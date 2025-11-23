@@ -1,13 +1,30 @@
-import {app, BrowserWindow} from 'electron'
-import path from 'path'
-import { isDev } from './util.js'
+import { app, BrowserWindow } from 'electron';
+import { ipcMainOn, isDev } from './util.js';
+import { getPreloadPath, getUIPath } from './pathResolver.js';
+import { createMenu } from './menu.js';
 
 app.on('ready', () => {
-    const mainWindow = new BrowserWindow({})
-    if (isDev()) {
-        mainWindow.loadURL('http://localhost:3000')
+  const mainWindow = new BrowserWindow({
+    webPreferences: {
+      preload: getPreloadPath(),
+    },
+    frame: false,
+  });
+  if (isDev()) {
+    mainWindow.loadURL('http://localhost:3000');
+  } else {
+    mainWindow.loadFile(getUIPath());
+  }
+  // Customize Menu
+  createMenu();
+  // Customize Frame
+  ipcMainOn('frameMinimize', () => mainWindow.minimize());
+  ipcMainOn('frameMaximize', () => {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
     } else {
-        mainWindow.loadFile(path.join(app.getAppPath()+'/dist-react/index.html'))
+      mainWindow.maximize();
     }
-
-})
+  });
+  ipcMainOn('frameClose', () => mainWindow.close());
+});

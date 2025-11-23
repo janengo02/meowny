@@ -1,19 +1,16 @@
 {
-
-    "appId": "com.anhngo.meowny",
-    "icon": "./meowny-logo.png",
-    "files": [
-        "dist-electron",
-        "dist-react",
-    ],
-    "mac": {
-        "target": "dmg"
-    },
-    "win": {
-        "target": ["portable", "msi"]
-    },
-    "linux": {
-        "target": "AppImage",
-        "category": "Utility"
-    }
+  "appId": "com.anhngo.meowny",
+  "icon": "./meowny-logo.png",
+  "files": ["dist-electron", "dist-react"],
+  "extraResources": ["dist-electron/preload.cjs"],
+  "mac": {
+    "target": "dmg"
+  },
+  "win": {
+    "target": ["portable", "msi"]
+  },
+  "linux": {
+    "target": "AppImage",
+    "category": "Utility"
+  }
 }
