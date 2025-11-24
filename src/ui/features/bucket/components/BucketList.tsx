@@ -4,19 +4,37 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Grid,
   Typography,
 } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
-import { useCreateBucketMutation } from '../api/bucketApi';
+import {
+  useCreateBucketMutation,
+  useGetBucketsQuery,
+} from '../api/bucketApi';
 import { useDashboardError } from '../../dashboard/hooks/useDashboardError';
 import AddIcon from '@mui/icons-material/Add';
 
 export function BucketList() {
   const buckets = useAppSelector((state) => state.bucket.buckets);
+  const { isLoading: isLoadingBuckets, error: bucketsError } =
+    useGetBucketsQuery();
   const [createBucket, { isLoading: isCreatingBucket }] =
     useCreateBucketMutation();
   const { setError } = useDashboardError();
+
+  if (bucketsError) {
+    setError('Failed to load buckets. Please try again.');
+  }
+
+  if (isLoadingBuckets) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const handleCreateBucket = async () => {
     try {

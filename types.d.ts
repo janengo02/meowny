@@ -376,6 +376,7 @@ type EventPayloadMapping = {
   'auth:getUser': AuthUser | null;
 
   // Database events
+  'db:getBuckets': Bucket[];
   'db:createBucket': Bucket;
 };
 
@@ -394,6 +395,7 @@ interface Window {
     getUser: () => Promise<AuthUser | null>;
 
     // Database methods
+    getBuckets: () => Promise<Bucket[]>;
     createBucket: (params: CreateBucketParams) => Promise<Bucket>;
   };
 }

@@ -14,12 +14,19 @@ const bucketSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    builder.addMatcher(
-      bucketApi.endpoints.createBucket.matchFulfilled,
-      (state, action) => {
-        state.buckets.push(action.payload);
-      }
-    );
+    builder
+      .addMatcher(
+        bucketApi.endpoints.getBuckets.matchFulfilled,
+        (state, action) => {
+          state.buckets = action.payload;
+        }
+      )
+      .addMatcher(
+        bucketApi.endpoints.createBucket.matchFulfilled,
+        (state, action) => {
+          state.buckets.push(action.payload);
+        }
+      );
   },
 });
 

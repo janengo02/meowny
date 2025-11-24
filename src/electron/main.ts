@@ -44,6 +44,7 @@ app.on('ready', () => {
   ipcMainHandle('auth:getUser', auth.getUser);
 
   // Database handlers
+  ipcMainHandle('db:getBuckets', db.getBuckets);
   ipcMainHandle('db:createBucket', async (args) => {
     return db.createBucket(args as CreateBucketParams);
   });

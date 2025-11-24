@@ -16,6 +16,7 @@ electron.contextBridge.exposeInMainWorld('electron', {
   // Database methods
   createBucket: (params: CreateBucketParams) =>
     ipcInvoke('db:createBucket', params),
+  getBuckets: () => ipcInvoke('db:getBuckets'),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {
