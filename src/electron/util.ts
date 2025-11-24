@@ -8,13 +8,13 @@ export function isDev() {
 
 export function ipcMainHandle<Key extends keyof EventPayloadMapping>(
   key: Key,
-  handler: () => EventPayloadMapping[Key],
+  handler: (args: unknown) => Promise<EventPayloadMapping[Key]>,
 ) {
-  ipcMain.handle(key, (event) => {
+  ipcMain.handle(key, async (event, args) => {
     // Validate event
     if (event.senderFrame) {
       validateEventFrame(event.senderFrame);
-      return handler();
+      return handler(args);
     }
     throw new Error('Malicious event');
   });

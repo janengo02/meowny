@@ -6,6 +6,16 @@ electron.contextBridge.exposeInMainWorld('electron', {
   frameMinimize: () => ipcSend('frameMinimize'),
   frameMaximize: () => ipcSend('frameMaximize'),
   frameClose: () => ipcSend('frameClose'),
+
+  // Auth methods
+  signUp: (params: SignUpParams) => ipcInvoke('auth:signUp', params),
+  signIn: (params: SignInParams) => ipcInvoke('auth:signIn', params),
+  signOut: () => ipcInvoke('auth:signOut'),
+  getUser: () => ipcInvoke('auth:getUser'),
+
+  // Database methods
+  createBucket: (params: CreateBucketParams) =>
+    ipcInvoke('db:createBucket', params),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {
@@ -14,8 +24,9 @@ function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {
 
 function ipcInvoke<Key extends keyof EventPayloadMapping>(
   key: Key,
+  args?: unknown,
 ): Promise<EventPayloadMapping[Key]> {
-  return electron.ipcRenderer.invoke(key);
+  return electron.ipcRenderer.invoke(key, args);
 }
 
 function ipcOn<Key extends keyof EventPayloadMapping>(
