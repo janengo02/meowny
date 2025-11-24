@@ -1,38 +1,38 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  TextField,
   Button,
   Alert,
   Link,
 } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
+import { FormTextField } from '../../../shared/components/form/FormTextField';
+import { loginSchema, type LoginFormData } from '../schemas/auth.schema';
 
 export function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    mode: 'onChange',
+  });
 
+  const onSubmit = async (data: LoginFormData) => {
+    setSubmitError(null);
     try {
-      const user = await window.electron.signIn({ email, password });
+      const user = await window.electron.signIn(data);
       login(user);
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed');
-    } finally {
-      setLoading(false);
+      setSubmitError(err instanceof Error ? err.message : 'Sign in failed');
     }
   };
 
@@ -66,45 +66,43 @@ export function Login() {
             Sign in to your account
           </Typography>
 
-          {error && (
+          {submitError && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+              {submitError}
             </Alert>
           )}
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              disabled={loading}
-              sx={{ mb: 2 }}
-            />
+          <FormProvider {...form}>
+            <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>
+              <FormTextField
+                name="email"
+                label="Email"
+                type="email"
+                placeholder="Enter your email"
+                sx={{ mb: 2 }}
+              />
 
-            <TextField
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              disabled={loading}
-              sx={{ mb: 3 }}
-            />
+              <FormTextField
+                name="password"
+                label="Password"
+                type="password"
+                placeholder="Enter your password"
+                sx={{ mb: 3 }}
+              />
 
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              size="large"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </Box>
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                size="large"
+                disabled={
+                  form.formState.isSubmitting || !form.formState.isValid
+                }
+              >
+                {form.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </Box>
+          </FormProvider>
 
           <Typography
             variant="body2"
