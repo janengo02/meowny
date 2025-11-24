@@ -1,7 +1,8 @@
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box } from '@mui/material';
+import { Provider } from 'react-redux';
 import { theme } from '../shared/theme/theme';
-import { AuthProvider } from '../features/auth/components/AuthProvider';
+import { store } from '../store/store';
 import { TitleBar } from '../shared/components/layout/TitleBar';
 import { ProtectedRoute } from '../features/auth/components/ProtectedRoute';
 import { PublicRoute } from '../features/auth/components/PublicRoute';
@@ -31,11 +32,11 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <HashRouter>
-        <AuthProvider>
+      <Provider store={store}>
+        <HashRouter>
           <AppRoutes />
-        </AuthProvider>
-      </HashRouter>
+        </HashRouter>
+      </Provider>
     </ThemeProvider>
   );
 }

@@ -15,25 +15,24 @@ import {
   Alert,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { useAuth } from '../../auth/hooks/useAuth';
+import { useAppSelector } from '../../../store/hooks';
+import { useSignOutMutation } from '../../auth/api/authApi';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const user = useAppSelector((state) => state.auth.user);
+  const [signOut, { isLoading: isSigningOut }] = useSignOutMutation();
   const [loading, setLoading] = useState(false);
   const [buckets, setBuckets] = useState<Bucket[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const handleLogout = async () => {
-    setLoading(true);
     setError(null);
     try {
-      await logout();
+      await signOut();
       navigate('/login');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Logout failed');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -92,9 +91,9 @@ export function Dashboard() {
             variant="outlined"
             size="small"
             onClick={handleLogout}
-            disabled={loading}
+            disabled={isSigningOut}
           >
-            {loading ? 'Logging out...' : 'Logout'}
+            {isSigningOut ? 'Logging out...' : 'Logout'}
           </Button>
         </Toolbar>
       </AppBar>

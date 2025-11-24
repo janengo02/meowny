@@ -1,11 +1,13 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAppSelector } from '../../../store/hooks';
+import { useGetUserQuery } from '../api/authApi';
 import { LoadingScreen } from '../../../shared/components/feedback/LoadingScreen';
 
 export function ProtectedRoute() {
-  const { user, loading } = useAuth();
+  const { isLoading } = useGetUserQuery();
+  const user = useAppSelector((state) => state.auth.user);
 
-  if (loading) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
 

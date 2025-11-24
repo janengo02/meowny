@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,36 +11,37 @@ import {
   Alert,
   Link,
 } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { registerSchema, type RegisterFormData } from '../schemas/auth.schema';
+import { useSignUpMutation } from '../api/authApi';
 
 export function Register() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [signUp, { isLoading, error, isSuccess }] = useSignUpMutation();
 
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     mode: 'onChange',
   });
 
-  const onSubmit = async (data: RegisterFormData) => {
-    setSubmitError(null);
-    try {
-      const user = await window.electron.signUp({
-        email: data.email,
-        password: data.password,
-        name: data.name,
-      });
-      login(user);
+  useEffect(() => {
+    if (isSuccess) {
       navigate('/dashboard');
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : 'Registration failed',
-      );
     }
+  }, [isSuccess, navigate]);
+
+  const onSubmit = async (data: RegisterFormData) => {
+    await signUp({
+      email: data.email,
+      password: data.password,
+      name: data.name,
+    });
   };
+
+  const errorMessage =
+    error && typeof error === 'object' && 'message' in error
+      ? (error as { message: string }).message
+      : null;
 
   return (
     <Box
@@ -72,9 +73,9 @@ export function Register() {
             Get started with Meowny
           </Typography>
 
-          {submitError && (
+          {errorMessage && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {submitError}
+              {errorMessage}
             </Alert>
           )}
 
@@ -116,13 +117,9 @@ export function Register() {
                 variant="contained"
                 fullWidth
                 size="large"
-                disabled={
-                  form.formState.isSubmitting || !form.formState.isValid
-                }
+                disabled={isLoading || !form.formState.isValid}
               >
-                {form.formState.isSubmitting
-                  ? 'Creating account...'
-                  : 'Create Account'}
+                {isLoading ? 'Creating account...' : 'Create Account'}
               </Button>
             </Box>
           </FormProvider>

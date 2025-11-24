@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,30 +11,33 @@ import {
   Alert,
   Link,
 } from '@mui/material';
-import { useAuth } from '../hooks/useAuth';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { loginSchema, type LoginFormData } from '../schemas/auth.schema';
+import { useSignInMutation } from '../api/authApi';
 
 export function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [signIn, { isLoading, error, isSuccess }] = useSignInMutation();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onChange',
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    setSubmitError(null);
-    try {
-      const user = await window.electron.signIn(data);
-      login(user);
+  useEffect(() => {
+    if (isSuccess) {
       navigate('/dashboard');
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Sign in failed');
     }
+  }, [isSuccess, navigate]);
+
+  const onSubmit = async (data: LoginFormData) => {
+    await signIn(data);
   };
+
+  const errorMessage =
+    error && typeof error === 'object' && 'message' in error
+      ? (error as { message: string }).message
+      : null;
 
   return (
     <Box
@@ -66,9 +69,9 @@ export function Login() {
             Sign in to your account
           </Typography>
 
-          {submitError && (
+          {errorMessage && (
             <Alert severity="error" sx={{ mb: 2 }}>
-              {submitError}
+              {errorMessage}
             </Alert>
           )}
 
@@ -95,11 +98,9 @@ export function Login() {
                 variant="contained"
                 fullWidth
                 size="large"
-                disabled={
-                  form.formState.isSubmitting || !form.formState.isValid
-                }
+                disabled={isLoading || !form.formState.isValid}
               >
-                {form.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
+                {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </Box>
           </FormProvider>
