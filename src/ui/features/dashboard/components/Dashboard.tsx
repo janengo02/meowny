@@ -17,13 +17,15 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import { useAppSelector } from '../../../store/hooks';
 import { useSignOutMutation } from '../../auth/api/authApi';
+import { useCreateBucketMutation } from '../../bucket/api/bucketApi';
 
 export function Dashboard() {
   const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
+  const buckets = useAppSelector((state) => state.bucket.buckets);
   const [signOut, { isLoading: isSigningOut }] = useSignOutMutation();
-  const [loading, setLoading] = useState(false);
-  const [buckets, setBuckets] = useState<Bucket[]>([]);
+  const [createBucket, { isLoading: isCreatingBucket }] =
+    useCreateBucketMutation();
   const [error, setError] = useState<string | null>(null);
 
   const handleLogout = async () => {
@@ -37,19 +39,15 @@ export function Dashboard() {
   };
 
   const handleCreateBucket = async () => {
-    setLoading(true);
     setError(null);
     try {
-      const bucket = await window.electron.createBucket({
+      await createBucket({
         name: `Bucket ${buckets.length + 1}`,
         type: 'expense',
         notes: 'Created from dashboard',
-      });
-      setBuckets((prev) => [...prev, bucket]);
+      }).unwrap();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create bucket');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -126,7 +124,7 @@ export function Dashboard() {
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleCreateBucket}
-              disabled={loading}
+              disabled={isCreatingBucket}
             >
               Create Bucket
             </Button>
