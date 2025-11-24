@@ -14,7 +14,15 @@ export function ipcMainHandle<Key extends keyof EventPayloadMapping>(
     // Validate event
     if (event.senderFrame) {
       validateEventFrame(event.senderFrame);
-      return handler(args);
+      try {
+        return await handler(args);
+      } catch (error) {
+        // Ensure error is serializable across IPC
+        const message =
+          error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error(`IPC Error [${key}]:`, message);
+        throw new Error(message);
+      }
     }
     throw new Error('Malicious event');
   });

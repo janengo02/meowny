@@ -45,7 +45,14 @@ app.on('ready', () => {
 
   // Database handlers
   ipcMainHandle('db:getBuckets', db.getBuckets);
+  ipcMainHandle('db:getBucket', async (args) => {
+    return db.getBucket(args as number);
+  });
   ipcMainHandle('db:createBucket', async (args) => {
     return db.createBucket(args as CreateBucketParams);
+  });
+  ipcMainHandle('db:updateBucket', async (args) => {
+    const { id, params } = args as { id: number; params: UpdateBucketParams };
+    return db.updateBucket(id, params);
   });
 });

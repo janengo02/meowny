@@ -377,7 +377,9 @@ type EventPayloadMapping = {
 
   // Database events
   'db:getBuckets': Bucket[];
+  'db:getBucket': Bucket;
   'db:createBucket': Bucket;
+  'db:updateBucket': Bucket;
 };
 
 type UnSubscribeFunction = () => void;
@@ -396,6 +398,8 @@ interface Window {
 
     // Database methods
     getBuckets: () => Promise<Bucket[]>;
+    getBucket: (id: number) => Promise<Bucket>;
     createBucket: (params: CreateBucketParams) => Promise<Bucket>;
+    updateBucket: (id: number, params: UpdateBucketParams) => Promise<Bucket>;
   };
 }

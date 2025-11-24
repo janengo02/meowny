@@ -1,6 +1,7 @@
 import {
   Box,
   Chip,
+  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -14,11 +15,12 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CategoryIcon from '@mui/icons-material/Category';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { ChipSelect } from '../../../shared/components/ChipSelect';
+import { useGetBucketQuery } from '../api/bucketApi';
 
 const BUCKET_TYPES: BucketTypeEnum[] = ['expense', 'saving', 'investment'];
 
 interface BucketModalProps {
-  bucket: Bucket | null;
+  bucketId: number | null;
   category?: BucketCategory | null;
   location?: BucketLocation | null;
   open: boolean;
@@ -26,13 +28,34 @@ interface BucketModalProps {
 }
 
 export function BucketModal({
-  bucket,
+  bucketId,
   category,
   location,
   open,
   onClose,
 }: BucketModalProps) {
-  if (!bucket) return null;
+  const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
+    skip: !bucketId,
+  });
+
+  if (!bucketId) return null;
+
+  if (isLoading || !bucket) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+        <DialogContent
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            py: 6,
+          }}
+        >
+          <CircularProgress />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   const gainLoss = bucket.market_value - bucket.contributed_amount;
   const gainLossPercent =

@@ -1,5 +1,3 @@
-import type { IpcRendererEvent } from 'electron';
-
 const electron = require('electron');
 
 electron.contextBridge.exposeInMainWorld('electron', {
@@ -14,9 +12,12 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getUser: () => ipcInvoke('auth:getUser'),
 
   // Database methods
+  getBuckets: () => ipcInvoke('db:getBuckets'),
+  getBucket: (id: number) => ipcInvoke('db:getBucket', id),
   createBucket: (params: CreateBucketParams) =>
     ipcInvoke('db:createBucket', params),
-  getBuckets: () => ipcInvoke('db:getBuckets'),
+  updateBucket: (id: number, params: UpdateBucketParams) =>
+    ipcInvoke('db:updateBucket', { id, params }),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {
@@ -28,14 +29,4 @@ function ipcInvoke<Key extends keyof EventPayloadMapping>(
   args?: unknown,
 ): Promise<EventPayloadMapping[Key]> {
   return electron.ipcRenderer.invoke(key, args);
-}
-
-function ipcOn<Key extends keyof EventPayloadMapping>(
-  key: Key,
-  callback: (payload: EventPayloadMapping[Key]) => void,
-): UnSubscribeFunction {
-  const cb = (_: IpcRendererEvent, payload: EventPayloadMapping[Key]) =>
-    callback(payload);
-  electron.ipcRenderer.on(key, cb);
-  return () => electron.ipcRenderer.off(key, cb);
 }

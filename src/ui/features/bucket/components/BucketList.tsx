@@ -17,7 +17,7 @@ import { BucketModal } from './BucketModal';
 
 export function BucketList() {
   const buckets = useAppSelector((state) => state.bucket.buckets);
-  const [selectedBucket, setSelectedBucket] = useState<Bucket | null>(null);
+  const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const { isLoading: isLoadingBuckets, error: bucketsError } =
     useGetBucketsQuery();
   const [createBucket, { isLoading: isCreatingBucket }] =
@@ -86,16 +86,16 @@ export function BucketList() {
         <Grid container spacing={2}>
           {buckets.map((bucket) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={bucket.id}>
-              <BucketCard bucket={bucket} onClick={() => setSelectedBucket(bucket)} />
+              <BucketCard bucket={bucket} onClick={() => setSelectedBucketId(bucket.id)} />
             </Grid>
           ))}
         </Grid>
       )}
 
       <BucketModal
-        bucket={selectedBucket}
-        open={selectedBucket !== null}
-        onClose={() => setSelectedBucket(null)}
+        bucketId={selectedBucketId}
+        open={selectedBucketId !== null}
+        onClose={() => setSelectedBucketId(null)}
       />
     </Box>
   );

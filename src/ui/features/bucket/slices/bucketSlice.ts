@@ -26,6 +26,17 @@ const bucketSlice = createSlice({
         (state, action) => {
           state.buckets.push(action.payload);
         }
+      )
+      .addMatcher(
+        bucketApi.endpoints.updateBucket.matchFulfilled,
+        (state, action) => {
+          const index = state.buckets.findIndex(
+            (b) => b.id === action.payload.id
+          );
+          if (index !== -1) {
+            state.buckets[index] = action.payload;
+          }
+        }
       );
   },
 });

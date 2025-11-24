@@ -13,6 +13,17 @@ export const bucketApi = baseApi.injectEndpoints({
       },
       providesTags: ['Bucket'],
     }),
+    getBucket: builder.query<Bucket, number>({
+      queryFn: async (id) => {
+        try {
+          const bucket = await window.electron.getBucket(id);
+          return { data: bucket };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: (_result, _error, id) => [{ type: 'Bucket', id }],
+    }),
     createBucket: builder.mutation<Bucket, CreateBucketParams>({
       queryFn: async (params) => {
         try {
@@ -24,7 +35,29 @@ export const bucketApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Bucket'],
     }),
+    updateBucket: builder.mutation<
+      Bucket,
+      { id: number; params: UpdateBucketParams }
+    >({
+      queryFn: async ({ id, params }) => {
+        try {
+          const bucket = await window.electron.updateBucket(id, params);
+          return { data: bucket };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { id }) => [
+        'Bucket',
+        { type: 'Bucket', id },
+      ],
+    }),
   }),
 });
 
-export const { useGetBucketsQuery, useCreateBucketMutation } = bucketApi;
+export const {
+  useGetBucketsQuery,
+  useGetBucketQuery,
+  useCreateBucketMutation,
+  useUpdateBucketMutation,
+} = bucketApi;
