@@ -159,9 +159,10 @@ type IncomeTax = {
 };
 
 // ============================================
-// QUERIES
+// QUERY PARAMS
 // ============================================
-// Create Bucket
+
+// Bucket
 type CreateBucketParams = {
   name: string;
   type: BucketTypeEnum;
@@ -170,6 +171,173 @@ type CreateBucketParams = {
   contributed_amount?: number;
   market_value?: number;
   is_hidden?: boolean;
+  notes?: string | null;
+};
+
+type UpdateBucketParams = {
+  name?: string;
+  type?: BucketTypeEnum;
+  bucket_category_id?: number | null;
+  bucket_location_id?: number | null;
+  contributed_amount?: number;
+  market_value?: number;
+  is_hidden?: boolean;
+  notes?: string | null;
+};
+
+// Bucket Category
+type CreateBucketCategoryParams = {
+  name: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+type UpdateBucketCategoryParams = {
+  name?: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+// Bucket Location
+type CreateBucketLocationParams = {
+  name: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+type UpdateBucketLocationParams = {
+  name?: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+// Bucket Goal
+type CreateBucketGoalParams = {
+  bucket_id: number;
+  min_amount?: number | null;
+  max_amount?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string | null;
+};
+
+type UpdateBucketGoalParams = {
+  bucket_id?: number;
+  min_amount?: number | null;
+  max_amount?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string | null;
+};
+
+// Bucket Value History
+type CreateBucketValueHistoryParams = {
+  bucket_id: number;
+  contributed_amount?: number;
+  market_value?: number;
+  recorded_at?: string;
+  source_type: SourceTypeEnum;
+  source_id?: number | null;
+  notes?: string | null;
+};
+
+type UpdateBucketValueHistoryParams = {
+  bucket_id?: number;
+  contributed_amount?: number;
+  market_value?: number;
+  recorded_at?: string;
+  source_type?: SourceTypeEnum;
+  source_id?: number | null;
+  notes?: string | null;
+};
+
+// Transaction
+type CreateTransactionParams = {
+  from_bucket_id?: number | null;
+  to_bucket_id?: number | null;
+  amount: number;
+  transaction_date?: string;
+  notes?: string | null;
+};
+
+type UpdateTransactionParams = {
+  from_bucket_id?: number | null;
+  to_bucket_id?: number | null;
+  amount?: number;
+  transaction_date?: string;
+  notes?: string | null;
+};
+
+// Income Source
+type CreateIncomeSourceParams = {
+  name: string;
+  color?: ColorEnum;
+  is_active?: boolean;
+  notes?: string | null;
+};
+
+type UpdateIncomeSourceParams = {
+  name?: string;
+  color?: ColorEnum;
+  is_active?: boolean;
+  notes?: string | null;
+};
+
+// Income Category
+type CreateIncomeCategoryParams = {
+  name: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+type UpdateIncomeCategoryParams = {
+  name?: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+// Income History
+type CreateIncomeHistoryParams = {
+  income_id: number;
+  income_category_id?: number | null;
+  gross_amount: number;
+  received_date?: string;
+  notes?: string | null;
+};
+
+type UpdateIncomeHistoryParams = {
+  income_id?: number;
+  income_category_id?: number | null;
+  gross_amount?: number;
+  received_date?: string;
+  notes?: string | null;
+};
+
+// Tax Category
+type CreateTaxCategoryParams = {
+  name: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+type UpdateTaxCategoryParams = {
+  name?: string;
+  color?: ColorEnum;
+  notes?: string | null;
+};
+
+// Income Tax
+type CreateIncomeTaxParams = {
+  income_history_id: number;
+  tax_category_id?: number | null;
+  tax_amount: number;
+  notes?: string | null;
+};
+
+type UpdateIncomeTaxParams = {
+  income_history_id?: number;
+  tax_category_id?: number | null;
+  tax_amount?: number;
   notes?: string | null;
 };
 
