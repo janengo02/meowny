@@ -25,3 +25,6 @@ dist-electron
 *.njsproj
 *.sln
 *.sw?
+
+# Local documentation
+doc/

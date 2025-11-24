@@ -6,6 +6,9 @@ export async function signUp(params: SignUpParams): Promise<AuthUser> {
   const { data, error } = await supabase.auth.signUp({
     email: params.email,
     password: params.password,
+    options: {
+      data: { name: params.name },
+    },
   });
 
   if (error) throw new Error(error.message);
