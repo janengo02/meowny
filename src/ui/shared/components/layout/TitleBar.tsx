@@ -6,17 +6,17 @@ export function TitleBar() {
       <div className="title-bar-controls">
         <button
           className="title-bar-button close"
-          onClick={window.electron.frameClose}
+          onClick={() => window.electron.frameClose()}
           aria-label="Close"
         />
         <button
           className="title-bar-button minimize"
-          onClick={window.electron.frameMinimize}
+          onClick={() => window.electron.frameMinimize()}
           aria-label="Minimize"
         />
         <button
           className="title-bar-button maximize"
-          onClick={window.electron.frameMaximize}
+          onClick={() => window.electron.frameMaximize()}
           aria-label="Maximize"
         />
       </div>
