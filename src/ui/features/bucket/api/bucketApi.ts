@@ -51,6 +51,20 @@ export const bucketApi = baseApi.injectEndpoints({
         'Bucket',
         { type: 'Bucket', id },
       ],
+      onQueryStarted: async ({ id, params }, { dispatch, queryFulfilled }) => {
+        // Optimistic update for getBucket
+        const patchResult = dispatch(
+          bucketApi.util.updateQueryData('getBucket', id, (draft) => {
+            Object.assign(draft, params);
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
     }),
   }),
 });

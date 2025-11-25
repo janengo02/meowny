@@ -14,10 +14,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CategoryIcon from '@mui/icons-material/Category';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { ChipSelect } from '../../../shared/components/ChipSelect';
 import { useGetBucketQuery } from '../api/bucketApi';
-
-const BUCKET_TYPES: BucketTypeEnum[] = ['expense', 'saving', 'investment'];
+import { BucketTypeSelect } from './BucketTypeSelect';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -98,11 +96,7 @@ export function BucketModal({
             {bucket.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <ChipSelect
-              value={bucket.type}
-              options={BUCKET_TYPES}
-              onChange={() => {}}
-            />
+            <BucketTypeSelect bucketId={bucket.id} value={bucket.type} />
             <Chip
               icon={<CategoryIcon sx={{ fontSize: 14 }} />}
               label={category ? category.name : 'Uncategorized'}

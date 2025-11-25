@@ -13,7 +13,6 @@ export const theme = createTheme({
     },
     background: {
       default: '#1a1a1a',
-      paper: 'rgba(255, 255, 255, 0.05)',
     },
     error: {
       main: '#f87171',
@@ -60,7 +59,6 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
         },
       },
     },
