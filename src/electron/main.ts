@@ -55,4 +55,8 @@ app.on('ready', () => {
     const { id, params } = args as { id: number; params: UpdateBucketParams };
     return db.updateBucket(id, params);
   });
+  ipcMainHandle('db:getBucketCategories', db.getBucketCategories);
+  ipcMainHandle('db:createBucketCategory', async (args) => {
+    return db.createBucketCategory(args as CreateBucketCategoryParams);
+  });
 });

@@ -12,10 +12,14 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import CategoryIcon from '@mui/icons-material/Category';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { useGetBucketQuery } from '../api/bucketApi';
+import { useGetBucketQuery, useUpdateBucketMutation } from '../api/bucketApi';
+import {
+  useGetBucketCategoriesQuery,
+  useCreateBucketCategoryMutation,
+} from '../api/bucketCategoryApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
+import { ChipAutocomplete } from '../../../shared/components/ChipAutocomplete';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -35,6 +39,9 @@ export function BucketModal({
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
+  const { data: categories = [] } = useGetBucketCategoriesQuery();
+  const [updateBucket] = useUpdateBucketMutation();
+  const [createCategory] = useCreateBucketCategoryMutation();
 
   if (!bucketId) return null;
 
@@ -61,6 +68,24 @@ export function BucketModal({
       ? (gainLoss / bucket.contributed_amount) * 100
       : 0;
   const isPositive = gainLoss >= 0;
+
+  const handleCategoryChange = async (categoryId: string | null) => {
+    if (!bucketId) return;
+    await updateBucket({
+      id: bucketId,
+      params: { bucket_category_id: categoryId ? Number(categoryId) : null },
+    });
+  };
+
+  const handleCreateCategory = async (name: string) => {
+    const newCategory = await createCategory({ name }).unwrap();
+    if (bucketId && newCategory) {
+      await updateBucket({
+        id: bucketId,
+        params: { bucket_category_id: newCategory.id },
+      });
+    }
+  };
 
   return (
     <Dialog
@@ -97,16 +122,18 @@ export function BucketModal({
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <BucketTypeSelect bucketId={bucket.id} value={bucket.type} />
-            <Chip
-              icon={<CategoryIcon sx={{ fontSize: 14 }} />}
-              label={category ? category.name : 'Uncategorized'}
-              size="small"
+            <ChipAutocomplete
+              value={bucket.bucket_category_id?.toString() ?? null}
+              options={categories.map((cat) => ({
+                value: cat.id.toString(),
+                label: cat.name,
+              }))}
+              onChange={handleCategoryChange}
+              onCreate={handleCreateCategory}
+              label="Category"
+              placeholder="Search categories..."
+              color={category ? 'default' : 'default'}
               variant="outlined"
-              sx={
-                category
-                  ? { borderColor: category.color, color: category.color }
-                  : { borderColor: 'text.secondary', color: 'text.secondary' }
-              }
             />
             <Chip
               icon={<LocationOnIcon sx={{ fontSize: 14 }} />}
