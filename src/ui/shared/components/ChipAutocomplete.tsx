@@ -23,7 +23,14 @@ interface ChipAutocompleteProps<T extends string> {
   options: ChipAutocompleteOption<T>[] | T[];
   onChange?: (value: T | null) => void;
   onCreate?: (value: string) => void;
-  color?: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  color?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning';
   size?: 'small' | 'medium';
   variant?: 'filled' | 'outlined';
   disabled?: boolean;
@@ -49,18 +56,19 @@ export function ChipAutocomplete<T extends string>({
   const [searchText, setSearchText] = useState('');
 
   const normalizedOptions: ChipAutocompleteOption<T>[] = options.map((opt) =>
-    typeof opt === 'string' ? { value: opt, label: opt } : opt
+    typeof opt === 'string' ? { value: opt, label: opt } : opt,
   );
 
   const currentOption = normalizedOptions.find((opt) => opt.value === value);
   const displayLabel = value ? (currentOption?.label ?? value) : `Add ${label}`;
 
   const filteredOptions = normalizedOptions.filter((opt) =>
-    (opt.label ?? opt.value).toLowerCase().includes(searchText.toLowerCase())
+    (opt.label ?? opt.value).toLowerCase().includes(searchText.toLowerCase()),
   );
 
   const hasExactMatch = filteredOptions.some(
-    (opt) => (opt.label ?? opt.value).toLowerCase() === searchText.toLowerCase()
+    (opt) =>
+      (opt.label ?? opt.value).toLowerCase() === searchText.toLowerCase(),
   );
 
   const showCreateOption =
@@ -100,68 +108,76 @@ export function ChipAutocomplete<T extends string>({
       <Chip
         label={displayLabel}
         size={size}
-        color={color}
+        color={value ? color : 'default'}
         variant={variant}
         deleteIcon={<ArrowDropDownIcon />}
         onDelete={disabled ? undefined : handleClick}
         onClick={handleClick}
         disabled={disabled}
-        sx={{ textTransform: 'capitalize', cursor: disabled ? 'default' : 'pointer' }}
+        sx={{
+          textTransform: 'capitalize',
+          cursor: disabled ? 'default' : 'pointer',
+        }}
       />
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
         onClose={handleClose}
-        PaperProps={{
-          sx: { minWidth: 200 },
+        slotProps={{
+          paper: {
+            sx: { minWidth: 200 },
+          },
         }}
       >
-        <Box sx={{ px: 2, py: 1 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder={placeholder}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            autoFocus
-            onClick={(e) => e.stopPropagation()}
-          />
-        </Box>
-        {allowClear && value && (
-          <>
-            <MenuItem onClick={handleClear}>
+        <Box>
+          <Box sx={{ px: 2, py: 1 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder={placeholder}
+              value={searchText}
+              onChange={(e) => {
+                e.stopPropagation(); // Prevent MenuItem autofocus
+                setSearchText(e.target.value);
+              }}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          </Box>
+          {allowClear && value && (
+            <>
+              <MenuItem onClick={handleClear}>
+                <ListItemIcon>
+                  <ClearIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Clear selection</ListItemText>
+              </MenuItem>
+              <Divider />
+            </>
+          )}
+          {filteredOptions.length > 0
+            ? filteredOptions.map((option) => (
+                <MenuItem
+                  key={option.value}
+                  selected={option.value === value}
+                  onClick={() => handleSelect(option.value)}
+                  sx={{ textTransform: 'capitalize' }}
+                >
+                  {option.label ?? option.value}
+                </MenuItem>
+              ))
+            : !showCreateOption && (
+                <MenuItem disabled>No results found</MenuItem>
+              )}
+          {showCreateOption && (
+            <MenuItem onClick={handleCreate}>
               <ListItemIcon>
-                <ClearIcon fontSize="small" />
+                <AddIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>Clear selection</ListItemText>
+              <ListItemText>Create "{searchText}"</ListItemText>
             </MenuItem>
-            <Divider />
-          </>
-        )}
-        {filteredOptions.length > 0 ? (
-          filteredOptions.map((option) => (
-            <MenuItem
-              key={option.value}
-              selected={option.value === value}
-              onClick={() => handleSelect(option.value)}
-              sx={{ textTransform: 'capitalize' }}
-            >
-              {option.label ?? option.value}
-            </MenuItem>
-          ))
-        ) : (
-          !showCreateOption && (
-            <MenuItem disabled>No results found</MenuItem>
-          )
-        )}
-        {showCreateOption && (
-          <MenuItem onClick={handleCreate}>
-            <ListItemIcon>
-              <AddIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Create "{searchText}"</ListItemText>
-          </MenuItem>
-        )}
+          )}
+        </Box>
       </Menu>
     </>
   );

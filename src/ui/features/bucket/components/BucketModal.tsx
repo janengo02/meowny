@@ -13,17 +13,12 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import { useGetBucketQuery, useUpdateBucketMutation } from '../api/bucketApi';
-import {
-  useGetBucketCategoriesQuery,
-  useCreateBucketCategoryMutation,
-} from '../api/bucketCategoryApi';
+import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
-import { ChipAutocomplete } from '../../../shared/components/ChipAutocomplete';
+import { BucketCategorySelect } from './BucketCategorySelect';
 
 interface BucketModalProps {
   bucketId: number | null;
-  category?: BucketCategory | null;
   location?: BucketLocation | null;
   open: boolean;
   onClose: () => void;
@@ -31,7 +26,6 @@ interface BucketModalProps {
 
 export function BucketModal({
   bucketId,
-  category,
   location,
   open,
   onClose,
@@ -39,9 +33,6 @@ export function BucketModal({
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
-  const { data: categories = [] } = useGetBucketCategoriesQuery();
-  const [updateBucket] = useUpdateBucketMutation();
-  const [createCategory] = useCreateBucketCategoryMutation();
 
   if (!bucketId) return null;
 
@@ -68,24 +59,6 @@ export function BucketModal({
       ? (gainLoss / bucket.contributed_amount) * 100
       : 0;
   const isPositive = gainLoss >= 0;
-
-  const handleCategoryChange = async (categoryId: string | null) => {
-    if (!bucketId) return;
-    await updateBucket({
-      id: bucketId,
-      params: { bucket_category_id: categoryId ? Number(categoryId) : null },
-    });
-  };
-
-  const handleCreateCategory = async (name: string) => {
-    const newCategory = await createCategory({ name }).unwrap();
-    if (bucketId && newCategory) {
-      await updateBucket({
-        id: bucketId,
-        params: { bucket_category_id: newCategory.id },
-      });
-    }
-  };
 
   return (
     <Dialog
@@ -122,18 +95,9 @@ export function BucketModal({
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <BucketTypeSelect bucketId={bucket.id} value={bucket.type} />
-            <ChipAutocomplete
-              value={bucket.bucket_category_id?.toString() ?? null}
-              options={categories.map((cat) => ({
-                value: cat.id.toString(),
-                label: cat.name,
-              }))}
-              onChange={handleCategoryChange}
-              onCreate={handleCreateCategory}
-              label="Category"
-              placeholder="Search categories..."
-              color={category ? 'default' : 'default'}
-              variant="outlined"
+            <BucketCategorySelect
+              bucketId={bucket.id}
+              value={bucket.bucket_category_id}
             />
             <Chip
               icon={<LocationOnIcon sx={{ fontSize: 14 }} />}
@@ -285,28 +249,6 @@ export function BucketModal({
         {/* Metadata */}
         <Divider sx={{ my: 3 }} />
         <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Category
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: category ? category.color : 'text.secondary' }}
-            >
-              {category ? category.name : 'Uncategorized'}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Location
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: location ? location.color : 'text.secondary' }}
-            >
-              {location ? location.name : 'No location'}
-            </Typography>
-          </Box>
           <Box>
             <Typography variant="caption" color="text.secondary">
               Created
