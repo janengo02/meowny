@@ -1,6 +1,5 @@
 import {
   Box,
-  Chip,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -12,21 +11,19 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
 import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
+import { BucketLocationSelect } from './BucketLocationSelect';
 
 interface BucketModalProps {
   bucketId: number | null;
-  location?: BucketLocation | null;
   open: boolean;
   onClose: () => void;
 }
 
 export function BucketModal({
   bucketId,
-  location,
   open,
   onClose,
 }: BucketModalProps) {
@@ -99,16 +96,9 @@ export function BucketModal({
               bucketId={bucket.id}
               value={bucket.bucket_category_id}
             />
-            <Chip
-              icon={<LocationOnIcon sx={{ fontSize: 14 }} />}
-              label={location ? location.name : 'No location'}
-              size="small"
-              variant="outlined"
-              sx={
-                location
-                  ? { borderColor: location.color, color: location.color }
-                  : { borderColor: 'text.secondary', color: 'text.secondary' }
-              }
+            <BucketLocationSelect
+              bucketId={bucket.id}
+              value={bucket.bucket_location_id}
             />
           </Box>
         </Box>

@@ -382,6 +382,8 @@ type EventPayloadMapping = {
   'db:updateBucket': Bucket;
   'db:getBucketCategories': BucketCategory[];
   'db:createBucketCategory': BucketCategory;
+  'db:getBucketLocations': BucketLocation[];
+  'db:createBucketLocation': BucketLocation;
 };
 
 type UnSubscribeFunction = () => void;
@@ -405,5 +407,7 @@ interface Window {
     updateBucket: (id: number, params: UpdateBucketParams) => Promise<Bucket>;
     getBucketCategories: () => Promise<BucketCategory[]>;
     createBucketCategory: (params: CreateBucketCategoryParams) => Promise<BucketCategory>;
+    getBucketLocations: () => Promise<BucketLocation[]>;
+    createBucketLocation: (params: CreateBucketLocationParams) => Promise<BucketLocation>;
   };
 }
