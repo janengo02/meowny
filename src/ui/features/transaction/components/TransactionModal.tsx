@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Box,
   Button,
@@ -6,15 +8,16 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
   Grid,
   IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
-  TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { FormTextField } from '../../../shared/components/form/FormTextField';
+import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import {
+  transactionSchema,
+  type TransactionFormData,
+} from '../schemas/transaction.schema';
 import { useCreateTransactionMutation } from '../api/transactionApi';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 
@@ -29,47 +32,47 @@ export function TransactionModal({
   open,
   onClose,
 }: TransactionModalProps) {
-  // Initialize toBucketId with the bucketId if provided
-  const [fromBucketId, setFromBucketId] = useState<string | null>(null);
-  const [toBucketId, setToBucketId] = useState<string | null>(() =>
-    bucketId ? String(bucketId) : null,
-  );
-  const [amount, setAmount] = useState('');
-  const [transactionDate, setTransactionDate] = useState(
-    new Date().toISOString().split('T')[0],
-  );
-  const [notes, setNotes] = useState('');
   const [createTransaction, { isLoading }] = useCreateTransactionMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<TransactionFormData>({
+    resolver: zodResolver(transactionSchema),
+    mode: 'onChange',
+    defaultValues: {
+      from_bucket_id: '',
+      to_bucket_id: bucketId ? String(bucketId) : '',
+      amount: '',
+      transaction_date: new Date().toISOString().split('T')[0],
+      notes: '',
+    },
+  });
 
-    const amountValue = parseFloat(amount);
-    if (isNaN(amountValue) || amountValue <= 0) {
-      return;
+  // Reset form when modal opens with a new bucketId
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        from_bucket_id: '',
+        to_bucket_id: bucketId ? String(bucketId) : '',
+        amount: '',
+        transaction_date: new Date().toISOString().split('T')[0],
+        notes: '',
+      });
     }
+  }, [open, bucketId, form]);
 
-    // At least one bucket must be specified
-    if (!fromBucketId && !toBucketId) {
-      return;
-    }
-
+  const onSubmit = async (data: TransactionFormData) => {
     try {
       await createTransaction({
-        from_bucket_id: fromBucketId ? parseInt(fromBucketId) : null,
-        to_bucket_id: toBucketId ? parseInt(toBucketId) : null,
-        amount: amountValue,
-        transaction_date: new Date(transactionDate).toISOString(),
-        notes: notes || null,
+        from_bucket_id: data.from_bucket_id
+          ? parseInt(data.from_bucket_id)
+          : null,
+        to_bucket_id: data.to_bucket_id ? parseInt(data.to_bucket_id) : null,
+        amount: parseFloat(data.amount),
+        transaction_date: new Date(data.transaction_date).toISOString(),
+        notes: data.notes || null,
       }).unwrap();
 
-      // Reset form
-      setFromBucketId(null);
-      setToBucketId(bucketId ? String(bucketId) : null);
-      setAmount('');
-      setTransactionDate(new Date().toISOString().split('T')[0]);
-      setNotes('');
+      form.reset();
       onClose();
     } catch (error) {
       console.error('Failed to create transaction:', error);
@@ -77,13 +80,17 @@ export function TransactionModal({
   };
 
   const handleClose = () => {
-    setFromBucketId(null);
-    setToBucketId(bucketId ? String(bucketId) : null);
-    setAmount('');
-    setTransactionDate(new Date().toISOString().split('T')[0]);
-    setNotes('');
+    form.reset();
     onClose();
   };
+
+  const bucketOptions = [
+    { value: '', label: 'Income' },
+    ...buckets.map((bucket) => ({
+      value: String(bucket.id),
+      label: bucket.name,
+    })),
+  ];
 
   return (
     <Dialog
@@ -99,112 +106,79 @@ export function TransactionModal({
         },
       }}
     >
-      <form onSubmit={handleSubmit}>
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            pb: 1,
-          }}
-        >
-          Add Transaction
-          <IconButton onClick={handleClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
-            {/* From Bucket and To Bucket - Same Row */}
-            <Grid container spacing={2}>
-              <Grid size={6}>
-                <FormControl fullWidth>
-                  <InputLabel>From Bucket</InputLabel>
-                  <Select
-                    value={fromBucketId || ''}
-                    onChange={(e) => setFromBucketId(e.target.value || null)}
-                    label="From Bucket"
-                  >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {buckets.map((bucket) => (
-                      <MenuItem key={bucket.id} value={String(bucket.id)}>
-                        {bucket.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={6}>
-                <FormControl fullWidth>
-                  <InputLabel>To Bucket</InputLabel>
-                  <Select
-                    value={toBucketId || ''}
-                    onChange={(e) => setToBucketId(e.target.value || null)}
-                    label="To Bucket"
-                  >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {buckets.map((bucket) => (
-                      <MenuItem key={bucket.id} value={String(bucket.id)}>
-                        {bucket.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-
-            {/* Amount */}
-            <TextField
-              label="Amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-              fullWidth
-              inputProps={{ min: 0, step: 0.01 }}
-            />
-
-            {/* Transaction Date */}
-            <TextField
-              label="Transaction Date"
-              type="date"
-              value={transactionDate}
-              onChange={(e) => setTransactionDate(e.target.value)}
-              required
-              fullWidth
-              InputLabelProps={{ shrink: true }}
-            />
-
-            {/* Notes */}
-            <TextField
-              label="Notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              multiline
-              rows={3}
-              fullWidth
-            />
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={handleClose} disabled={isLoading}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={isLoading || !amount || (!fromBucketId && !toBucketId)}
+      <FormProvider {...form}>
+        <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>
+          <DialogTitle
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              pb: 1,
+            }}
           >
             Add Transaction
-          </Button>
-        </DialogActions>
-      </form>
+            <IconButton onClick={handleClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent>
+            <Box
+              sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}
+            >
+              {/* From Bucket and To Bucket - Same Row */}
+              <Grid container spacing={2}>
+                <Grid size={6}>
+                  <FormSelectField
+                    name="from_bucket_id"
+                    label="From Bucket"
+                    options={bucketOptions}
+                  />
+                </Grid>
+                <Grid size={6}>
+                  <FormSelectField
+                    name="to_bucket_id"
+                    label="To Bucket"
+                    options={bucketOptions}
+                  />
+                </Grid>
+              </Grid>
+
+              {/* Amount */}
+              <FormTextField
+                name="amount"
+                label="Amount"
+                type="number"
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+
+              {/* Transaction Date */}
+              <FormTextField
+                name="transaction_date"
+                label="Transaction Date"
+                type="date"
+                InputLabelProps={{ shrink: true }}
+              />
+
+              {/* Notes */}
+              <FormTextField name="notes" label="Notes" multiline rows={3} />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={handleClose} disabled={isLoading}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isLoading || !form.formState.isValid}
+            >
+              {isLoading ? 'Adding...' : 'Add Transaction'}
+            </Button>
+          </DialogActions>
+        </Box>
+      </FormProvider>
     </Dialog>
   );
 }
