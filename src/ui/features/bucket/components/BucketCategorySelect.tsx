@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ChipAutocomplete } from '../../../shared/components/ChipAutocomplete';
 import { useUpdateBucketMutation } from '../api/bucketApi';
 import {
@@ -18,8 +19,10 @@ export function BucketCategorySelect({
 }: BucketCategorySelectProps) {
   const { data: categories = [] } = useGetBucketCategoriesQuery();
   const [updateBucket, { isLoading: isUpdating }] = useUpdateBucketMutation();
-  const [createCategory, { isLoading: isCreating }] =
-    useCreateBucketCategoryMutation();
+  const [
+    createCategory,
+    { isLoading: isCreating, data: newlyCreatedCategory },
+  ] = useCreateBucketCategoryMutation();
 
   const handleCategoryChange = async (categoryId: string | null) => {
     try {
@@ -46,13 +49,31 @@ export function BucketCategorySelect({
     }
   };
 
+  // Include the newly created category in options if it's not yet in the cached list
+  const options = useMemo(() => {
+    const categoryOptions = categories.map((cat) => ({
+      value: cat.id.toString(),
+      label: cat.name,
+    }));
+
+    // If we just created a category and it's not in the list yet, add it temporarily
+    if (
+      newlyCreatedCategory &&
+      !categories.find((cat) => cat.id === newlyCreatedCategory.id)
+    ) {
+      categoryOptions.push({
+        value: newlyCreatedCategory.id.toString(),
+        label: newlyCreatedCategory.name,
+      });
+    }
+
+    return categoryOptions;
+  }, [categories, newlyCreatedCategory]);
+
   return (
     <ChipAutocomplete
       value={value?.toString() ?? null}
-      options={categories.map((cat) => ({
-        value: cat.id.toString(),
-        label: cat.name,
-      }))}
+      options={options}
       onChange={handleCategoryChange}
       onCreate={handleCreateCategory}
       label="Category"

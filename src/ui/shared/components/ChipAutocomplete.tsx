@@ -60,7 +60,7 @@ export function ChipAutocomplete<T extends string>({
   );
 
   const currentOption = normalizedOptions.find((opt) => opt.value === value);
-  const displayLabel = value ? (currentOption?.label ?? value) : `Add ${label}`;
+  const displayLabel = value ? (currentOption?.label ?? '') : `Add ${label}`;
 
   const filteredOptions = normalizedOptions.filter((opt) =>
     (opt.label ?? opt.value).toLowerCase().includes(searchText.toLowerCase()),
@@ -115,7 +115,6 @@ export function ChipAutocomplete<T extends string>({
         onClick={handleClick}
         disabled={disabled}
         sx={{
-          textTransform: 'capitalize',
           cursor: disabled ? 'default' : 'pointer',
         }}
       />
@@ -161,7 +160,6 @@ export function ChipAutocomplete<T extends string>({
                   key={option.value}
                   selected={option.value === value}
                   onClick={() => handleSelect(option.value)}
-                  sx={{ textTransform: 'capitalize' }}
                 >
                   {option.label ?? option.value}
                 </MenuItem>

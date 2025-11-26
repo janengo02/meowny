@@ -30,7 +30,10 @@ export function BucketTypeSelect({
   return (
     <ChipSelect
       value={value}
-      options={BUCKET_TYPES}
+      options={BUCKET_TYPES.map((type) => ({
+        value: type,
+        label: type.charAt(0).toUpperCase() + type.slice(1),
+      }))}
       onChange={handleChange}
       disabled={disabled || isLoading}
     />
