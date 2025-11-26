@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { rules, refinements, refinementMessages } from '../../../shared/validation/rules';
+import {
+  rules,
+  refinements,
+  refinementMessages,
+} from '../../../shared/validation/rules';
 
 export const loginSchema = z.object({
   email: rules.email(),

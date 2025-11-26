@@ -11,7 +11,14 @@ interface ChipSelectProps<T extends string> {
   value: T;
   options: ChipSelectOption<T>[] | T[];
   onChange?: (value: T) => void;
-  color?: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  color?:
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning';
   size?: 'small' | 'medium';
   variant?: 'filled' | 'outlined';
   disabled?: boolean;
@@ -29,7 +36,7 @@ export function ChipSelect<T extends string>({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const normalizedOptions: ChipSelectOption<T>[] = options.map((opt) =>
-    typeof opt === 'string' ? { value: opt, label: opt } : opt
+    typeof opt === 'string' ? { value: opt, label: opt } : opt,
   );
 
   const currentOption = normalizedOptions.find((opt) => opt.value === value);
@@ -57,7 +64,7 @@ export function ChipSelect<T extends string>({
         onDelete={disabled ? undefined : handleClick}
         onClick={handleClick}
         disabled={disabled}
-        sx={{ textTransform: 'capitalize', cursor: disabled ? 'default' : 'pointer' }}
+        sx={{ cursor: disabled ? 'default' : 'pointer' }}
       />
       <Menu
         anchorEl={anchorEl}
@@ -69,7 +76,6 @@ export function ChipSelect<T extends string>({
             key={option.value}
             selected={option.value === value}
             onClick={() => handleSelect(option.value)}
-            sx={{ textTransform: 'capitalize' }}
           >
             {option.label ?? option.value}
           </MenuItem>

@@ -406,8 +406,12 @@ interface Window {
     createBucket: (params: CreateBucketParams) => Promise<Bucket>;
     updateBucket: (id: number, params: UpdateBucketParams) => Promise<Bucket>;
     getBucketCategories: () => Promise<BucketCategory[]>;
-    createBucketCategory: (params: CreateBucketCategoryParams) => Promise<BucketCategory>;
+    createBucketCategory: (
+      params: CreateBucketCategoryParams,
+    ) => Promise<BucketCategory>;
     getBucketLocations: () => Promise<BucketLocation[]>;
-    createBucketLocation: (params: CreateBucketLocationParams) => Promise<BucketLocation>;
+    createBucketLocation: (
+      params: CreateBucketLocationParams,
+    ) => Promise<BucketLocation>;
   };
 }

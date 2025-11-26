@@ -30,7 +30,5 @@ export const bucketLocationApi = baseApi.injectEndpoints({
   }),
 });
 
-export const {
-  useGetBucketLocationsQuery,
-  useCreateBucketLocationMutation,
-} = bucketLocationApi;
+export const { useGetBucketLocationsQuery, useCreateBucketLocationMutation } =
+  bucketLocationApi;

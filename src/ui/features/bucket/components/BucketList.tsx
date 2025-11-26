@@ -86,7 +86,10 @@ export function BucketList() {
         <Grid container spacing={2}>
           {buckets.map((bucket) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={bucket.id}>
-              <BucketCard bucket={bucket} onClick={() => setSelectedBucketId(bucket.id)} />
+              <BucketCard
+                bucket={bucket}
+                onClick={() => setSelectedBucketId(bucket.id)}
+              />
             </Grid>
           ))}
         </Grid>

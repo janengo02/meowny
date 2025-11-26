@@ -30,7 +30,5 @@ export const bucketCategoryApi = baseApi.injectEndpoints({
   }),
 });
 
-export const {
-  useGetBucketCategoriesQuery,
-  useCreateBucketCategoryMutation,
-} = bucketCategoryApi;
+export const { useGetBucketCategoriesQuery, useCreateBucketCategoryMutation } =
+  bucketCategoryApi;

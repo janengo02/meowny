@@ -11,7 +11,8 @@ const patterns = {
 
 // Field rules with built-in error messages
 export const rules = {
-  required: (field: string) => z.string().min(1, { message: `${field} is required` }),
+  required: (field: string) =>
+    z.string().min(1, { message: `${field} is required` }),
 
   email: () =>
     z
@@ -57,18 +58,27 @@ export const rules = {
     z
       .string()
       .min(1, { message: 'Name is required' })
-      .min(minLength, { message: `Name must be at least ${minLength} characters` })
-      .max(maxLength, { message: `Name must be at most ${maxLength} characters` }),
+      .min(minLength, {
+        message: `Name must be at least ${minLength} characters`,
+      })
+      .max(maxLength, {
+        message: `Name must be at most ${maxLength} characters`,
+      }),
 
-  confirmPassword: () => z.string().min(1, { message: 'Please confirm your password' }),
+  confirmPassword: () =>
+    z.string().min(1, { message: 'Please confirm your password' }),
 };
 
 // Refinement helpers
 export const refinements = {
-  passwordsMatch: <T extends { password: string; confirmPassword: string }>(data: T) =>
-    data.password === data.confirmPassword,
+  passwordsMatch: <T extends { password: string; confirmPassword: string }>(
+    data: T,
+  ) => data.password === data.confirmPassword,
 };
 
 export const refinementMessages = {
-  passwordsMatch: { message: 'Passwords do not match', path: ['confirmPassword'] },
+  passwordsMatch: {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  },
 };

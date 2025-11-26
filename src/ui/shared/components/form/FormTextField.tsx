@@ -1,7 +1,8 @@
 import { useFormContext } from 'react-hook-form';
 import { TextField, type TextFieldProps } from '@mui/material';
 
-export interface FormTextFieldProps extends Omit<TextFieldProps, 'error' | 'helperText' | 'name'> {
+export interface FormTextFieldProps
+  extends Omit<TextFieldProps, 'error' | 'helperText' | 'name'> {
   name: string;
 }
 

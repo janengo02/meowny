@@ -84,9 +84,12 @@ export async function updateBucketGoal(
 
   const updateData: Record<string, unknown> = {};
   if (params.bucket_id !== undefined) updateData.bucket_id = params.bucket_id;
-  if (params.min_amount !== undefined) updateData.min_amount = params.min_amount;
-  if (params.max_amount !== undefined) updateData.max_amount = params.max_amount;
-  if (params.start_date !== undefined) updateData.start_date = params.start_date;
+  if (params.min_amount !== undefined)
+    updateData.min_amount = params.min_amount;
+  if (params.max_amount !== undefined)
+    updateData.max_amount = params.max_amount;
+  if (params.start_date !== undefined)
+    updateData.start_date = params.start_date;
   if (params.end_date !== undefined) updateData.end_date = params.end_date;
   if (params.notes !== undefined) updateData.notes = params.notes;
 

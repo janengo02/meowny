@@ -88,7 +88,8 @@ export async function updateIncomeTax(
     updateData.income_history_id = params.income_history_id;
   if (params.tax_category_id !== undefined)
     updateData.tax_category_id = params.tax_category_id;
-  if (params.tax_amount !== undefined) updateData.tax_amount = params.tax_amount;
+  if (params.tax_amount !== undefined)
+    updateData.tax_amount = params.tax_amount;
   if (params.notes !== undefined) updateData.notes = params.notes;
 
   const { data, error } = await supabase

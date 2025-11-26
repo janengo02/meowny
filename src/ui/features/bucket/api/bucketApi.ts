@@ -56,7 +56,7 @@ export const bucketApi = baseApi.injectEndpoints({
         const patchResult = dispatch(
           bucketApi.util.updateQueryData('getBucket', id, (draft) => {
             Object.assign(draft, params);
-          })
+          }),
         );
 
         try {

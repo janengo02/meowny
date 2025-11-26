@@ -22,11 +22,7 @@ interface BucketModalProps {
   onClose: () => void;
 }
 
-export function BucketModal({
-  bucketId,
-  open,
-  onClose,
-}: BucketModalProps) {
+export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
