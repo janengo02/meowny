@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Chip, Menu, MenuItem } from '@mui/material';
+import { Chip, Menu, MenuItem, Divider, ListItemIcon, ListItemText } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import ClearIcon from '@mui/icons-material/Clear';
 
 interface ChipSelectOption<T extends string> {
   value: T;
@@ -8,9 +9,9 @@ interface ChipSelectOption<T extends string> {
 }
 
 interface ChipSelectProps<T extends string> {
-  value: T;
+  value: T | null;
   options: ChipSelectOption<T>[] | T[];
-  onChange?: (value: T) => void;
+  onChange?: (value: T | null) => void;
   color?:
     | 'default'
     | 'primary'
@@ -22,6 +23,8 @@ interface ChipSelectProps<T extends string> {
   size?: 'small' | 'medium';
   variant?: 'filled' | 'outlined';
   disabled?: boolean;
+  placeholder?: string;
+  allowClear?: boolean;
 }
 
 export function ChipSelect<T extends string>({
@@ -32,6 +35,8 @@ export function ChipSelect<T extends string>({
   size = 'small',
   variant = 'outlined',
   disabled = false,
+  placeholder = 'Select',
+  allowClear = false,
 }: ChipSelectProps<T>) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -40,7 +45,7 @@ export function ChipSelect<T extends string>({
   );
 
   const currentOption = normalizedOptions.find((opt) => opt.value === value);
-  const displayLabel = currentOption?.label ?? value;
+  const displayLabel = value ? (currentOption?.label ?? value) : placeholder;
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     if (!disabled) {
@@ -53,12 +58,17 @@ export function ChipSelect<T extends string>({
     setAnchorEl(null);
   };
 
+  const handleClear = () => {
+    onChange?.(null);
+    setAnchorEl(null);
+  };
+
   return (
     <>
       <Chip
         label={displayLabel}
         size={size}
-        color={color}
+        color={value ? color : 'default'}
         variant={variant}
         deleteIcon={<ArrowDropDownIcon />}
         onDelete={disabled ? undefined : handleClick}
@@ -71,6 +81,17 @@ export function ChipSelect<T extends string>({
         open={Boolean(anchorEl)}
         onClose={() => setAnchorEl(null)}
       >
+        {allowClear && value && (
+          <>
+            <MenuItem onClick={handleClear}>
+              <ListItemIcon>
+                <ClearIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Clear selection</ListItemText>
+            </MenuItem>
+            <Divider />
+          </>
+        )}
         {normalizedOptions.map((option) => (
           <MenuItem
             key={option.value}

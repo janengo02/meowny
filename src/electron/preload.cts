@@ -24,6 +24,15 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getBucketLocations: () => ipcInvoke('db:getBucketLocations'),
   createBucketLocation: (params: CreateBucketLocationParams) =>
     ipcInvoke('db:createBucketLocation', params),
+  getTransactions: () => ipcInvoke('db:getTransactions'),
+  getTransaction: (id: number) => ipcInvoke('db:getTransaction', id),
+  getTransactionsByBucket: (bucketId: number) =>
+    ipcInvoke('db:getTransactionsByBucket', bucketId),
+  createTransaction: (params: CreateTransactionParams) =>
+    ipcInvoke('db:createTransaction', params),
+  updateTransaction: (id: number, params: UpdateTransactionParams) =>
+    ipcInvoke('db:updateTransaction', { id, params }),
+  deleteTransaction: (id: number) => ipcInvoke('db:deleteTransaction', id),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {

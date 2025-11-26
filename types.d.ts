@@ -384,6 +384,12 @@ type EventPayloadMapping = {
   'db:createBucketCategory': BucketCategory;
   'db:getBucketLocations': BucketLocation[];
   'db:createBucketLocation': BucketLocation;
+  'db:getTransactions': Transaction[];
+  'db:getTransaction': Transaction;
+  'db:getTransactionsByBucket': Transaction[];
+  'db:createTransaction': Transaction;
+  'db:updateTransaction': Transaction;
+  'db:deleteTransaction': void;
 };
 
 type UnSubscribeFunction = () => void;
@@ -413,5 +419,14 @@ interface Window {
     createBucketLocation: (
       params: CreateBucketLocationParams,
     ) => Promise<BucketLocation>;
+    getTransactions: () => Promise<Transaction[]>;
+    getTransaction: (id: number) => Promise<Transaction>;
+    getTransactionsByBucket: (bucketId: number) => Promise<Transaction[]>;
+    createTransaction: (params: CreateTransactionParams) => Promise<Transaction>;
+    updateTransaction: (
+      id: number,
+      params: UpdateTransactionParams,
+    ) => Promise<Transaction>;
+    deleteTransaction: (id: number) => Promise<void>;
   };
 }

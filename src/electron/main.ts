@@ -63,4 +63,24 @@ app.on('ready', () => {
   ipcMainHandle('db:createBucketLocation', async (args) => {
     return db.createBucketLocation(args as CreateBucketLocationParams);
   });
+  ipcMainHandle('db:getTransactions', db.getTransactions);
+  ipcMainHandle('db:getTransaction', async (args) => {
+    return db.getTransaction(args as number);
+  });
+  ipcMainHandle('db:getTransactionsByBucket', async (args) => {
+    return db.getTransactionsByBucket(args as number);
+  });
+  ipcMainHandle('db:createTransaction', async (args) => {
+    return db.createTransaction(args as CreateTransactionParams);
+  });
+  ipcMainHandle('db:updateTransaction', async (args) => {
+    const { id, params } = args as {
+      id: number;
+      params: UpdateTransactionParams;
+    };
+    return db.updateTransaction(id, params);
+  });
+  ipcMainHandle('db:deleteTransaction', async (args) => {
+    return db.deleteTransaction(args as number);
+  });
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   CircularProgress,
@@ -11,10 +12,12 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
+import { TransactionModal } from '../../transaction/components/TransactionModal';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -23,6 +26,7 @@ interface BucketModalProps {
 }
 
 export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
+  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
@@ -106,7 +110,8 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
       <DialogContent sx={{ pt: 2 }}>
         {/* Summary Stats */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid size={{ xs: 6, sm: 3 }}>
+          {/* Contributed/Spent - shown for all types */}
+          <Grid size={{ xs: 6, sm: bucket.type === 'investment' ? 3 : 12 }}>
             <Box
               sx={{
                 p: 2,
@@ -114,83 +119,114 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
                 bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
+                position: 'relative',
               }}
             >
-              <Typography variant="caption" color="text.secondary">
-                Contributed
-              </Typography>
-              <Typography variant="h3" sx={{ mt: 0.5 }}>
-                ${bucket.contributed_amount.toFixed(2)}
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 1,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                Market Value
-              </Typography>
-              <Typography variant="h3" sx={{ mt: 0.5 }}>
-                ${bucket.market_value.toFixed(2)}
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 1,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                Gain/Loss
-              </Typography>
-              <Typography
-                variant="h3"
+              <Box
                 sx={{
-                  mt: 0.5,
-                  color: isPositive ? 'success.main' : 'error.main',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
                 }}
               >
-                {isPositive ? '+' : ''}${gainLoss.toFixed(2)}
-              </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {bucket.type === 'expense' ? 'Spent' : 'Contributed'}
+                  </Typography>
+                  <Typography variant="h3" sx={{ mt: 0.5 }}>
+                    ${bucket.contributed_amount.toFixed(2)}
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setTransactionModalOpen(true)}
+                  sx={{
+                    ml: 1,
+                    bgcolor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                  }}
+                >
+                  <SyncAltIcon fontSize="small" />
+                </IconButton>
+              </Box>
             </Box>
           </Grid>
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 1,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="caption" color="text.secondary">
-                Return
-              </Typography>
-              <Typography
-                variant="h3"
-                sx={{
-                  mt: 0.5,
-                  color: isPositive ? 'success.main' : 'error.main',
-                }}
-              >
-                {isPositive ? '+' : ''}
-                {gainLossPercent.toFixed(2)}%
-              </Typography>
-            </Box>
-          </Grid>
+
+          {/* Investment-only fields */}
+          {bucket.type === 'investment' && (
+            <>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Market Value
+                  </Typography>
+                  <Typography variant="h3" sx={{ mt: 0.5 }}>
+                    ${bucket.market_value.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Gain/Loss
+                  </Typography>
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      mt: 0.5,
+                      color: isPositive ? 'success.main' : 'error.main',
+                    }}
+                  >
+                    {isPositive ? '+' : ''}${gainLoss.toFixed(2)}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid size={{ xs: 6, sm: 3 }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary">
+                    Return
+                  </Typography>
+                  <Typography
+                    variant="h3"
+                    sx={{
+                      mt: 0.5,
+                      color: isPositive ? 'success.main' : 'error.main',
+                    }}
+                  >
+                    {isPositive ? '+' : ''}
+                    {gainLossPercent.toFixed(2)}%
+                  </Typography>
+                </Box>
+              </Grid>
+            </>
+          )}
         </Grid>
 
         {/* Graph Section */}
@@ -253,6 +289,11 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
           </Box>
         </Box>
       </DialogContent>
+      <TransactionModal
+        bucketId={bucketId}
+        open={transactionModalOpen}
+        onClose={() => setTransactionModalOpen(false)}
+      />
     </Dialog>
   );
 }

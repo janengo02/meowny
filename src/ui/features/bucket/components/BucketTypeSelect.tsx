@@ -16,7 +16,8 @@ export function BucketTypeSelect({
 }: BucketTypeSelectProps) {
   const [updateBucket, { isLoading }] = useUpdateBucketMutation();
 
-  const handleChange = async (newType: BucketTypeEnum) => {
+  const handleChange = async (newType: BucketTypeEnum | null) => {
+    if (!newType) return; // Don't allow clearing bucket type
     try {
       await updateBucket({
         id: bucketId,
