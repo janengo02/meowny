@@ -17,6 +17,7 @@ import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
+import { BucketValueHistoryTable } from './BucketValueHistoryTable';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
 import { formatMoney, formatPercent } from '../../../shared/utils';
 
@@ -253,6 +254,15 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
               Performance graph coming soon
             </Typography>
           </Box>
+        </Box>
+
+        {/* Value History Logs Section */}
+        <Divider sx={{ my: 3 }} />
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h3" sx={{ mb: 2 }}>
+            Value History Logs
+          </Typography>
+          <BucketValueHistoryTable bucketId={bucketId} />
         </Box>
 
         {/* Notes Section */}

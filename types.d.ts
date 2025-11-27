@@ -360,6 +360,17 @@ type SignInParams = {
   password: string;
 };
 
+// Transaction with bucket names (for value history query)
+type TransactionWithBucketNames = Transaction & {
+  from_bucket_name: string | null;
+  to_bucket_name: string | null;
+};
+
+// Value History with Transaction
+type ValueHistoryWithTransaction = BucketValueHistory & {
+  transaction: TransactionWithBucketNames | null;
+};
+
 // ============================================
 // IPC EVENT TYPES
 // ============================================
@@ -390,6 +401,7 @@ type EventPayloadMapping = {
   'db:createTransaction': Transaction;
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
+  'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
 };
 
 type UnSubscribeFunction = () => void;
@@ -428,5 +440,8 @@ interface Window {
       params: UpdateTransactionParams,
     ) => Promise<Transaction>;
     deleteTransaction: (id: number) => Promise<void>;
+    getValueHistoryWithTransactionsByBucket: (
+      bucketId: number,
+    ) => Promise<ValueHistoryWithTransaction[]>;
   };
 }

@@ -125,3 +125,23 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function getValueHistoryWithTransactionsByBucket(
+  bucketId: number,
+): Promise<ValueHistoryWithTransaction[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Using PostgreSQL view or direct SQL via PostgREST is limited
+  // The cleanest approach is using a stored function (RPC)
+  const { data, error } = await supabase.rpc(
+    'get_value_history_with_transactions_by_bucket',
+    {
+      p_bucket_id: bucketId,
+      p_user_id: userId,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  return data;
+}

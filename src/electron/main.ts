@@ -83,4 +83,7 @@ app.on('ready', () => {
   ipcMainHandle('db:deleteTransaction', async (args) => {
     return db.deleteTransaction(args as number);
   });
+  ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
+    return db.getValueHistoryWithTransactionsByBucket(args as number);
+  });
 });

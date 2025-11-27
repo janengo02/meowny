@@ -60,20 +60,22 @@ export function BucketCard({
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid size={6}>
               <Typography variant="caption" color="text.secondary">
-                Contributed
+                {bucket.type === 'expense' ? 'Spent' : 'Contributed'}
               </Typography>
               <Typography variant="body1" fontWeight={600}>
                 {formatMoney(bucket.contributed_amount)}
               </Typography>
             </Grid>
-            <Grid size={6}>
-              <Typography variant="caption" color="text.secondary">
-                Market Value
-              </Typography>
-              <Typography variant="body1" fontWeight={600}>
-                {formatMoney(bucket.market_value)}
-              </Typography>
-            </Grid>
+            {bucket.type === 'investment' && (
+              <Grid size={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Market Value
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {formatMoney(bucket.market_value)}
+                </Typography>
+              </Grid>
+            )}
           </Grid>
           {bucket.notes && (
             <Typography

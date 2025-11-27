@@ -33,6 +33,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
   updateTransaction: (id: number, params: UpdateTransactionParams) =>
     ipcInvoke('db:updateTransaction', { id, params }),
   deleteTransaction: (id: number) => ipcInvoke('db:deleteTransaction', id),
+  getValueHistoryWithTransactionsByBucket: (bucketId: number) =>
+    ipcInvoke('db:getValueHistoryWithTransactionsByBucket', bucketId),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {
