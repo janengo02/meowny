@@ -8,75 +8,91 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Grid,
   IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { z } from 'zod';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
-import { FormSelectField } from '../../../shared/components/form/FormSelectField';
-import {
-  transactionSchema,
-  type TransactionFormData,
-} from '../schemas/transaction.schema';
-import { useCreateTransactionMutation } from '../api/transactionApi';
-import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
+import { useUpdateBucketMutation } from '../api/bucketApi';
+import { useCreateBucketValueHistoryMutation } from '../api/bucketValueHistoryApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 
-interface TransactionModalProps {
-  bucketId?: number;
+const marketValueSchema = z.object({
+  market_value: z.string().min(1, 'Market value is required'),
+  recorded_at: z.string().min(1, 'Recorded date is required'),
+  notes: z.string().optional(),
+});
+
+type MarketValueFormData = z.infer<typeof marketValueSchema>;
+
+interface MarketValueModalProps {
+  bucketId: number;
+  currentMarketValue: number;
+  currentContributedAmount: number;
   open: boolean;
   onClose: () => void;
 }
 
-export function TransactionModal({
+export function MarketValueModal({
   bucketId,
+  currentMarketValue,
+  currentContributedAmount,
   open,
   onClose,
-}: TransactionModalProps) {
-  const [createTransaction, { isLoading }] = useCreateTransactionMutation();
-  const { data: buckets = [] } = useGetBucketsQuery();
+}: MarketValueModalProps) {
+  const [updateBucket, { isLoading: isUpdatingBucket }] =
+    useUpdateBucketMutation();
+  const [createBucketValueHistory, { isLoading: isCreatingHistory }] =
+    useCreateBucketValueHistoryMutation();
 
-  const form = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema),
+  const isLoading = isUpdatingBucket || isCreatingHistory;
+
+  const form = useForm<MarketValueFormData>({
+    resolver: zodResolver(marketValueSchema),
     mode: 'onChange',
     defaultValues: {
-      from_bucket_id: '',
-      to_bucket_id: bucketId ? String(bucketId) : '',
-      amount: '',
-      transaction_date: getTokyoDateTime(),
+      market_value: String(currentMarketValue),
+      recorded_at: getTokyoDateTime(),
       notes: '',
     },
   });
 
-  // Reset form when modal opens with a new bucketId
   useEffect(() => {
     if (open) {
       form.reset({
-        from_bucket_id: '',
-        to_bucket_id: bucketId ? String(bucketId) : '',
-        amount: '',
-        transaction_date: getTokyoDateTime(),
+        market_value: String(currentMarketValue),
+        recorded_at: getTokyoDateTime(),
         notes: '',
       });
     }
-  }, [open, bucketId, form]);
+  }, [open, currentMarketValue, form]);
 
-  const onSubmit = async (data: TransactionFormData) => {
+  const onSubmit = async (data: MarketValueFormData) => {
     try {
-      await createTransaction({
-        from_bucket_id: data.from_bucket_id
-          ? parseInt(data.from_bucket_id)
-          : null,
-        to_bucket_id: data.to_bucket_id ? parseInt(data.to_bucket_id) : null,
-        amount: parseFloat(data.amount),
-        transaction_date: new Date(data.transaction_date).toISOString(),
+      const newMarketValue = parseFloat(data.market_value);
+
+      // Create bucket value history record
+      await createBucketValueHistory({
+        bucket_id: bucketId,
+        contributed_amount: currentContributedAmount,
+        market_value: newMarketValue,
+        recorded_at: new Date(data.recorded_at).toISOString(),
+        source_type: 'market',
         notes: data.notes || null,
+      }).unwrap();
+
+      // Update bucket market value
+      await updateBucket({
+        id: bucketId,
+        params: {
+          market_value: newMarketValue,
+        },
       }).unwrap();
 
       form.reset();
       onClose();
     } catch (error) {
-      console.error('Failed to create transaction:', error);
+      console.error('Failed to update market value:', error);
     }
   };
 
@@ -84,14 +100,6 @@ export function TransactionModal({
     form.reset();
     onClose();
   };
-
-  const bucketOptions = [
-    { value: '', label: 'Income' },
-    ...buckets.map((bucket) => ({
-      value: String(bucket.id),
-      label: bucket.name,
-    })),
-  ];
 
   return (
     <Dialog
@@ -117,7 +125,7 @@ export function TransactionModal({
               pb: 1,
             }}
           >
-            Add Transaction
+            Update Market Value
             <IconButton onClick={handleClose} size="small">
               <CloseIcon />
             </IconButton>
@@ -127,42 +135,21 @@ export function TransactionModal({
             <Box
               sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}
             >
-              {/* From Bucket and To Bucket - Same Row */}
-              <Grid container spacing={2}>
-                <Grid size={6}>
-                  <FormSelectField
-                    name="from_bucket_id"
-                    label="From Bucket"
-                    options={bucketOptions}
-                  />
-                </Grid>
-                <Grid size={6}>
-                  <FormSelectField
-                    name="to_bucket_id"
-                    label="To Bucket"
-                    options={bucketOptions}
-                  />
-                </Grid>
-              </Grid>
-
-              {/* Amount */}
               <FormTextField
-                name="amount"
-                label="Amount"
+                name="market_value"
+                label="Market Value"
                 type="number"
                 inputProps={{ min: 0, step: 0.01 }}
               />
 
-              {/* Transaction Date */}
               <FormTextField
-                name="transaction_date"
-                label="Transaction Date & Time (Tokyo)"
+                name="recorded_at"
+                label="Recorded Date & Time (Tokyo)"
                 type="datetime-local"
                 InputLabelProps={{ shrink: true }}
                 slotProps={{ htmlInput: { readOnly: true, step: 1 } }}
               />
 
-              {/* Notes */}
               <FormTextField name="notes" label="Notes" multiline rows={3} />
             </Box>
           </DialogContent>
@@ -176,7 +163,7 @@ export function TransactionModal({
               variant="contained"
               disabled={isLoading || !form.formState.isValid}
             >
-              {isLoading ? 'Adding...' : 'Add Transaction'}
+              {isLoading ? 'Updating...' : 'Update'}
             </Button>
           </DialogActions>
         </Box>

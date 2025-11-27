@@ -86,4 +86,7 @@ app.on('ready', () => {
   ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
     return db.getValueHistoryWithTransactionsByBucket(args as number);
   });
+  ipcMainHandle('db:createBucketValueHistory', async (args) => {
+    return db.createBucketValueHistory(args as CreateBucketValueHistoryParams);
+  });
 });

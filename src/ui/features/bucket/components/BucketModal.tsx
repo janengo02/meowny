@@ -13,12 +13,14 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
+import EditIcon from '@mui/icons-material/Edit';
 import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
+import { MarketValueModal } from './MarketValueModal';
 import { formatMoney, formatPercent } from '../../../shared/utils';
 
 interface BucketModalProps {
@@ -29,6 +31,7 @@ interface BucketModalProps {
 
 export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   const [transactionModalOpen, setTransactionModalOpen] = useState(false);
+  const [marketValueModalOpen, setMarketValueModalOpen] = useState(false);
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
@@ -168,14 +171,39 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
                     bgcolor: 'background.paper',
                     border: '1px solid',
                     borderColor: 'divider',
+                    position: 'relative',
                   }}
                 >
-                  <Typography variant="caption" color="text.secondary">
-                    Market Value
-                  </Typography>
-                  <Typography variant="h3" sx={{ mt: 0.5 }}>
-                    {formatMoney(bucket.market_value)}
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                    }}
+                  >
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Market Value
+                      </Typography>
+                      <Typography variant="h3" sx={{ mt: 0.5 }}>
+                        {formatMoney(bucket.market_value)}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => setMarketValueModalOpen(true)}
+                      sx={{
+                        ml: 1,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                      }}
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Box>
               </Grid>
               <Grid size={{ xs: 6, sm: 3 }}>
@@ -303,6 +331,13 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         bucketId={bucketId}
         open={transactionModalOpen}
         onClose={() => setTransactionModalOpen(false)}
+      />
+      <MarketValueModal
+        bucketId={bucketId}
+        currentMarketValue={bucket.market_value}
+        currentContributedAmount={bucket.contributed_amount}
+        open={marketValueModalOpen}
+        onClose={() => setMarketValueModalOpen(false)}
       />
     </Dialog>
   );

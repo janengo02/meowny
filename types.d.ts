@@ -402,6 +402,7 @@ type EventPayloadMapping = {
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
+  'db:createBucketValueHistory': BucketValueHistory;
 };
 
 type UnSubscribeFunction = () => void;
@@ -443,5 +444,8 @@ interface Window {
     getValueHistoryWithTransactionsByBucket: (
       bucketId: number,
     ) => Promise<ValueHistoryWithTransaction[]>;
+    createBucketValueHistory: (
+      params: CreateBucketValueHistoryParams,
+    ) => Promise<BucketValueHistory>;
   };
 }
