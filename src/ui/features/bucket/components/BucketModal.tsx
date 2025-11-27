@@ -18,6 +18,7 @@ import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
+import { formatMoney, formatPercent } from '../../../shared/utils';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -134,7 +135,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
                     {bucket.type === 'expense' ? 'Spent' : 'Contributed'}
                   </Typography>
                   <Typography variant="h3" sx={{ mt: 0.5 }}>
-                    ${bucket.contributed_amount.toFixed(2)}
+                    {formatMoney(bucket.contributed_amount)}
                   </Typography>
                 </Box>
                 <IconButton
@@ -172,7 +173,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
                     Market Value
                   </Typography>
                   <Typography variant="h3" sx={{ mt: 0.5 }}>
-                    ${bucket.market_value.toFixed(2)}
+                    {formatMoney(bucket.market_value)}
                   </Typography>
                 </Box>
               </Grid>
@@ -196,7 +197,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
                       color: isPositive ? 'success.main' : 'error.main',
                     }}
                   >
-                    {isPositive ? '+' : ''}${gainLoss.toFixed(2)}
+                    {formatMoney(gainLoss, { showSign: true })}
                   </Typography>
                 </Box>
               </Grid>
@@ -220,8 +221,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
                       color: isPositive ? 'success.main' : 'error.main',
                     }}
                   >
-                    {isPositive ? '+' : ''}
-                    {gainLossPercent.toFixed(2)}%
+                    {formatPercent(gainLossPercent, 2, true)}
                   </Typography>
                 </Box>
               </Grid>

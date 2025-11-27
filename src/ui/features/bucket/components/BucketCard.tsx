@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import CategoryIcon from '@mui/icons-material/Category';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
+import { formatMoney } from '../../../shared/utils';
 
 interface BucketCardProps {
   bucket: Bucket;
@@ -62,7 +63,7 @@ export function BucketCard({
                 Contributed
               </Typography>
               <Typography variant="body1" fontWeight={600}>
-                ${bucket.contributed_amount.toFixed(2)}
+                {formatMoney(bucket.contributed_amount)}
               </Typography>
             </Grid>
             <Grid size={6}>
@@ -70,7 +71,7 @@ export function BucketCard({
                 Market Value
               </Typography>
               <Typography variant="body1" fontWeight={600}>
-                ${bucket.market_value.toFixed(2)}
+                {formatMoney(bucket.market_value)}
               </Typography>
             </Grid>
           </Grid>
