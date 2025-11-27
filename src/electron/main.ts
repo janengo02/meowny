@@ -89,4 +89,17 @@ app.on('ready', () => {
   ipcMainHandle('db:createBucketValueHistory', async (args) => {
     return db.createBucketValueHistory(args as CreateBucketValueHistoryParams);
   });
+  ipcMainHandle('db:getBucketGoalsByBucket', async (args) => {
+    return db.getBucketGoalsByBucket(args as number);
+  });
+  ipcMainHandle('db:createBucketGoal', async (args) => {
+    return db.createBucketGoal(args as CreateBucketGoalParams);
+  });
+  ipcMainHandle('db:updateBucketGoal', async (args) => {
+    const { id, params } = args as { id: number; params: UpdateBucketGoalParams };
+    return db.updateBucketGoal(id, params);
+  });
+  ipcMainHandle('db:deleteBucketGoal', async (args) => {
+    return db.deleteBucketGoal(args as number);
+  });
 });

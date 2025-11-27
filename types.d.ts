@@ -403,6 +403,10 @@ type EventPayloadMapping = {
   'db:deleteTransaction': void;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:createBucketValueHistory': BucketValueHistory;
+  'db:getBucketGoalsByBucket': BucketGoal[];
+  'db:createBucketGoal': BucketGoal;
+  'db:updateBucketGoal': BucketGoal;
+  'db:deleteBucketGoal': void;
 };
 
 type UnSubscribeFunction = () => void;
@@ -447,5 +451,12 @@ interface Window {
     createBucketValueHistory: (
       params: CreateBucketValueHistoryParams,
     ) => Promise<BucketValueHistory>;
+    getBucketGoalsByBucket: (bucketId: number) => Promise<BucketGoal[]>;
+    createBucketGoal: (params: CreateBucketGoalParams) => Promise<BucketGoal>;
+    updateBucketGoal: (
+      id: number,
+      params: UpdateBucketGoalParams,
+    ) => Promise<BucketGoal>;
+    deleteBucketGoal: (id: number) => Promise<void>;
   };
 }

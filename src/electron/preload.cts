@@ -37,6 +37,13 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:getValueHistoryWithTransactionsByBucket', bucketId),
   createBucketValueHistory: (params: CreateBucketValueHistoryParams) =>
     ipcInvoke('db:createBucketValueHistory', params),
+  getBucketGoalsByBucket: (bucketId: number) =>
+    ipcInvoke('db:getBucketGoalsByBucket', bucketId),
+  createBucketGoal: (params: CreateBucketGoalParams) =>
+    ipcInvoke('db:createBucketGoal', params),
+  updateBucketGoal: (id: number, params: UpdateBucketGoalParams) =>
+    ipcInvoke('db:updateBucketGoal', { id, params }),
+  deleteBucketGoal: (id: number) => ipcInvoke('db:deleteBucketGoal', id),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {

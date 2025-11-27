@@ -21,6 +21,7 @@ import { BucketLocationSelect } from './BucketLocationSelect';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
 import { MarketValueModal } from './MarketValueModal';
+import { BucketGoal } from './BucketGoal';
 import { formatMoney, formatPercent } from '../../../shared/utils';
 
 interface BucketModalProps {
@@ -283,6 +284,10 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             </Typography>
           </Box>
         </Box>
+
+        {/* Bucket Goal Section */}
+        <Divider sx={{ my: 3 }} />
+        <BucketGoal bucketId={bucketId} />
 
         {/* Value History Logs Section */}
         <Divider sx={{ my: 3 }} />
