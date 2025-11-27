@@ -73,9 +73,9 @@ export function BucketValueHistoryTable({
           <TableRow>
             <TableCell>Date</TableCell>
             <TableCell>Type</TableCell>
+            <TableCell>Transaction</TableCell>
             <TableCell align="right">Contributed</TableCell>
             <TableCell align="right">Market Value</TableCell>
-            <TableCell>Transaction</TableCell>
             <TableCell>Notes</TableCell>
           </TableRow>
         </TableHead>
@@ -110,16 +110,6 @@ export function BucketValueHistoryTable({
                     ) : undefined
                   }
                 />
-              </TableCell>
-              <TableCell align="right">
-                <Typography variant="body2">
-                  {formatMoney(history.contributed_amount)}
-                </Typography>
-              </TableCell>
-              <TableCell align="right">
-                <Typography variant="body2">
-                  {formatMoney(history.market_value)}
-                </Typography>
               </TableCell>
               <TableCell>
                 {history.transaction ? (
@@ -167,6 +157,17 @@ export function BucketValueHistoryTable({
                   </Typography>
                 )}
               </TableCell>
+              <TableCell align="right">
+                <Typography variant="body2">
+                  {formatMoney(history.contributed_amount)}
+                </Typography>
+              </TableCell>
+              <TableCell align="right">
+                <Typography variant="body2">
+                  {formatMoney(history.market_value)}
+                </Typography>
+              </TableCell>
+
               <TableCell>
                 {history.notes ? (
                   <Typography variant="body2" color="text.secondary">

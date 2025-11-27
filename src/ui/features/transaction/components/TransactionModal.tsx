@@ -35,6 +35,14 @@ export function TransactionModal({
   const [createTransaction, { isLoading }] = useCreateTransactionMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
 
+  const getTokyoDateTime = () => {
+    const now = new Date();
+    const tokyoTime = new Date(
+      now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }),
+    );
+    return tokyoTime.toISOString().slice(0, 19);
+  };
+
   const form = useForm<TransactionFormData>({
     resolver: zodResolver(transactionSchema),
     mode: 'onChange',
@@ -42,7 +50,7 @@ export function TransactionModal({
       from_bucket_id: '',
       to_bucket_id: bucketId ? String(bucketId) : '',
       amount: '',
-      transaction_date: new Date().toISOString().split('T')[0],
+      transaction_date: getTokyoDateTime(),
       notes: '',
     },
   });
@@ -54,7 +62,7 @@ export function TransactionModal({
         from_bucket_id: '',
         to_bucket_id: bucketId ? String(bucketId) : '',
         amount: '',
-        transaction_date: new Date().toISOString().split('T')[0],
+        transaction_date: getTokyoDateTime(),
         notes: '',
       });
     }
@@ -155,9 +163,10 @@ export function TransactionModal({
               {/* Transaction Date */}
               <FormTextField
                 name="transaction_date"
-                label="Transaction Date"
-                type="date"
+                label="Transaction Date & Time (Tokyo)"
+                type="datetime-local"
                 InputLabelProps={{ shrink: true }}
+                slotProps={{ htmlInput: { readOnly: true, step: 1 } }}
               />
 
               {/* Notes */}

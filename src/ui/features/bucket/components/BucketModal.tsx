@@ -113,7 +113,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         {/* Summary Stats */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* Contributed/Spent - shown for all types */}
-          <Grid size={{ xs: 6, sm: bucket.type === 'investment' ? 3 : 12 }}>
+          <Grid size={{ xs: 6, sm: 3 }}>
             <Box
               sx={{
                 p: 2,
