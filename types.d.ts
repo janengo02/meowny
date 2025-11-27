@@ -78,6 +78,11 @@ type BucketGoal = {
   updated_at: string;
 };
 
+type BucketGoalWithStatus = BucketGoal & {
+  is_active: boolean;
+  current_status: number;
+};
+
 type Transaction = {
   id: number;
   user_id: string;
@@ -403,7 +408,7 @@ type EventPayloadMapping = {
   'db:deleteTransaction': void;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:createBucketValueHistory': BucketValueHistory;
-  'db:getBucketGoalsByBucket': BucketGoal[];
+  'db:getBucketGoalsWithStatus': BucketGoalWithStatus[];
   'db:createBucketGoal': BucketGoal;
   'db:updateBucketGoal': BucketGoal;
   'db:deleteBucketGoal': void;
@@ -451,7 +456,7 @@ interface Window {
     createBucketValueHistory: (
       params: CreateBucketValueHistoryParams,
     ) => Promise<BucketValueHistory>;
-    getBucketGoalsByBucket: (bucketId: number) => Promise<BucketGoal[]>;
+    getBucketGoalsWithStatus: (bucketId: number) => Promise<BucketGoalWithStatus[]>;
     createBucketGoal: (params: CreateBucketGoalParams) => Promise<BucketGoal>;
     updateBucketGoal: (
       id: number,

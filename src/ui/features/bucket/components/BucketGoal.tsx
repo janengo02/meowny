@@ -146,6 +146,13 @@ export function BucketGoal({ bucketId }: BucketGoalProps) {
                   <Typography variant="body2" fontWeight="medium">
                     {goal.min_amount !== null ? formatMoney(goal.min_amount) : '-'}
                   </Typography>
+                  {goal.min_amount !== null && (
+                    <Typography variant="caption" color={goal.current_status >= goal.min_amount ? 'success.main' : 'text.secondary'}>
+                      {goal.current_status >= goal.min_amount
+                        ? '(Completed)'
+                        : `(${formatMoney(goal.min_amount - goal.current_status)} to go)`}
+                    </Typography>
+                  )}
                 </Grid>
                 <Grid size={{ xs: 6, sm: 3 }}>
                   <Typography variant="caption" color="text.secondary">
@@ -154,6 +161,13 @@ export function BucketGoal({ bucketId }: BucketGoalProps) {
                   <Typography variant="body2" fontWeight="medium">
                     {goal.max_amount !== null ? formatMoney(goal.max_amount) : '-'}
                   </Typography>
+                  {goal.max_amount !== null && (
+                    <Typography variant="caption" color={goal.current_status >= goal.max_amount ? 'success.main' : 'text.secondary'}>
+                      {goal.current_status >= goal.max_amount
+                        ? '(Completed)'
+                        : `(${formatMoney(goal.max_amount - goal.current_status)} left)`}
+                    </Typography>
+                  )}
                 </Grid>
                 <Grid size={{ xs: 6, sm: 3 }}>
                   <Typography variant="caption" color="text.secondary">

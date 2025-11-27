@@ -2,10 +2,10 @@ import { baseApi } from '../../../store/baseApi';
 
 export const bucketGoalApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getBucketGoalsByBucket: builder.query<BucketGoal[], number>({
+    getBucketGoalsByBucket: builder.query<BucketGoalWithStatus[], number>({
       queryFn: async (bucketId) => {
         try {
-          const data = await window.electron.getBucketGoalsByBucket(bucketId);
+          const data = await window.electron.getBucketGoalsWithStatus(bucketId);
           return { data };
         } catch (error) {
           return { error: { message: (error as Error).message } };

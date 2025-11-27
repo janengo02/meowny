@@ -117,3 +117,18 @@ export async function deleteBucketGoal(id: number): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function getBucketGoalsWithStatus(
+  bucketId: number,
+): Promise<BucketGoalWithStatus[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase.rpc('get_bucket_goals_with_status', {
+    p_bucket_id: bucketId,
+    p_user_id: userId,
+  });
+
+  if (error) throw new Error(error.message);
+  return data;
+}

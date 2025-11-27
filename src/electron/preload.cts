@@ -37,8 +37,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:getValueHistoryWithTransactionsByBucket', bucketId),
   createBucketValueHistory: (params: CreateBucketValueHistoryParams) =>
     ipcInvoke('db:createBucketValueHistory', params),
-  getBucketGoalsByBucket: (bucketId: number) =>
-    ipcInvoke('db:getBucketGoalsByBucket', bucketId),
+  getBucketGoalsWithStatus: (bucketId: number) =>
+    ipcInvoke('db:getBucketGoalsWithStatus', bucketId),
   createBucketGoal: (params: CreateBucketGoalParams) =>
     ipcInvoke('db:createBucketGoal', params),
   updateBucketGoal: (id: number, params: UpdateBucketGoalParams) =>
