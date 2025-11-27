@@ -290,7 +290,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
           <Typography variant="h3" sx={{ mb: 2 }}>
             Value History Logs
           </Typography>
-          <BucketValueHistoryTable bucketId={bucketId} />
+          <BucketValueHistoryTable bucketId={bucketId} bucketType={bucket.type} />
         </Box>
 
         {/* Notes Section */}

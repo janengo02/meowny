@@ -17,10 +17,12 @@ import { formatMoney } from '../../../shared/utils';
 
 interface BucketValueHistoryTableProps {
   bucketId: number;
+  bucketType: BucketTypeEnum;
 }
 
 export function BucketValueHistoryTable({
   bucketId,
+  bucketType,
 }: BucketValueHistoryTableProps) {
   const { data: valueHistory, isLoading } =
     useGetValueHistoryWithTransactionsByBucketQuery(bucketId);
@@ -74,8 +76,12 @@ export function BucketValueHistoryTable({
             <TableCell>Date</TableCell>
             <TableCell>Type</TableCell>
             <TableCell>Transaction</TableCell>
-            <TableCell align="right">Contributed</TableCell>
-            <TableCell align="right">Market Value</TableCell>
+            <TableCell>
+              {bucketType === 'expense' ? 'Spent' : 'Contributed'}
+            </TableCell>
+            {bucketType === 'investment' && (
+              <TableCell>Market Value</TableCell>
+            )}
             <TableCell>Notes</TableCell>
           </TableRow>
         </TableHead>
@@ -162,11 +168,13 @@ export function BucketValueHistoryTable({
                   {formatMoney(history.contributed_amount)}
                 </Typography>
               </TableCell>
-              <TableCell align="right">
-                <Typography variant="body2">
-                  {formatMoney(history.market_value)}
-                </Typography>
-              </TableCell>
+              {bucketType === 'investment' && (
+                <TableCell align="right">
+                  <Typography variant="body2">
+                    {formatMoney(history.market_value)}
+                  </Typography>
+                </TableCell>
+              )}
 
               <TableCell>
                 {history.notes ? (
