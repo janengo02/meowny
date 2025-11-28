@@ -13,6 +13,7 @@ import { useCreateIncomeSourceMutation, useGetIncomeSourcesQuery } from '../api/
 import { useDashboardError } from '../../dashboard/hooks/useDashboardError';
 import AddIcon from '@mui/icons-material/Add';
 import { IncomeCard } from './IncomeCard';
+import { IncomeModal } from './IncomeModal';
 
 export function IncomeList() {
   const incomeSources = useAppSelector((state) => state.income.incomeSources);
@@ -95,6 +96,12 @@ export function IncomeList() {
           ))}
         </Grid>
       )}
+
+      <IncomeModal
+        incomeSourceId={selectedIncomeId}
+        open={selectedIncomeId !== null}
+        onClose={() => setSelectedIncomeId(null)}
+      />
     </Box>
   );
 }

@@ -9,6 +9,15 @@ export function createMenu() {
       submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'quit' }],
     },
     {
+      label: 'Edit',
+      submenu: [
+        { label: 'Cut', accelerator: 'CmdOrCtrl+X', role: 'cut' },
+        { label: 'Copy', accelerator: 'CmdOrCtrl+C', role: 'copy' },
+        { label: 'Paste', accelerator: 'CmdOrCtrl+V', role: 'paste' },
+        { label: 'Select All', accelerator: 'CmdOrCtrl+A', role: 'selectAll' },
+      ],
+    },
+    {
       label: 'View',
       submenu: [
         { role: 'reload' },
