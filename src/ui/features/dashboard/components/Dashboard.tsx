@@ -3,6 +3,7 @@ import { Navbar } from './Navbar';
 import { BucketList } from '../../bucket/components/BucketList';
 import { DashboardErrorProvider } from '../context/DashboardErrorProvider';
 import { useDashboardError } from '../hooks/useDashboardError';
+import { IncomeList } from '../../income/components/IncomeList';
 
 function DashboardContent() {
   const { error } = useDashboardError();
@@ -23,6 +24,7 @@ function DashboardContent() {
           </Alert>
         )}
         <BucketList />
+        <IncomeList />
       </Container>
     </Box>
   );

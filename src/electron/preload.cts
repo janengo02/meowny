@@ -44,6 +44,46 @@ electron.contextBridge.exposeInMainWorld('electron', {
   updateBucketGoal: (id: number, params: UpdateBucketGoalParams) =>
     ipcInvoke('db:updateBucketGoal', { id, params }),
   deleteBucketGoal: (id: number) => ipcInvoke('db:deleteBucketGoal', id),
+
+  // Income Source methods
+  getIncomeSources: () => ipcInvoke('db:getIncomeSources'),
+  getIncomeSource: (id: number) => ipcInvoke('db:getIncomeSource', id),
+  createIncomeSource: (params: CreateIncomeSourceParams) =>
+    ipcInvoke('db:createIncomeSource', params),
+  updateIncomeSource: (id: number, params: UpdateIncomeSourceParams) =>
+    ipcInvoke('db:updateIncomeSource', { id, params }),
+  deleteIncomeSource: (id: number) => ipcInvoke('db:deleteIncomeSource', id),
+
+  // Income Category methods
+  getIncomeCategories: () => ipcInvoke('db:getIncomeCategories'),
+  getIncomeCategory: (id: number) => ipcInvoke('db:getIncomeCategory', id),
+  createIncomeCategory: (params: CreateIncomeCategoryParams) =>
+    ipcInvoke('db:createIncomeCategory', params),
+  updateIncomeCategory: (id: number, params: UpdateIncomeCategoryParams) =>
+    ipcInvoke('db:updateIncomeCategory', { id, params }),
+  deleteIncomeCategory: (id: number) => ipcInvoke('db:deleteIncomeCategory', id),
+
+  // Income History methods
+  getIncomeHistories: () => ipcInvoke('db:getIncomeHistories'),
+  getIncomeHistory: (id: number) => ipcInvoke('db:getIncomeHistory', id),
+  getIncomeHistoriesBySource: (incomeId: number) =>
+    ipcInvoke('db:getIncomeHistoriesBySource', incomeId),
+  createIncomeHistory: (params: CreateIncomeHistoryParams) =>
+    ipcInvoke('db:createIncomeHistory', params),
+  updateIncomeHistory: (id: number, params: UpdateIncomeHistoryParams) =>
+    ipcInvoke('db:updateIncomeHistory', { id, params }),
+  deleteIncomeHistory: (id: number) => ipcInvoke('db:deleteIncomeHistory', id),
+
+  // Income Tax methods
+  getIncomeTaxes: () => ipcInvoke('db:getIncomeTaxes'),
+  getIncomeTax: (id: number) => ipcInvoke('db:getIncomeTax', id),
+  getIncomeTaxesByIncomeHistory: (incomeHistoryId: number) =>
+    ipcInvoke('db:getIncomeTaxesByIncomeHistory', incomeHistoryId),
+  createIncomeTax: (params: CreateIncomeTaxParams) =>
+    ipcInvoke('db:createIncomeTax', params),
+  updateIncomeTax: (id: number, params: UpdateIncomeTaxParams) =>
+    ipcInvoke('db:updateIncomeTax', { id, params }),
+  deleteIncomeTax: (id: number) => ipcInvoke('db:deleteIncomeTax', id),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {

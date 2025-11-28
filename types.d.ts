@@ -412,6 +412,28 @@ type EventPayloadMapping = {
   'db:createBucketGoal': BucketGoal;
   'db:updateBucketGoal': BucketGoal;
   'db:deleteBucketGoal': void;
+  'db:getIncomeSources': IncomeSource[];
+  'db:getIncomeSource': IncomeSource;
+  'db:createIncomeSource': IncomeSource;
+  'db:updateIncomeSource': IncomeSource;
+  'db:deleteIncomeSource': void;
+  'db:getIncomeCategories': IncomeCategory[];
+  'db:getIncomeCategory': IncomeCategory;
+  'db:createIncomeCategory': IncomeCategory;
+  'db:updateIncomeCategory': IncomeCategory;
+  'db:deleteIncomeCategory': void;
+  'db:getIncomeHistories': IncomeHistory[];
+  'db:getIncomeHistory': IncomeHistory;
+  'db:getIncomeHistoriesBySource': IncomeHistory[];
+  'db:createIncomeHistory': IncomeHistory;
+  'db:updateIncomeHistory': IncomeHistory;
+  'db:deleteIncomeHistory': void;
+  'db:getIncomeTaxes': IncomeTax[];
+  'db:getIncomeTax': IncomeTax;
+  'db:getIncomeTaxesByIncomeHistory': IncomeTax[];
+  'db:createIncomeTax': IncomeTax;
+  'db:updateIncomeTax': IncomeTax;
+  'db:deleteIncomeTax': void;
 };
 
 type UnSubscribeFunction = () => void;
@@ -463,5 +485,47 @@ interface Window {
       params: UpdateBucketGoalParams,
     ) => Promise<BucketGoal>;
     deleteBucketGoal: (id: number) => Promise<void>;
+
+    // Income Source methods
+    getIncomeSources: () => Promise<IncomeSource[]>;
+    getIncomeSource: (id: number) => Promise<IncomeSource>;
+    createIncomeSource: (params: CreateIncomeSourceParams) => Promise<IncomeSource>;
+    updateIncomeSource: (
+      id: number,
+      params: UpdateIncomeSourceParams,
+    ) => Promise<IncomeSource>;
+    deleteIncomeSource: (id: number) => Promise<void>;
+
+    // Income Category methods
+    getIncomeCategories: () => Promise<IncomeCategory[]>;
+    getIncomeCategory: (id: number) => Promise<IncomeCategory>;
+    createIncomeCategory: (params: CreateIncomeCategoryParams) => Promise<IncomeCategory>;
+    updateIncomeCategory: (
+      id: number,
+      params: UpdateIncomeCategoryParams,
+    ) => Promise<IncomeCategory>;
+    deleteIncomeCategory: (id: number) => Promise<void>;
+
+    // Income History methods
+    getIncomeHistories: () => Promise<IncomeHistory[]>;
+    getIncomeHistory: (id: number) => Promise<IncomeHistory>;
+    getIncomeHistoriesBySource: (incomeId: number) => Promise<IncomeHistory[]>;
+    createIncomeHistory: (params: CreateIncomeHistoryParams) => Promise<IncomeHistory>;
+    updateIncomeHistory: (
+      id: number,
+      params: UpdateIncomeHistoryParams,
+    ) => Promise<IncomeHistory>;
+    deleteIncomeHistory: (id: number) => Promise<void>;
+
+    // Income Tax methods
+    getIncomeTaxes: () => Promise<IncomeTax[]>;
+    getIncomeTax: (id: number) => Promise<IncomeTax>;
+    getIncomeTaxesByIncomeHistory: (incomeHistoryId: number) => Promise<IncomeTax[]>;
+    createIncomeTax: (params: CreateIncomeTaxParams) => Promise<IncomeTax>;
+    updateIncomeTax: (
+      id: number,
+      params: UpdateIncomeTaxParams,
+    ) => Promise<IncomeTax>;
+    deleteIncomeTax: (id: number) => Promise<void>;
   };
 }
