@@ -84,6 +84,15 @@ electron.contextBridge.exposeInMainWorld('electron', {
   updateIncomeTax: (id: number, params: UpdateIncomeTaxParams) =>
     ipcInvoke('db:updateIncomeTax', { id, params }),
   deleteIncomeTax: (id: number) => ipcInvoke('db:deleteIncomeTax', id),
+
+  // Tax Category methods
+  getTaxCategories: () => ipcInvoke('db:getTaxCategories'),
+  getTaxCategory: (id: number) => ipcInvoke('db:getTaxCategory', id),
+  createTaxCategory: (params: CreateTaxCategoryParams) =>
+    ipcInvoke('db:createTaxCategory', params),
+  updateTaxCategory: (id: number, params: UpdateTaxCategoryParams) =>
+    ipcInvoke('db:updateTaxCategory', { id, params }),
+  deleteTaxCategory: (id: number) => ipcInvoke('db:deleteTaxCategory', id),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {

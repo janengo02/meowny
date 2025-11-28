@@ -14,28 +14,115 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import {
   useGetIncomeHistoriesBySourceQuery,
   useCreateIncomeHistoryMutation,
   useUpdateIncomeHistoryMutation,
   useDeleteIncomeHistoryMutation,
 } from '../api/incomeHistoryApi';
+import {
+  useGetIncomeTaxesByIncomeHistoryQuery,
+  useCreateIncomeTaxMutation,
+} from '../api/incomeTaxApi';
 import { IncomeCategorySelect } from './IncomeCategorySelect';
 import { IncomeGrossInput } from './IncomeGrossInput';
+import { ReceivedDateInput } from './ReceivedDateInput';
+import { TaxCell } from './TaxCell';
+import { NetAmountCell } from './NetAmountCell';
 
 interface IncomeHistoryTableProps {
   incomeSourceId: number;
 }
 
+interface IncomeHistoryRowActionsProps {
+  historyId: number;
+  incomeId: number;
+  incomeCategoryId: number | null;
+  grossAmount: number;
+  onDelete: (historyId: number) => void;
+}
+
+function IncomeHistoryRowActions({
+  historyId,
+  incomeId,
+  incomeCategoryId,
+  grossAmount,
+  onDelete,
+}: IncomeHistoryRowActionsProps) {
+  const { data: incomeTaxes = [] } =
+    useGetIncomeTaxesByIncomeHistoryQuery(historyId);
+  const [createIncomeHistory] = useCreateIncomeHistoryMutation();
+  const [createIncomeTax] = useCreateIncomeTaxMutation();
+
+  const handleDuplicate = async () => {
+    try {
+      const now = new Date().toISOString();
+
+      // Create new income history with same values
+      const newHistory = await createIncomeHistory({
+        income_id: incomeId,
+        income_category_id: incomeCategoryId,
+        gross_amount: grossAmount,
+        received_date: now,
+      }).unwrap();
+
+      // Duplicate all taxes associated with the original income history
+      for (const tax of incomeTaxes) {
+        await createIncomeTax({
+          income_history_id: newHistory.id,
+          tax_category_id: tax.tax_category_id,
+          tax_amount: tax.tax_amount,
+        }).unwrap();
+      }
+    } catch (error) {
+      console.error('Failed to duplicate income history:', error);
+    }
+  };
+
+  return (
+    <>
+      <IconButton
+        size="small"
+        onClick={handleDuplicate}
+        color="primary"
+        title="Duplicate"
+      >
+        <ContentCopyIcon fontSize="small" />
+      </IconButton>
+      <IconButton
+        size="small"
+        onClick={() => onDelete(historyId)}
+        color="error"
+        title="Delete"
+      >
+        <DeleteIcon fontSize="small" />
+      </IconButton>
+    </>
+  );
+}
+
 export function IncomeHistoryTable({
   incomeSourceId,
 }: IncomeHistoryTableProps) {
-  const { data: incomeHistories, isLoading } =
+  const { data: incomeHistories = [], isLoading } =
     useGetIncomeHistoriesBySourceQuery(incomeSourceId);
   const [createIncomeHistory, { isLoading: isCreating }] =
     useCreateIncomeHistoryMutation();
   const [updateIncomeHistory] = useUpdateIncomeHistoryMutation();
   const [deleteIncomeHistory] = useDeleteIncomeHistoryMutation();
+
+  // Sort income histories by received_date desc, then by id asc
+  const sortedIncomeHistories = [...incomeHistories].sort((a, b) => {
+    // First sort by received_date descending
+    const dateComparison =
+      new Date(b.received_date).getTime() - new Date(a.received_date).getTime();
+    if (dateComparison !== 0) {
+      return dateComparison;
+    }
+    // If dates are equal, sort by id ascending
+    return b.id - a.id;
+  });
 
   const handleAddIncomeHistory = async () => {
     try {
@@ -86,6 +173,17 @@ export function IncomeHistoryTable({
     }
   };
 
+  const handleReceivedDateSave = async (historyId: number, newDate: string) => {
+    try {
+      await updateIncomeHistory({
+        id: historyId,
+        params: { received_date: newDate },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update received date:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <Box
@@ -101,7 +199,7 @@ export function IncomeHistoryTable({
     );
   }
 
-  if (!incomeHistories || incomeHistories.length === 0) {
+  if (!sortedIncomeHistories || sortedIncomeHistories.length === 0) {
     return (
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
@@ -162,26 +260,30 @@ export function IncomeHistoryTable({
               <TableCell align="right" width={150}>
                 Gross Amount
               </TableCell>
-              <TableCell align="right">Tax</TableCell>
+              <TableCell width={300}>Tax</TableCell>
               <TableCell align="right">Net Amount</TableCell>
               <TableCell>Notes</TableCell>
-              <TableCell align="center" width={60}>
+              <TableCell align="center" width={100}>
                 Actions
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {incomeHistories.map((history) => (
+            {sortedIncomeHistories.map((history) => (
               <TableRow
                 key={history.id}
                 sx={{
                   '&:last-child td, &:last-child th': { border: 0 },
+                  verticalAlign: 'top',
                 }}
               >
-                <TableCell>
-                  <Typography variant="body2">
-                    {new Date(history.received_date).toLocaleString()}
-                  </Typography>
+                <TableCell sx={{ verticalAlign: 'top' }}>
+                  <ReceivedDateInput
+                    value={history.received_date}
+                    onSave={(newDate) =>
+                      handleReceivedDateSave(history.id, newDate)
+                    }
+                  />
                 </TableCell>
                 <TableCell>
                   <IncomeCategorySelect
@@ -199,15 +301,17 @@ export function IncomeHistoryTable({
                     }
                   />
                 </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" color="text.secondary">
-                    -
-                  </Typography>
+                <TableCell>
+                  <TaxCell
+                    incomeHistoryId={history.id}
+                    grossAmount={history.gross_amount}
+                  />
                 </TableCell>
                 <TableCell align="right">
-                  <Typography variant="body2" color="text.secondary">
-                    -
-                  </Typography>
+                  <NetAmountCell
+                    incomeHistoryId={history.id}
+                    grossAmount={history.gross_amount}
+                  />
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" color="text.secondary">
@@ -215,13 +319,13 @@ export function IncomeHistoryTable({
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDeleteHistory(history.id)}
-                    color="error"
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
+                  <IncomeHistoryRowActions
+                    historyId={history.id}
+                    incomeId={incomeSourceId}
+                    incomeCategoryId={history.income_category_id}
+                    grossAmount={history.gross_amount}
+                    onDelete={handleDeleteHistory}
+                  />
                 </TableCell>
               </TableRow>
             ))}

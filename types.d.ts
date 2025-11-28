@@ -434,6 +434,11 @@ type EventPayloadMapping = {
   'db:createIncomeTax': IncomeTax;
   'db:updateIncomeTax': IncomeTax;
   'db:deleteIncomeTax': void;
+  'db:getTaxCategories': TaxCategory[];
+  'db:getTaxCategory': TaxCategory;
+  'db:createTaxCategory': TaxCategory;
+  'db:updateTaxCategory': TaxCategory;
+  'db:deleteTaxCategory': void;
 };
 
 type UnSubscribeFunction = () => void;
@@ -527,5 +532,15 @@ interface Window {
       params: UpdateIncomeTaxParams,
     ) => Promise<IncomeTax>;
     deleteIncomeTax: (id: number) => Promise<void>;
+
+    // Tax Category methods
+    getTaxCategories: () => Promise<TaxCategory[]>;
+    getTaxCategory: (id: number) => Promise<TaxCategory>;
+    createTaxCategory: (params: CreateTaxCategoryParams) => Promise<TaxCategory>;
+    updateTaxCategory: (
+      id: number,
+      params: UpdateTaxCategoryParams,
+    ) => Promise<TaxCategory>;
+    deleteTaxCategory: (id: number) => Promise<void>;
   };
 }

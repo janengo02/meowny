@@ -172,4 +172,20 @@ app.on('ready', () => {
   ipcMainHandle('db:deleteIncomeTax', async (args) => {
     return db.deleteIncomeTax(args as number);
   });
+
+  // Tax Category handlers
+  ipcMainHandle('db:getTaxCategories', db.getTaxCategories);
+  ipcMainHandle('db:getTaxCategory', async (args) => {
+    return db.getTaxCategory(args as number);
+  });
+  ipcMainHandle('db:createTaxCategory', async (args) => {
+    return db.createTaxCategory(args as CreateTaxCategoryParams);
+  });
+  ipcMainHandle('db:updateTaxCategory', async (args) => {
+    const { id, params } = args as { id: number; params: UpdateTaxCategoryParams };
+    return db.updateTaxCategory(id, params);
+  });
+  ipcMainHandle('db:deleteTaxCategory', async (args) => {
+    return db.deleteTaxCategory(args as number);
+  });
 });
