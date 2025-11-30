@@ -88,7 +88,8 @@ export function ColumnMappingDialog({
               MenuProps={{
                 sx: {
                   '& .MuiPaper-root': {
-                    fontFamily: 'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+                    fontFamily:
+                      'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
                   },
                 },
               }}
@@ -113,7 +114,8 @@ export function ColumnMappingDialog({
               MenuProps={{
                 sx: {
                   '& .MuiPaper-root': {
-                    fontFamily: 'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+                    fontFamily:
+                      'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
                   },
                 },
               }}
@@ -138,7 +140,8 @@ export function ColumnMappingDialog({
               MenuProps={{
                 sx: {
                   '& .MuiPaper-root': {
-                    fontFamily: 'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+                    fontFamily:
+                      'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
                   },
                 },
               }}
@@ -160,7 +163,11 @@ export function ColumnMappingDialog({
         <Button onClick={onClose} variant="outlined">
           Cancel
         </Button>
-        <Button onClick={handleComplete} variant="contained" disabled={!isValid}>
+        <Button
+          onClick={handleComplete}
+          variant="contained"
+          disabled={!isValid}
+        >
           Next
         </Button>
       </DialogActions>

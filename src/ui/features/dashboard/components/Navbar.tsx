@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../store/hooks';
 import { useSignOutMutation } from '../../auth/api/authApi';
 import { useDashboardError } from '../hooks/useDashboardError';
-import { CsvImportFlow } from './CsvImportFlow';
+import { CsvImportFlow } from '../../transaction/components/CsvImportFlow';
 
 export function Navbar() {
   const navigate = useNavigate();

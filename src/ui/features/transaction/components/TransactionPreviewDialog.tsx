@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -24,8 +24,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { type MappedTransaction } from './CsvImportFlow';
 import { useAppSelector } from '../../../store/hooks';
 import { formatMoney } from '../../../shared/utils';
-import { useCreateTransactionMutation } from '../../transaction/api/transactionApi';
-import { useDashboardError } from '../hooks/useDashboardError';
+import { useCreateTransactionMutation } from '../api/transactionApi';
+import { useDashboardError } from '../../dashboard/hooks/useDashboardError';
 
 interface TransactionPreviewDialogProps {
   open: boolean;
@@ -101,6 +101,10 @@ export function TransactionPreviewDialog({
       setIsImporting(false);
     }
   };
+
+  useEffect(() => {
+    setEditedTransactions(transactions);
+  }, [transactions]);
 
   return (
     <Dialog
