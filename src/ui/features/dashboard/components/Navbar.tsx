@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../store/hooks';
 import { useSignOutMutation } from '../../auth/api/authApi';
 import { useDashboardError } from '../hooks/useDashboardError';
+import { CsvImportFlow } from './CsvImportFlow';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -49,14 +50,17 @@ export function Navbar() {
             {user?.email}
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={handleLogout}
-          disabled={isSigningOut}
-        >
-          {isSigningOut ? 'Logging out...' : 'Logout'}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <CsvImportFlow />
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleLogout}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? 'Logging out...' : 'Logout'}
+          </Button>
+        </Box>
       </Toolbar>
     </AppBar>
   );
