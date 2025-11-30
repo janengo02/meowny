@@ -21,6 +21,17 @@ export const bucketValueHistoryApi = baseApi.injectEndpoints({
         { type: 'Bucket', id: bucketId },
       ],
     }),
+    getAssetsValueHistory: builder.query<BucketValueHistoryWithBucket[], void>({
+      queryFn: async () => {
+        try {
+          const data = await window.electron.getAssetsValueHistory();
+          return { data };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Bucket'],
+    }),
     createBucketValueHistory: builder.mutation<
       BucketValueHistory,
       CreateBucketValueHistoryParams
@@ -43,5 +54,6 @@ export const bucketValueHistoryApi = baseApi.injectEndpoints({
 
 export const {
   useGetValueHistoryWithTransactionsByBucketQuery,
+  useGetAssetsValueHistoryQuery,
   useCreateBucketValueHistoryMutation,
 } = bucketValueHistoryApi;

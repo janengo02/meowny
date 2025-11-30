@@ -376,6 +376,15 @@ type ValueHistoryWithTransaction = BucketValueHistory & {
   transaction: TransactionWithBucketNames | null;
 };
 
+// Bucket Value History with Bucket details
+type BucketValueHistoryWithBucket = BucketValueHistory & {
+  bucket: {
+    id: number;
+    name: string;
+    type: BucketTypeEnum;
+  };
+};
+
 // ============================================
 // IPC EVENT TYPES
 // ============================================
@@ -408,6 +417,7 @@ type EventPayloadMapping = {
   'db:deleteTransaction': void;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:createBucketValueHistory': BucketValueHistory;
+  'db:getAssetsValueHistory': BucketValueHistoryWithBucket[];
   'db:getBucketGoalsWithStatus': BucketGoalWithStatus[];
   'db:createBucketGoal': BucketGoal;
   'db:updateBucketGoal': BucketGoal;
@@ -483,6 +493,7 @@ interface Window {
     createBucketValueHistory: (
       params: CreateBucketValueHistoryParams,
     ) => Promise<BucketValueHistory>;
+    getAssetsValueHistory: () => Promise<BucketValueHistoryWithBucket[]>;
     getBucketGoalsWithStatus: (bucketId: number) => Promise<BucketGoalWithStatus[]>;
     createBucketGoal: (params: CreateBucketGoalParams) => Promise<BucketGoal>;
     updateBucketGoal: (

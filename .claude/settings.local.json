@@ -4,7 +4,9 @@
       "Bash(mkdir:*)",
       "Bash(npx tsc:*)",
       "Bash(npm install:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run transpile:electron:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []

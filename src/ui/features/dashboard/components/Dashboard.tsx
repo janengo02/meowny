@@ -6,7 +6,7 @@ import { DashboardErrorProvider } from '../context/DashboardErrorProvider';
 import { useDashboardError } from '../hooks/useDashboardError';
 import { IncomeList } from '../../income/components/IncomeList';
 import { ChartPlaceholder } from './ChartPlaceholder';
-import ShowChartIcon from '@mui/icons-material/ShowChart';
+import { AssetsOverTimeChart } from './AssetsOverTimeChart';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
@@ -49,11 +49,7 @@ function DashboardContent() {
 
             {/* 1. Full width Assets chart */}
             <Box sx={{ mb: 4 }}>
-              <ChartPlaceholder
-                title="Assets Over Time"
-                height={300}
-                icon={<ShowChartIcon sx={{ fontSize: 48 }} />}
-              />
+              <AssetsOverTimeChart />
             </Box>
 
             {/* 2. Left: Saving buckets, Right: Investment buckets */}

@@ -88,6 +88,7 @@ app.on('ready', () => {
   ipcMainHandle('db:createBucketValueHistory', async (args) => {
     return db.createBucketValueHistory(args as CreateBucketValueHistoryParams);
   });
+  ipcMainHandle('db:getAssetsValueHistory', db.getAssetsValueHistory);
   ipcMainHandle('db:getBucketGoalsWithStatus', async (args) => {
     return db.getBucketGoalsWithStatus(args as number);
   });

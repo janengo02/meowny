@@ -145,3 +145,34 @@ export async function getValueHistoryWithTransactionsByBucket(
   if (error) throw new Error(error.message);
   return data;
 }
+
+export async function getAssetsValueHistory(): Promise<
+  BucketValueHistoryWithBucket[]
+> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // First get all saving and investment buckets for the user
+  const { data: buckets, error: bucketsError } = await supabase
+    .from('bucket')
+    .select('id')
+    .eq('user_id', userId)
+    .in('type', ['saving', 'investment']);
+
+  if (bucketsError) throw new Error(bucketsError.message);
+  if (!buckets || buckets.length === 0) return [];
+
+  const bucketIds = buckets.map((b) => b.id);
+
+  // Then get value history for those buckets with bucket details
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select('*, bucket:bucket_id(id, name, type)')
+    .eq('user_id', userId)
+    .in('bucket_id', bucketIds)
+    .order('recorded_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+
+  return data;
+}
