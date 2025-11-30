@@ -20,7 +20,11 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { useGetBucketQuery, useUpdateBucketMutation, useDeleteBucketMutation } from '../api/bucketApi';
+import {
+  useGetBucketQuery,
+  useUpdateBucketMutation,
+  useDeleteBucketMutation,
+} from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
@@ -93,7 +97,11 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
 
   if (!bucketId) return null;
 
-  if (isLoading || !bucket) {
+  // Show loading when initially loading or when bucket data doesn't match the requested bucketId
+  // Don't show loading when just refetching the same bucket (updates)
+  const isLoadingCorrectBucket = isLoading || !bucket || bucket.id !== bucketId;
+
+  if (isLoadingCorrectBucket) {
     return (
       <Drawer
         anchor="right"
@@ -160,6 +168,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
           }}
         >
           <TextField
+            key={bucket.id}
             defaultValue={bucket.name}
             onBlur={handleNameBlur}
             onKeyDown={handleNameKeyDown}
@@ -464,13 +473,12 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         aria-labelledby="delete-dialog-title"
         aria-describedby="delete-dialog-description"
       >
-        <DialogTitle id="delete-dialog-title">
-          Delete Bucket?
-        </DialogTitle>
+        <DialogTitle id="delete-dialog-title">Delete Bucket?</DialogTitle>
         <DialogContent>
           <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete "{bucket.name}"? This action cannot be undone.
-            All associated transactions and value history will also be deleted.
+            Are you sure you want to delete "{bucket.name}"? This action cannot
+            be undone. All associated transactions and value history will also
+            be deleted.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

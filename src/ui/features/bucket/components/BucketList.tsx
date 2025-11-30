@@ -100,6 +100,7 @@ export function BucketList({
             sx={{ display: 'flex' }}
           >
             <BucketCard
+              key={bucket.id}
               bucket={bucket}
               onClick={() => setSelectedBucketId(bucket.id)}
             />
@@ -109,7 +110,7 @@ export function BucketList({
           size={
             type === 'expense'
               ? { xs: 4, sm: 3, md: 2 }
-              : { xs: 12, sm: 6, md: 6 }
+              : { xs: 12, sm: 6, md: 4 }
           }
           sx={{ display: 'flex' }}
         >
