@@ -1,5 +1,12 @@
 import { useState } from 'react';
-import { Chip, Menu, MenuItem, Divider, ListItemIcon, ListItemText } from '@mui/material';
+import {
+  Chip,
+  Menu,
+  MenuItem,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import ClearIcon from '@mui/icons-material/Clear';
 
@@ -32,7 +39,7 @@ export function ChipSelect<T extends string>({
   options,
   onChange,
   color = 'primary',
-  size = 'small',
+  size = 'medium',
   variant = 'outlined',
   disabled = false,
   placeholder = 'Select',

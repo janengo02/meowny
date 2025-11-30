@@ -11,7 +11,6 @@ app.on('ready', () => {
     webPreferences: {
       preload: getPreloadPath(),
     },
-    frame: false,
   });
   if (isDev()) {
     mainWindow.loadURL('http://localhost:3000');
@@ -96,7 +95,10 @@ app.on('ready', () => {
     return db.createBucketGoal(args as CreateBucketGoalParams);
   });
   ipcMainHandle('db:updateBucketGoal', async (args) => {
-    const { id, params } = args as { id: number; params: UpdateBucketGoalParams };
+    const { id, params } = args as {
+      id: number;
+      params: UpdateBucketGoalParams;
+    };
     return db.updateBucketGoal(id, params);
   });
   ipcMainHandle('db:deleteBucketGoal', async (args) => {
@@ -112,7 +114,10 @@ app.on('ready', () => {
     return db.createIncomeSource(args as CreateIncomeSourceParams);
   });
   ipcMainHandle('db:updateIncomeSource', async (args) => {
-    const { id, params } = args as { id: number; params: UpdateIncomeSourceParams };
+    const { id, params } = args as {
+      id: number;
+      params: UpdateIncomeSourceParams;
+    };
     return db.updateIncomeSource(id, params);
   });
   ipcMainHandle('db:deleteIncomeSource', async (args) => {
@@ -128,7 +133,10 @@ app.on('ready', () => {
     return db.createIncomeCategory(args as CreateIncomeCategoryParams);
   });
   ipcMainHandle('db:updateIncomeCategory', async (args) => {
-    const { id, params } = args as { id: number; params: UpdateIncomeCategoryParams };
+    const { id, params } = args as {
+      id: number;
+      params: UpdateIncomeCategoryParams;
+    };
     return db.updateIncomeCategory(id, params);
   });
   ipcMainHandle('db:deleteIncomeCategory', async (args) => {
@@ -147,7 +155,10 @@ app.on('ready', () => {
     return db.createIncomeHistory(args as CreateIncomeHistoryParams);
   });
   ipcMainHandle('db:updateIncomeHistory', async (args) => {
-    const { id, params } = args as { id: number; params: UpdateIncomeHistoryParams };
+    const { id, params } = args as {
+      id: number;
+      params: UpdateIncomeHistoryParams;
+    };
     return db.updateIncomeHistory(id, params);
   });
   ipcMainHandle('db:deleteIncomeHistory', async (args) => {
@@ -166,7 +177,10 @@ app.on('ready', () => {
     return db.createIncomeTax(args as CreateIncomeTaxParams);
   });
   ipcMainHandle('db:updateIncomeTax', async (args) => {
-    const { id, params } = args as { id: number; params: UpdateIncomeTaxParams };
+    const { id, params } = args as {
+      id: number;
+      params: UpdateIncomeTaxParams;
+    };
     return db.updateIncomeTax(id, params);
   });
   ipcMainHandle('db:deleteIncomeTax', async (args) => {
@@ -182,7 +196,10 @@ app.on('ready', () => {
     return db.createTaxCategory(args as CreateTaxCategoryParams);
   });
   ipcMainHandle('db:updateTaxCategory', async (args) => {
-    const { id, params } = args as { id: number; params: UpdateTaxCategoryParams };
+    const { id, params } = args as {
+      id: number;
+      params: UpdateTaxCategoryParams;
+    };
     return db.updateTaxCategory(id, params);
   });
   ipcMainHandle('db:deleteTaxCategory', async (args) => {

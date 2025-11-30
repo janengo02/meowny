@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
 import { useCreateBucketMutation, useGetBucketsQuery } from '../api/bucketApi';
@@ -13,12 +13,14 @@ interface BucketListProps {
   type?: BucketTypeEnum;
   title?: string;
   showCreateButton?: boolean;
+  onModalOpenChange?: (isOpen: boolean) => void;
 }
 
 export function BucketList({
   type,
   title = 'Your Buckets',
   showCreateButton = true,
+  onModalOpenChange,
 }: BucketListProps) {
   const allBuckets = useAppSelector((state) => state.bucket.buckets);
   const buckets = type
@@ -34,6 +36,11 @@ export function BucketList({
   if (bucketsError) {
     setError('Failed to load buckets. Please try again.');
   }
+
+  useEffect(() => {
+    onModalOpenChange?.(selectedBucketId !== null);
+  }, [selectedBucketId, onModalOpenChange]);
+
   const handleCreateBucket = async () => {
     try {
       const bucketType = type || 'expense';
@@ -88,8 +95,8 @@ export function BucketList({
           <Grid
             size={
               type === 'expense'
-                ? { xs: 4, sm: 3, md: 2 }
-                : { xs: 12, sm: 6, md: 6 }
+                ? { xs: 12, sm: 3, md: 2 }
+                : { xs: 12, sm: 6, md: 4 }
             }
             key={bucket.id}
             sx={{ display: 'flex' }}

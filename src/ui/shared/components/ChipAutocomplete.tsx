@@ -45,7 +45,7 @@ export function ChipAutocomplete<T extends string>({
   onChange,
   onCreate,
   color = 'primary',
-  size = 'small',
+  size = 'medium',
   variant = 'outlined',
   disabled = false,
   placeholder = 'Search...',

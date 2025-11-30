@@ -2,9 +2,7 @@ import { useState } from 'react';
 import {
   Box,
   CircularProgress,
-  Dialog,
-  DialogContent,
-  DialogTitle,
+  Drawer,
   Divider,
   Grid,
   IconButton,
@@ -41,18 +39,32 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
 
   if (isLoading || !bucket) {
     return (
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogContent
+      <Drawer
+        anchor="right"
+        open={open}
+        onClose={onClose}
+        variant="temporary"
+        ModalProps={{
+          disableScrollLock: true,
+        }}
+        sx={{
+          '& .MuiDrawer-paper': {
+            width: { xs: '100%', md: '50%' },
+            bgcolor: 'background.default',
+          },
+        }}
+      >
+        <Box
           sx={{
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            py: 6,
+            height: '100vh',
           }}
         >
           <CircularProgress />
-        </DialogContent>
-      </Dialog>
+        </Box>
+      </Drawer>
     );
   }
 
@@ -64,56 +76,53 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   const isPositive = gainLoss >= 0;
 
   return (
-    <Dialog
+    <Drawer
+      anchor="right"
       open={open}
       onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
+      variant="temporary"
+      ModalProps={{
+        keepMounted: true,
+        disableScrollLock: true,
+      }}
+      sx={{
+        '& .MuiDrawer-paper': {
+          width: { xs: '100%', md: '50%' },
           bgcolor: 'background.default',
-          border: '1px solid',
+          borderLeft: '1px solid',
           borderColor: 'divider',
         },
       }}
     >
-      <DialogTitle
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 1,
-        }}
-      >
+      <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            mb: 2,
           }}
         >
-          <Typography variant="h2" component="span">
-            {bucket.name}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <BucketTypeSelect bucketId={bucket.id} value={bucket.type} />
-            <BucketCategorySelect
-              bucketId={bucket.id}
-              value={bucket.bucket_category_id}
-            />
-            <BucketLocationSelect
-              bucketId={bucket.id}
-              value={bucket.bucket_location_id}
-            />
-          </Box>
+          <Typography variant="h2">{bucket.name}</Typography>
+          <IconButton onClick={onClose} size="small">
+            <CloseIcon />
+          </IconButton>
         </Box>
-        <IconButton onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
 
-      <DialogContent sx={{ pt: 2 }}>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <BucketTypeSelect bucketId={bucket.id} value={bucket.type} />
+          <BucketCategorySelect
+            bucketId={bucket.id}
+            value={bucket.bucket_category_id}
+          />
+          <BucketLocationSelect
+            bucketId={bucket.id}
+            value={bucket.bucket_location_id}
+          />
+        </Box>
+      </Box>
+
+      <Box sx={{ p: 3, overflowY: 'auto', flex: 1 }}>
         {/* Summary Stats */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {/* Contributed/Spent - shown for all types */}
@@ -295,7 +304,10 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
           <Typography variant="h3" sx={{ mb: 2 }}>
             Value History Logs
           </Typography>
-          <BucketValueHistoryTable bucketId={bucketId} bucketType={bucket.type} />
+          <BucketValueHistoryTable
+            bucketId={bucketId}
+            bucketType={bucket.type}
+          />
         </Box>
 
         {/* Notes Section */}
@@ -331,7 +343,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             </Typography>
           </Box>
         </Box>
-      </DialogContent>
+      </Box>
       <TransactionModal
         bucketId={bucketId}
         open={transactionModalOpen}
@@ -344,6 +356,6 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         open={marketValueModalOpen}
         onClose={() => setMarketValueModalOpen(false)}
       />
-    </Dialog>
+    </Drawer>
   );
 }
