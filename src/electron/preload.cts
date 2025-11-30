@@ -18,6 +18,7 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:createBucket', params),
   updateBucket: (id: number, params: UpdateBucketParams) =>
     ipcInvoke('db:updateBucket', { id, params }),
+  deleteBucket: (id: number) => ipcInvoke('db:deleteBucket', id),
   getBucketCategories: () => ipcInvoke('db:getBucketCategories'),
   createBucketCategory: (params: CreateBucketCategoryParams) =>
     ipcInvoke('db:createBucketCategory', params),

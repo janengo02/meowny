@@ -7,12 +7,20 @@ import {
   Grid,
   IconButton,
   Typography,
+  TextField,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import EditIcon from '@mui/icons-material/Edit';
-import { useGetBucketQuery } from '../api/bucketApi';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useGetBucketQuery, useUpdateBucketMutation, useDeleteBucketMutation } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
@@ -31,9 +39,57 @@ interface BucketModalProps {
 export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   const [transactionModalOpen, setTransactionModalOpen] = useState(false);
   const [marketValueModalOpen, setMarketValueModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
+  const [updateBucket] = useUpdateBucketMutation();
+  const [deleteBucket, { isLoading: isDeleting }] = useDeleteBucketMutation();
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (bucket) {
+      try {
+        await deleteBucket(bucket.id).unwrap();
+        setDeleteDialogOpen(false);
+        onClose();
+      } catch (error) {
+        // Error handling - could show a toast/snackbar here
+        console.error('Failed to delete bucket:', error);
+      }
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+  };
+
+  const handleNameBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    if (bucket) {
+      const trimmedName = e.target.value.trim();
+      if (!trimmedName) {
+        // Reset to original name if empty
+        e.target.value = bucket.name;
+      } else if (trimmedName !== bucket.name) {
+        // Update if name changed
+        await updateBucket({
+          id: bucket.id,
+          params: { name: trimmedName },
+        });
+      }
+    }
+  };
+
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (e.target as HTMLInputElement).blur();
+    }
+  };
 
   if (!bucketId) return null;
 
@@ -103,7 +159,40 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             mb: 2,
           }}
         >
-          <Typography variant="h2">{bucket.name}</Typography>
+          <TextField
+            defaultValue={bucket.name}
+            onBlur={handleNameBlur}
+            onKeyDown={handleNameKeyDown}
+            variant="standard"
+            fullWidth
+            slotProps={{
+              input: {
+                disableUnderline: true,
+                sx: {
+                  fontSize: '1.5rem',
+                  fontWeight: 500,
+                  padding: 0,
+                  '&:before': {
+                    display: 'none',
+                  },
+                  '&:after': {
+                    display: 'none',
+                  },
+                },
+              },
+            }}
+            sx={{
+              mr: 2,
+              '& .MuiInputBase-root': {
+                '&:before': {
+                  display: 'none',
+                },
+                '&:after': {
+                  display: 'none',
+                },
+              },
+            }}
+          />
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
           </IconButton>
@@ -325,7 +414,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
 
         {/* Metadata */}
         <Divider sx={{ my: 3 }} />
-        <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 3 }}>
           <Box>
             <Typography variant="caption" color="text.secondary">
               Created
@@ -343,6 +432,17 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             </Typography>
           </Box>
         </Box>
+
+        {/* Delete Button */}
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteIcon />}
+          onClick={handleDeleteClick}
+          fullWidth
+        >
+          Delete Bucket
+        </Button>
       </Box>
       <TransactionModal
         bucketId={bucketId}
@@ -356,6 +456,37 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         open={marketValueModalOpen}
         onClose={() => setMarketValueModalOpen(false)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          Delete Bucket?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Are you sure you want to delete "{bucket.name}"? This action cannot be undone.
+            All associated transactions and value history will also be deleted.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Drawer>
   );
 }

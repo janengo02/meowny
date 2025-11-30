@@ -66,6 +66,17 @@ export const bucketApi = baseApi.injectEndpoints({
         }
       },
     }),
+    deleteBucket: builder.mutation<void, number>({
+      queryFn: async (id) => {
+        try {
+          await window.electron.deleteBucket(id);
+          return { data: undefined };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['Bucket'],
+    }),
   }),
 });
 
@@ -74,4 +85,5 @@ export const {
   useGetBucketQuery,
   useCreateBucketMutation,
   useUpdateBucketMutation,
+  useDeleteBucketMutation,
 } = bucketApi;

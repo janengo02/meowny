@@ -7,7 +7,6 @@ import AddIcon from '@mui/icons-material/Add';
 import { BucketCard } from './BucketCard';
 import { BucketModal } from './BucketModal';
 import { AddBucketCard } from './AddBucketCard';
-import { CsvImportFlow } from '../../transaction/components/CsvImportFlow';
 
 interface BucketListProps {
   type?: BucketTypeEnum;
@@ -86,7 +85,6 @@ export function BucketList({
               New
             </Button>
           )}
-          {type === 'expense' && <CsvImportFlow />}
         </Box>
       </Box>
 
