@@ -14,9 +14,9 @@ interface IncomeCardProps {
 
 export function IncomeCard({ incomeSource, onClick }: IncomeCardProps) {
   return (
-    <Card>
-      <CardActionArea onClick={onClick}>
-        <CardContent>
+    <Card sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardActionArea onClick={onClick} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
+        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Typography variant="h3" gutterBottom>
             {incomeSource.name}
           </Typography>

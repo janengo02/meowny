@@ -70,14 +70,14 @@ export function IncomeList() {
 
       <Grid container spacing={2}>
         {incomeSources.map((incomeSource) => (
-          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={incomeSource.id}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }} key={incomeSource.id} sx={{ display: 'flex' }}>
             <IncomeCard
               incomeSource={incomeSource}
               onClick={() => setSelectedIncomeId(incomeSource.id)}
             />
           </Grid>
         ))}
-        <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 4 }} sx={{ display: 'flex' }}>
           <AddIncomeCard onClick={handleCreateIncomeSource} />
         </Grid>
       </Grid>
