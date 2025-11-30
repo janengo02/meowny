@@ -25,19 +25,13 @@ export function BucketCard({
   onClick,
 }: BucketCardProps) {
   return (
-    <Card>
-      <CardActionArea onClick={onClick}>
-        <CardContent>
+    <Card sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+      <CardActionArea onClick={onClick} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
+        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Typography variant="h3" gutterBottom>
             {bucket.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-            <Chip
-              label={bucket.type}
-              size="small"
-              color="primary"
-              variant="outlined"
-            />
             {category && (
               <Chip
                 icon={<CategoryIcon sx={{ fontSize: 14 }} />}
@@ -77,20 +71,6 @@ export function BucketCard({
               </Grid>
             )}
           </Grid>
-          {bucket.notes && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mt: 2,
-                pt: 2,
-                borderTop: 1,
-                borderColor: 'divider',
-              }}
-            >
-              {bucket.notes}
-            </Typography>
-          )}
         </CardContent>
       </CardActionArea>
     </Card>

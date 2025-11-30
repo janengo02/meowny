@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../../store/hooks';
 import { useSignOutMutation } from '../../auth/api/authApi';
 import { useDashboardError } from '../hooks/useDashboardError';
-import { CsvImportFlow } from '../../transaction/components/CsvImportFlow';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -51,7 +50,6 @@ export function Navbar() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <CsvImportFlow />
           <Button
             variant="outlined"
             size="small"

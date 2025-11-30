@@ -28,20 +28,6 @@ export function IncomeCard({ incomeSource, onClick }: IncomeCardProps) {
               variant="outlined"
             />
           </Box>
-          {incomeSource.notes && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                mt: 2,
-                pt: 2,
-                borderTop: 1,
-                borderColor: 'divider',
-              }}
-            >
-              {incomeSource.notes}
-            </Typography>
-          )}
         </CardContent>
       </CardActionArea>
     </Card>

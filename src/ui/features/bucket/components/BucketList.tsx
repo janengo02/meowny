@@ -1,22 +1,29 @@
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Grid,
-  Typography,
-} from '@mui/material';
+import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
 import { useCreateBucketMutation, useGetBucketsQuery } from '../api/bucketApi';
 import { useDashboardError } from '../../dashboard/hooks/useDashboardError';
 import AddIcon from '@mui/icons-material/Add';
 import { BucketCard } from './BucketCard';
 import { BucketModal } from './BucketModal';
+import { AddBucketCard } from './AddBucketCard';
+import { CsvImportFlow } from '../../transaction/components/CsvImportFlow';
 
-export function BucketList() {
-  const buckets = useAppSelector((state) => state.bucket.buckets);
+interface BucketListProps {
+  type?: BucketTypeEnum;
+  title?: string;
+  showCreateButton?: boolean;
+}
+
+export function BucketList({
+  type,
+  title = 'Your Buckets',
+  showCreateButton = true,
+}: BucketListProps) {
+  const allBuckets = useAppSelector((state) => state.bucket.buckets);
+  const buckets = type
+    ? allBuckets.filter((bucket) => bucket.type === type)
+    : allBuckets;
   const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const { isLoading: isLoadingBuckets, error: bucketsError } =
     useGetBucketsQuery();
@@ -29,11 +36,14 @@ export function BucketList() {
   }
   const handleCreateBucket = async () => {
     try {
-      await createBucket({
-        name: `Bucket ${buckets.length + 1}`,
-        type: 'expense',
-        notes: 'Created from dashboard',
+      const bucketType = type || 'expense';
+      const result = await createBucket({
+        name: `New ${bucketType.charAt(0).toUpperCase() + bucketType.slice(1)} Bucket`,
+        type: bucketType,
+        notes: '',
       }).unwrap();
+      // Open the modal for the newly created bucket
+      setSelectedBucketId(result.id);
     } catch {
       setError('Failed to create bucket. Please try again.');
     }
@@ -57,43 +67,50 @@ export function BucketList() {
           mb: 2,
         }}
       >
-        <Typography variant="h2">Your Buckets</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateBucket}
-          disabled={isCreatingBucket}
-        >
-          Create Bucket
-        </Button>
+        <Typography variant="h2">{title}</Typography>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {showCreateButton && (
+            <Button
+              variant="text"
+              startIcon={<AddIcon />}
+              onClick={handleCreateBucket}
+              disabled={isCreatingBucket}
+            >
+              New
+            </Button>
+          )}
+          {type === 'expense' && <CsvImportFlow />}
+        </Box>
       </Box>
 
-      {buckets.length === 0 ? (
-        <Card
-          sx={{
-            border: '1px dashed',
-            borderColor: 'divider',
-            bgcolor: 'transparent',
-          }}
+      <Grid container spacing={2}>
+        {buckets.map((bucket) => (
+          <Grid
+            size={
+              type === 'expense'
+                ? { xs: 4, sm: 3, md: 2 }
+                : { xs: 12, sm: 6, md: 6 }
+            }
+            key={bucket.id}
+            sx={{ display: 'flex' }}
+          >
+            <BucketCard
+              bucket={bucket}
+              onClick={() => setSelectedBucketId(bucket.id)}
+            />
+          </Grid>
+        ))}
+        <Grid
+          size={
+            type === 'expense'
+              ? { xs: 4, sm: 3, md: 2 }
+              : { xs: 12, sm: 6, md: 6 }
+          }
+          sx={{ display: 'flex' }}
         >
-          <CardContent sx={{ textAlign: 'center', py: 6 }}>
-            <Typography color="text.secondary">
-              No buckets yet. Create your first bucket to get started!
-            </Typography>
-          </CardContent>
-        </Card>
-      ) : (
-        <Grid container spacing={2}>
-          {buckets.map((bucket) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={bucket.id}>
-              <BucketCard
-                bucket={bucket}
-                onClick={() => setSelectedBucketId(bucket.id)}
-              />
-            </Grid>
-          ))}
+          <AddBucketCard onClick={handleCreateBucket} />
         </Grid>
-      )}
+      </Grid>
 
       <BucketModal
         bucketId={selectedBucketId}
