@@ -23,6 +23,7 @@ interface ColumnMappingDialogProps {
     transactionDate: string;
     transactionAmount: string;
     notes: string;
+    bucket: string;
   }) => void;
 }
 
@@ -35,15 +36,16 @@ export function ColumnMappingDialog({
   const [transactionDate, setTransactionDate] = useState('');
   const [transactionAmount, setTransactionAmount] = useState('');
   const [notes, setNotes] = useState('');
+  const [bucket, setBucket] = useState('');
 
   const handleComplete = () => {
-    if (!transactionDate || !transactionAmount || !notes) {
+    if (!transactionDate || !transactionAmount || !notes || !bucket) {
       return;
     }
-    onComplete({ transactionDate, transactionAmount, notes });
+    onComplete({ transactionDate, transactionAmount, notes, bucket });
   };
 
-  const isValid = transactionDate && transactionAmount && notes;
+  const isValid = transactionDate && transactionAmount && notes && bucket;
 
   return (
     <Dialog
@@ -89,7 +91,7 @@ export function ColumnMappingDialog({
                 sx: {
                   '& .MuiPaper-root': {
                     fontFamily:
-                      'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
                   },
                 },
               }}
@@ -115,7 +117,7 @@ export function ColumnMappingDialog({
                 sx: {
                   '& .MuiPaper-root': {
                     fontFamily:
-                      'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
                   },
                 },
               }}
@@ -141,7 +143,33 @@ export function ColumnMappingDialog({
                 sx: {
                   '& .MuiPaper-root': {
                     fontFamily:
-                      'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+                  },
+                },
+              }}
+            >
+              <MenuItem value="">
+                <em>Select a column</em>
+              </MenuItem>
+              {headers.map((header) => (
+                <MenuItem key={header} value={header}>
+                  {header}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl fullWidth>
+            <InputLabel>Bucket</InputLabel>
+            <Select
+              value={bucket}
+              label="Bucket"
+              onChange={(e) => setBucket(e.target.value)}
+              MenuProps={{
+                sx: {
+                  '& .MuiPaper-root': {
+                    fontFamily:
+                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
                   },
                 },
               }}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -19,6 +19,7 @@ import {
   MenuItem,
   FormControl,
   CircularProgress,
+  TextField,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { type MappedTransaction } from './CsvImportFlow';
@@ -43,16 +44,55 @@ export function TransactionPreviewDialog({
   const { setError } = useDashboardError();
   const [isImporting, setIsImporting] = useState(false);
 
-  // Filter for expense buckets only
-  const expenseBuckets = buckets.filter((bucket) => bucket.type === 'expense');
+  // Create a map of bucket name (lowercase) to bucket ID for quick lookup
+  const bucketNameToIdMap = useMemo(() => {
+    const map = new Map<string, number>();
+    buckets.forEach((bucket) => {
+      map.set(bucket.name.toLowerCase().trim(), bucket.id);
+    });
+    return map;
+  }, [buckets]);
+
+  // Auto-map bucket names from CSV to bucket IDs on initial load
+  const initialMappedTransactions = useMemo(() => {
+    return transactions.map((transaction) => {
+      const bucketName = transaction.bucket.toLowerCase().trim();
+      const bucketId = bucketNameToIdMap.get(bucketName);
+      const bucketIdStr = bucketId ? bucketId.toString() : '';
+
+      // Parse amount to determine direction
+      const cleanAmount = transaction.transactionAmount.replace(/[^\d.-]/g, '');
+      const amount = parseFloat(cleanAmount) || 0;
+
+      return {
+        ...transaction,
+        bucket: bucketIdStr,
+        // If positive amount, set toBucket; if negative, set fromBucket
+        fromBucket: amount < 0 ? bucketIdStr : '',
+        toBucket: amount >= 0 ? bucketIdStr : '',
+      };
+    });
+  }, [transactions, bucketNameToIdMap]);
 
   // Set edited transactions to the initial transactions
   const [editedTransactions, setEditedTransactions] =
-    useState<MappedTransaction[]>(transactions);
+    useState<MappedTransaction[]>(initialMappedTransactions);
 
-  const handleBucketChange = (index: number, bucketId: string) => {
+  const handleFromBucketChange = (index: number, bucketId: string) => {
     const updated = [...editedTransactions];
-    updated[index] = { ...updated[index], bucket: bucketId };
+    updated[index] = { ...updated[index], fromBucket: bucketId };
+    setEditedTransactions(updated);
+  };
+
+  const handleToBucketChange = (index: number, bucketId: string) => {
+    const updated = [...editedTransactions];
+    updated[index] = { ...updated[index], toBucket: bucketId };
+    setEditedTransactions(updated);
+  };
+
+  const handleNotesChange = (index: number, notes: string) => {
+    const updated = [...editedTransactions];
+    updated[index] = { ...updated[index], notes };
     setEditedTransactions(updated);
   };
 
@@ -63,9 +103,11 @@ export function TransactionPreviewDialog({
     let errorCount = 0;
 
     try {
-      // Filter transactions that have a bucket selected
+      // Filter transactions that have at least one bucket selected
       const transactionsToImport = editedTransactions.filter(
-        (t) => t.bucket && t.bucket.trim() !== '',
+        (t) =>
+          (t.fromBucket && t.fromBucket.trim() !== '') ||
+          (t.toBucket && t.toBucket.trim() !== ''),
       );
 
       skipCount = editedTransactions.length - transactionsToImport.length;
@@ -73,10 +115,17 @@ export function TransactionPreviewDialog({
       // Import each transaction
       for (const transaction of transactionsToImport) {
         try {
+          // Parse amount and remove any non-numeric characters (like commas, currency symbols)
+          const cleanAmount = transaction.transactionAmount.replace(/[^\d.-]/g, '');
+          const amount = Math.abs(parseFloat(cleanAmount) || 0);
+
+          const fromBucketId = transaction.fromBucket ? parseInt(transaction.fromBucket) : null;
+          const toBucketId = transaction.toBucket ? parseInt(transaction.toBucket) : null;
+
           await createTransaction({
-            from_bucket_id: null,
-            to_bucket_id: parseInt(transaction.bucket),
-            amount: parseFloat(transaction.transactionAmount) || 0,
+            from_bucket_id: fromBucketId,
+            to_bucket_id: toBucketId,
+            amount: amount,
             transaction_date: transaction.transactionDate,
             notes: transaction.notes || null,
           }).unwrap();
@@ -103,8 +152,8 @@ export function TransactionPreviewDialog({
   };
 
   useEffect(() => {
-    setEditedTransactions(transactions);
-  }, [transactions]);
+    setEditedTransactions(initialMappedTransactions);
+  }, [initialMappedTransactions]);
 
   return (
     <Dialog
@@ -149,7 +198,7 @@ export function TransactionPreviewDialog({
             border: '1px solid',
             borderColor: 'divider',
             fontFamily:
-              'system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif',
+              '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
           }}
         >
           <Table size="small" stickyHeader>
@@ -163,7 +212,10 @@ export function TransactionPreviewDialog({
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
                 <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>
-                  Bucket
+                  From Bucket
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>
+                  To Bucket
                 </TableCell>
               </TableRow>
             </TableHead>
@@ -178,35 +230,81 @@ export function TransactionPreviewDialog({
                   }}
                 >
                   <TableCell>{transaction.transactionDate}</TableCell>
-                  <TableCell align="right">
-                    {formatMoney(
-                      parseFloat(transaction.transactionAmount) || 0,
-                    )}
-                  </TableCell>
                   <TableCell
+                    align="right"
                     sx={{
-                      maxWidth: 300,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      color: (() => {
+                        const amount = parseFloat(
+                          transaction.transactionAmount.replace(/[^\d.-]/g, ''),
+                        ) || 0;
+                        if (amount > 0) return 'success.main';
+                        if (amount < 0) return 'error.main';
+                        return 'inherit';
+                      })(),
+                      fontWeight: 500,
                     }}
                   >
-                    {transaction.notes}
+                    {formatMoney(
+                      parseFloat(transaction.transactionAmount.replace(/[^\d.-]/g, '')) || 0,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      value={transaction.notes}
+                      onChange={(e) => handleNotesChange(index, e.target.value)}
+                      variant="standard"
+                      size="small"
+                      fullWidth
+                      disabled={isImporting}
+                      placeholder="Add notes..."
+                      slotProps={{
+                        input: {
+                          disableUnderline: true,
+                        },
+                      }}
+                      sx={{
+                        maxWidth: 300,
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     <FormControl size="small" fullWidth>
                       <Select
-                        value={transaction.bucket}
+                        value={transaction.fromBucket}
                         onChange={(e) =>
-                          handleBucketChange(index, e.target.value)
+                          handleFromBucketChange(index, e.target.value)
                         }
                         displayEmpty
                         disabled={isImporting}
                       >
                         <MenuItem value="">
-                          <em>Select bucket</em>
+                          <em>None</em>
                         </MenuItem>
-                        {expenseBuckets.map((bucket) => (
+                        {buckets.map((bucket) => (
+                          <MenuItem
+                            key={bucket.id}
+                            value={bucket.id.toString()}
+                          >
+                            {bucket.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </TableCell>
+                  <TableCell>
+                    <FormControl size="small" fullWidth>
+                      <Select
+                        value={transaction.toBucket}
+                        onChange={(e) =>
+                          handleToBucketChange(index, e.target.value)
+                        }
+                        displayEmpty
+                        disabled={isImporting}
+                      >
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {buckets.map((bucket) => (
                           <MenuItem
                             key={bucket.id}
                             value={bucket.id.toString()}

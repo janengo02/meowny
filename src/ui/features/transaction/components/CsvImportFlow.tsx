@@ -13,7 +13,9 @@ export interface MappedTransaction {
   transactionDate: string;
   transactionAmount: string;
   notes: string;
-  bucket: string;
+  bucket: string; // Bucket name from CSV (will be mapped to fromBucket or toBucket)
+  fromBucket: string; // Bucket ID for from_bucket_id
+  toBucket: string; // Bucket ID for to_bucket_id
 }
 
 export function CsvImportFlow() {
@@ -36,15 +38,35 @@ export function CsvImportFlow() {
       const arrayBuffer = e.target?.result as ArrayBuffer;
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      // Try to decode as Shift-JIS first (common for Japanese CSV files)
+      // Try to decode with proper encoding detection
       let text: string;
-      try {
-        const decoder = new TextDecoder('shift-jis');
-        text = decoder.decode(uint8Array);
-      } catch {
-        // Fall back to UTF-8 if Shift-JIS fails
+
+      // Check for UTF-8 BOM (EF BB BF)
+      const hasUtf8Bom = uint8Array.length >= 3 &&
+        uint8Array[0] === 0xEF &&
+        uint8Array[1] === 0xBB &&
+        uint8Array[2] === 0xBF;
+
+      if (hasUtf8Bom) {
+        // If UTF-8 BOM is present, decode as UTF-8 and skip BOM
         const decoder = new TextDecoder('utf-8');
-        text = decoder.decode(uint8Array);
+        text = decoder.decode(uint8Array.slice(3));
+      } else {
+        // Try UTF-8 first (most common for Vietnamese and modern files)
+        try {
+          const decoder = new TextDecoder('utf-8', { fatal: true });
+          text = decoder.decode(uint8Array);
+        } catch {
+          // Fall back to Shift-JIS for Japanese files
+          try {
+            const decoder = new TextDecoder('shift-jis');
+            text = decoder.decode(uint8Array);
+          } catch {
+            // Final fallback to UTF-8 without fatal flag
+            const decoder = new TextDecoder('utf-8');
+            text = decoder.decode(uint8Array);
+          }
+        }
       }
 
       // Parse the decoded text
@@ -81,6 +103,7 @@ export function CsvImportFlow() {
     transactionDate: string;
     transactionAmount: string;
     notes: string;
+    bucket: string;
   }) => {
     // Map CSV data to transactions based on column mapping
     const mapped = csvData
@@ -88,7 +111,9 @@ export function CsvImportFlow() {
         transactionDate: row[mapping.transactionDate] || '',
         transactionAmount: row[mapping.transactionAmount] || '',
         notes: row[mapping.notes] || '',
-        bucket: '', // Default empty, user will select in preview
+        bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
+        fromBucket: '', // Will be auto-mapped in preview dialog
+        toBucket: '', // Will be auto-mapped in preview dialog
       }))
       .filter((t) => t.transactionDate && t.transactionAmount); // Filter out rows with missing required fields
 
