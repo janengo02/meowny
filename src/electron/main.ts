@@ -85,6 +85,15 @@ app.on('ready', () => {
   ipcMainHandle('db:deleteTransaction', async (args) => {
     return db.deleteTransaction(args as number);
   });
+  ipcMainHandle('db:checkDuplicateTransaction', async (args) => {
+    return db.checkDuplicateTransaction(args as {
+      transaction_date: string;
+      amount: number;
+      from_bucket_id: number | null;
+      to_bucket_id: number | null;
+      notes: string | null;
+    });
+  });
   ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
     return db.getValueHistoryWithTransactionsByBucket(args as number);
   });

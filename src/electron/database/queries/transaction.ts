@@ -183,3 +183,48 @@ export async function deleteTransaction(id: number): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function checkDuplicateTransaction(params: {
+  transaction_date: string;
+  amount: number;
+  from_bucket_id: number | null;
+  to_bucket_id: number | null;
+  notes: string | null;
+}): Promise<boolean> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  let query = supabase
+    .from('transaction')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('transaction_date', params.transaction_date)
+    .eq('amount', params.amount);
+
+  // Handle notes - can be null
+  if (params.notes === null) {
+    query = query.is('notes', null);
+  } else {
+    query = query.eq('notes', params.notes);
+  }
+
+  // Handle from_bucket_id - can be null
+  if (params.from_bucket_id === null) {
+    query = query.is('from_bucket_id', null);
+  } else {
+    query = query.eq('from_bucket_id', params.from_bucket_id);
+  }
+
+  // Handle to_bucket_id - can be null
+  if (params.to_bucket_id === null) {
+    query = query.is('to_bucket_id', null);
+  } else {
+    query = query.eq('to_bucket_id', params.to_bucket_id);
+  }
+
+  const { data, error } = await query.limit(1);
+
+  if (error) throw new Error(error.message);
+
+  return data !== null && data.length > 0;
+}

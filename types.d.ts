@@ -416,6 +416,7 @@ type EventPayloadMapping = {
   'db:createTransaction': Transaction;
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
+  'db:checkDuplicateTransaction': boolean;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:createBucketValueHistory': BucketValueHistory;
   'db:getAssetsValueHistory': BucketValueHistoryWithBucket[];
@@ -489,6 +490,13 @@ interface Window {
       params: UpdateTransactionParams,
     ) => Promise<Transaction>;
     deleteTransaction: (id: number) => Promise<void>;
+    checkDuplicateTransaction: (params: {
+      transaction_date: string;
+      amount: number;
+      from_bucket_id: number | null;
+      to_bucket_id: number | null;
+      notes: string | null;
+    }) => Promise<boolean>;
     getValueHistoryWithTransactionsByBucket: (
       bucketId: number,
     ) => Promise<ValueHistoryWithTransaction[]>;
