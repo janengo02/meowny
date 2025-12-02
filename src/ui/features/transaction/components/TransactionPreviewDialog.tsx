@@ -15,30 +15,23 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Select,
-  MenuItem,
-  FormControl,
   CircularProgress,
-  TextField,
-  Switch,
-  FormControlLabel,
-  Chip,
   Alert,
-  Checkbox,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { type MappedTransaction } from './CsvImportFlow';
 import { useAppSelector } from '../../../store/hooks';
-import { formatMoney } from '../../../shared/utils';
 import { useCreateTransactionMutation } from '../api/transactionApi';
+import { TransactionRow } from './TransactionRow';
 
 type ImportStatus =
   | 'validating'
   | 'ready'
+  | 'invalid'
   | 'duplicate_detected'
-  | 'error'
   | 'importing'
   | 'success'
+  | 'error'
   | 'duplicate_skipped'
   | 'duplicate_imported';
 
@@ -56,7 +49,7 @@ export function TransactionPreviewDialog({
   const buckets = useAppSelector((state) => state.bucket.buckets);
   const [createTransaction] = useCreateTransactionMutation();
   const [isImporting, setIsImporting] = useState(false);
-  const [duplicatesAllowed, setDuplicatesAllowed] = useState(false);
+  const [isImportComplete, setIsImportComplete] = useState(false);
   const [importStatuses, setImportStatuses] = useState<
     Record<number, ImportStatus>
   >({});
@@ -67,6 +60,180 @@ export function TransactionPreviewDialog({
   const [alertSeverity, setAlertSeverity] = useState<
     'success' | 'error' | 'info'
   >('info');
+
+
+
+
+  // Set edited transactions to the initial transactions
+  const [editedTransactions, setEditedTransactions] = useState<
+    MappedTransaction[]
+  >([]);
+
+  // Count transactions that will be imported
+  const importCount = useMemo(() => {
+    return editedTransactions.filter((_, index) => {
+      const shouldImport = shouldImportFlags[index] ?? true;
+      const isValidStatus = importStatuses[index] === 'ready' || importStatuses[index] === 'duplicate_detected';
+      return shouldImport && isValidStatus;
+    }).length;
+  }, [editedTransactions, importStatuses, shouldImportFlags]);
+
+  // Single handler for updating transaction fields
+  const handleUpdateTransaction = useCallback((
+    index: number,
+    field: keyof MappedTransaction,
+    value: string,
+  ) => {
+    setEditedTransactions((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  }, []);
+
+  const handleShouldImportChange = useCallback((index: number, shouldImport: boolean) => {
+    setShouldImportFlags((prev) => ({
+      ...prev,
+      [index]: shouldImport,
+    }));
+  }, []);
+
+  // Check if a transaction is a duplicate using the API
+  const checkDuplicate = useCallback(
+    async (
+      transactionDate: string,
+      amount: number,
+      fromBucketId: number | null,
+      toBucketId: number | null,
+      notes: string | null,
+    ): Promise<boolean> => {
+      try {
+        const isDuplicate = await window.electron.checkDuplicateTransaction({
+          transaction_date: transactionDate,
+          amount: amount,
+          from_bucket_id: fromBucketId,
+          to_bucket_id: toBucketId,
+          notes: notes,
+        });
+        return isDuplicate;
+      } catch (error) {
+        console.error('Error checking for duplicate:', error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  // Handler for status changes from child rows
+  const handleStatusChange = useCallback((index: number, status: ImportStatus) => {
+    setImportStatuses((prev) => ({
+      ...prev,
+      [index]: status,
+    }));
+  }, []);
+
+  const handleImport = async () => {
+    setIsImporting(true);
+    setAlertMessage(null); // Clear previous messages
+    let successCount = 0;
+    let skipCount = 0;
+    let errorCount = 0;
+
+    try {
+      // Import each transaction based on shouldImport flag
+      for (let index = 0; index < editedTransactions.length; index++) {
+        const transaction = editedTransactions[index];
+        const shouldImport = shouldImportFlags[index] ?? true;
+
+        // Skip if shouldImport is false
+        if (!shouldImport) {
+          skipCount++;
+          continue;
+        }
+
+        // Skip if no bucket selected
+        if (
+          !(
+            (transaction.fromBucket && transaction.fromBucket.trim() !== '') ||
+            (transaction.toBucket && transaction.toBucket.trim() !== '')
+          )
+        ) {
+          skipCount++;
+          continue;
+        }
+
+        try {
+          // Update status to importing
+          setImportStatuses((prev) => ({
+            ...prev,
+            [index]: 'importing',
+          }));
+
+          // Parse amount and remove any non-numeric characters (like commas, currency symbols)
+          const cleanAmount = transaction.transactionAmount.replace(
+            /[^\d.-]/g,
+            '',
+          );
+          const amount = Math.abs(parseFloat(cleanAmount) || 0);
+
+          const fromBucketId = transaction.fromBucket
+            ? parseInt(transaction.fromBucket)
+            : null;
+          const toBucketId = transaction.toBucket
+            ? parseInt(transaction.toBucket)
+            : null;
+          const notes = transaction.notes || null;
+
+          // Create transaction
+          await createTransaction({
+            from_bucket_id: fromBucketId,
+            to_bucket_id: toBucketId,
+            amount: amount,
+            transaction_date: transaction.transactionDate,
+            notes: notes,
+          }).unwrap();
+
+          setImportStatuses((prev) => ({
+            ...prev,
+            [index]: 'success',
+          }));
+          successCount++;
+        } catch (error) {
+          console.error('Error importing transaction:', error);
+          setImportStatuses((prev) => ({
+            ...prev,
+            [index]: 'error',
+          }));
+          errorCount++;
+        }
+      }
+
+      // Show success message or error
+      const messageParts = [`${successCount} imported`];
+      if (skipCount > 0) {
+        messageParts.push(`${skipCount} skipped`);
+      }
+      if (errorCount > 0) {
+        messageParts.push(`${errorCount} failed`);
+      }
+
+      const message = `Import completed: ${messageParts.join(', ')}`;
+      if (errorCount > 0) {
+        setAlertSeverity('error');
+      } else if (skipCount > 0) {
+        setAlertSeverity('info');
+      } else {
+        setAlertSeverity('success');
+      }
+      setAlertMessage(message);
+    } catch {
+      setAlertSeverity('error');
+      setAlertMessage('Failed to import transactions. Please try again.');
+    } finally {
+      setIsImporting(false);
+      setIsImportComplete(true);
+    }
+  };
 
   // Create a map of bucket name (lowercase) to bucket ID for quick lookup
   const bucketNameToIdMap = useMemo(() => {
@@ -98,285 +265,7 @@ export function TransactionPreviewDialog({
     });
   }, [transactions, bucketNameToIdMap]);
 
-  // Set edited transactions to the initial transactions
-  const [editedTransactions, setEditedTransactions] = useState<
-    MappedTransaction[]
-  >(initialMappedTransactions);
-
-  // Validation: Check if any transaction has should_import=true but no buckets selected
-  const hasValidationErrors = useMemo(() => {
-    return editedTransactions.some((transaction, index) => {
-      const shouldImport = shouldImportFlags[index] ?? true;
-      const hasNoBuckets =
-        (!transaction.fromBucket || transaction.fromBucket.trim() === '') &&
-        (!transaction.toBucket || transaction.toBucket.trim() === '');
-      return shouldImport && hasNoBuckets;
-    });
-  }, [editedTransactions, shouldImportFlags]);
-
-  // Count transactions that will be imported
-  const importCount = useMemo(() => {
-    return editedTransactions.filter((transaction, index) => {
-      const shouldImport = shouldImportFlags[index] ?? true;
-      const hasAtLeastOneBucket =
-        (transaction.fromBucket && transaction.fromBucket.trim() !== '') ||
-        (transaction.toBucket && transaction.toBucket.trim() !== '');
-      return shouldImport && hasAtLeastOneBucket;
-    }).length;
-  }, [editedTransactions, shouldImportFlags]);
-
-  const handleFromBucketChange = (index: number, bucketId: string) => {
-    const updated = [...editedTransactions];
-    updated[index] = { ...updated[index], fromBucket: bucketId };
-    setEditedTransactions(updated);
-    // Check for duplicates after change
-    checkAndUpdateDuplicateStatus(index, updated[index]);
-  };
-
-  const handleToBucketChange = (index: number, bucketId: string) => {
-    const updated = [...editedTransactions];
-    updated[index] = { ...updated[index], toBucket: bucketId };
-    setEditedTransactions(updated);
-    // Check for duplicates after change
-    checkAndUpdateDuplicateStatus(index, updated[index]);
-  };
-
-  const handleNotesChange = (index: number, notes: string) => {
-    const updated = [...editedTransactions];
-    updated[index] = { ...updated[index], notes };
-    setEditedTransactions(updated);
-    // Check for duplicates after change
-    checkAndUpdateDuplicateStatus(index, updated[index]);
-  };
-
-  const handleShouldImportChange = (index: number, shouldImport: boolean) => {
-    setShouldImportFlags((prev) => ({
-      ...prev,
-      [index]: shouldImport,
-    }));
-
-    // // Re-validate status with the new shouldImport value
-    // checkAndUpdateDuplicateStatus(
-    //   index,
-    //   editedTransactions[index],
-    //   shouldImport,
-    // );
-  };
-
-  // Check if a transaction is a duplicate using the API
-  const checkDuplicate = useCallback(
-    async (
-      transactionDate: string,
-      amount: number,
-      fromBucketId: number | null,
-      toBucketId: number | null,
-      notes: string | null,
-    ): Promise<boolean> => {
-      try {
-        const isDuplicate = await window.electron.checkDuplicateTransaction({
-          transaction_date: transactionDate,
-          amount: amount,
-          from_bucket_id: fromBucketId,
-          to_bucket_id: toBucketId,
-          notes: notes,
-        });
-        return isDuplicate;
-      } catch (error) {
-        console.error('Error checking for duplicate:', error);
-        return false;
-      }
-    },
-    [],
-  );
-
-  // Check and update duplicate status for a specific transaction
-  const checkAndUpdateDuplicateStatus = useCallback(
-    async (
-      index: number,
-      transaction: MappedTransaction,
-      shouldImportOverride?: boolean,
-    ) => {
-      // Check for validation errors first
-      const shouldImport =
-        shouldImportOverride ?? shouldImportFlags[index] ?? true;
-      const hasNoBuckets =
-        (!transaction.fromBucket || transaction.fromBucket.trim() === '') &&
-        (!transaction.toBucket || transaction.toBucket.trim() === '');
-
-      // If should_import is true and no buckets selected, set status to error
-      if (shouldImport && hasNoBuckets) {
-        setImportStatuses((prev) => ({
-          ...prev,
-          [index]: 'error',
-        }));
-        return;
-      }
-
-      // Only check duplicates if we have at least one bucket selected
-      if (!transaction.fromBucket && !transaction.toBucket) {
-        setImportStatuses((prev) => ({
-          ...prev,
-          [index]: 'ready',
-        }));
-        return;
-      }
-
-      // Set status to validating while checking
-      setImportStatuses((prev) => ({
-        ...prev,
-        [index]: 'validating',
-      }));
-
-      const cleanAmount = transaction.transactionAmount.replace(/[^\d.-]/g, '');
-      const amount = Math.abs(parseFloat(cleanAmount) || 0);
-      const fromBucketId = transaction.fromBucket
-        ? parseInt(transaction.fromBucket)
-        : null;
-      const toBucketId = transaction.toBucket
-        ? parseInt(transaction.toBucket)
-        : null;
-      const notes = transaction.notes || null;
-
-      const hasDuplicate = await checkDuplicate(
-        transaction.transactionDate,
-        amount,
-        fromBucketId,
-        toBucketId,
-        notes,
-      );
-
-      setImportStatuses((prev) => ({
-        ...prev,
-        [index]: hasDuplicate ? 'duplicate_detected' : 'ready',
-      }));
-
-      // Update shouldImport flag based on duplicate status and duplicatesAllowed
-      // Only update if we're not using an override (which means user manually changed it)
-      if (
-        hasDuplicate &&
-        !duplicatesAllowed &&
-        shouldImportOverride === undefined
-      ) {
-        setShouldImportFlags((prev) => ({
-          ...prev,
-          [index]: false,
-        }));
-      }
-    },
-    [shouldImportFlags, duplicatesAllowed, checkDuplicate],
-  );
-
-  const handleImport = async () => {
-    setIsImporting(true);
-    setAlertMessage(null); // Clear previous messages
-    let successCount = 0;
-    let skipCount = 0;
-    let errorCount = 0;
-
-    // Reset import statuses
-    const newStatuses: Record<number, ImportStatus> = {};
-    editedTransactions.forEach((_, index) => {
-      newStatuses[index] = 'ready';
-    });
-    setImportStatuses(newStatuses);
-
-    try {
-      // Import each transaction based on shouldImport flag
-      for (let index = 0; index < editedTransactions.length; index++) {
-        const transaction = editedTransactions[index];
-        const shouldImport = shouldImportFlags[index] ?? true;
-
-        // Skip if shouldImport is false
-        if (!shouldImport) {
-          newStatuses[index] = 'duplicate_skipped';
-          setImportStatuses({ ...newStatuses });
-          skipCount++;
-          continue;
-        }
-
-        // Skip if no bucket selected
-        if (
-          !(
-            (transaction.fromBucket && transaction.fromBucket.trim() !== '') ||
-            (transaction.toBucket && transaction.toBucket.trim() !== '')
-          )
-        ) {
-          newStatuses[index] = 'error';
-          setImportStatuses({ ...newStatuses });
-          skipCount++;
-          continue;
-        }
-
-        try {
-          // Update status to importing
-          newStatuses[index] = 'importing';
-          setImportStatuses({ ...newStatuses });
-
-          // Parse amount and remove any non-numeric characters (like commas, currency symbols)
-          const cleanAmount = transaction.transactionAmount.replace(
-            /[^\d.-]/g,
-            '',
-          );
-          const amount = Math.abs(parseFloat(cleanAmount) || 0);
-
-          const fromBucketId = transaction.fromBucket
-            ? parseInt(transaction.fromBucket)
-            : null;
-          const toBucketId = transaction.toBucket
-            ? parseInt(transaction.toBucket)
-            : null;
-          const notes = transaction.notes || null;
-
-          // Create transaction
-          await createTransaction({
-            from_bucket_id: fromBucketId,
-            to_bucket_id: toBucketId,
-            amount: amount,
-            transaction_date: transaction.transactionDate,
-            notes: notes,
-          }).unwrap();
-
-          newStatuses[index] = 'success';
-          setImportStatuses({ ...newStatuses });
-          successCount++;
-        } catch (error) {
-          console.error('Error importing transaction:', error);
-          newStatuses[index] = 'error';
-          setImportStatuses({ ...newStatuses });
-          errorCount++;
-        }
-      }
-
-      // Show success message or error
-      const messageParts = [`${successCount} imported`];
-      if (skipCount > 0) {
-        messageParts.push(`${skipCount} skipped`);
-      }
-      if (errorCount > 0) {
-        messageParts.push(`${errorCount} failed`);
-      }
-
-      const message = `Import completed: ${messageParts.join(', ')}`;
-      if (errorCount > 0) {
-        setAlertSeverity('error');
-      } else if (skipCount > 0) {
-        setAlertSeverity('info');
-      } else {
-        setAlertSeverity('success');
-      }
-      setAlertMessage(message);
-    } catch {
-      setAlertSeverity('error');
-      setAlertMessage('Failed to import transactions. Please try again.');
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   useEffect(() => {
-    setEditedTransactions(initialMappedTransactions);
-    // Reset alert message when transactions change
-    setAlertMessage(null);
     // Reset import statuses when transactions change
     const newStatuses: Record<number, ImportStatus> = {};
     const newShouldImportFlags: Record<number, boolean> = {};
@@ -384,87 +273,13 @@ export function TransactionPreviewDialog({
       newStatuses[index] = 'validating'; // Set to validating initially
       newShouldImportFlags[index] = true; // Initially all transactions should be imported
     });
+
+
+    setEditedTransactions(initialMappedTransactions);
     setImportStatuses(newStatuses);
     setShouldImportFlags(newShouldImportFlags);
-
-    // Check for duplicates on initial load
-    const checkAllDuplicates = async () => {
-      for (let index = 0; index < initialMappedTransactions.length; index++) {
-        const transaction = initialMappedTransactions[index];
-        const shouldImport = true; // Initially all are set to import
-        const hasNoBuckets =
-          (!transaction.fromBucket || transaction.fromBucket.trim() === '') &&
-          (!transaction.toBucket || transaction.toBucket.trim() === '');
-
-        // If should_import is true and no buckets selected, set status to error
-        if (shouldImport && hasNoBuckets) {
-          setImportStatuses((prev) => ({
-            ...prev,
-            [index]: 'error',
-          }));
-          continue;
-        }
-
-        // Only check duplicates if we have at least one bucket selected
-        if (!transaction.fromBucket && !transaction.toBucket) {
-          setImportStatuses((prev) => ({
-            ...prev,
-            [index]: 'ready',
-          }));
-          continue;
-        }
-
-        // Set status to validating while checking
-        setImportStatuses((prev) => ({
-          ...prev,
-          [index]: 'validating',
-        }));
-
-        const cleanAmount = transaction.transactionAmount.replace(
-          /[^\d.-]/g,
-          '',
-        );
-        const amount = Math.abs(parseFloat(cleanAmount) || 0);
-        const fromBucketId = transaction.fromBucket
-          ? parseInt(transaction.fromBucket)
-          : null;
-        const toBucketId = transaction.toBucket
-          ? parseInt(transaction.toBucket)
-          : null;
-        const notes = transaction.notes || null;
-
-        try {
-          const isDuplicate = await window.electron.checkDuplicateTransaction({
-            transaction_date: transaction.transactionDate,
-            amount: amount,
-            from_bucket_id: fromBucketId,
-            to_bucket_id: toBucketId,
-            notes: notes,
-          });
-
-          setImportStatuses((prev) => ({
-            ...prev,
-            [index]: isDuplicate ? 'duplicate_detected' : 'ready',
-          }));
-
-          // Update shouldImport flag based on duplicate status and duplicatesAllowed
-          if (isDuplicate && !duplicatesAllowed) {
-            setShouldImportFlags((prev) => ({
-              ...prev,
-              [index]: false,
-            }));
-          }
-        } catch (error) {
-          console.error('Error checking for duplicate:', error);
-          setImportStatuses((prev) => ({
-            ...prev,
-            [index]: 'ready',
-          }));
-        }
-      }
-    };
-    checkAllDuplicates();
-  }, [initialMappedTransactions, duplicatesAllowed]);
+    // Initial validation is now handled by each TransactionRow component on mount
+  }, [initialMappedTransactions]);
 
   return (
     <Dialog
@@ -493,24 +308,8 @@ export function TransactionPreviewDialog({
           <Typography variant="h2">Transaction Preview</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Review and assign buckets to {editedTransactions.length}{' '}
-            transaction(s)
+            transaction(s). Duplicate transactions will be automatically disabled.
           </Typography>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={duplicatesAllowed}
-                onChange={(e) => setDuplicatesAllowed(e.target.checked)}
-                disabled={isImporting}
-                size="small"
-              />
-            }
-            label={
-              <Typography variant="body2" color="text.secondary">
-                Allow duplicate transactions
-              </Typography>
-            }
-            sx={{ mt: 1 }}
-          />
         </Box>
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
@@ -518,15 +317,7 @@ export function TransactionPreviewDialog({
       </DialogTitle>
 
       <DialogContent sx={{ pt: 2 }}>
-        {alertMessage && (
-          <Alert
-            severity={alertSeverity}
-            onClose={() => setAlertMessage(null)}
-            sx={{ mb: 2 }}
-          >
-            {alertMessage}
-          </Alert>
-        )}
+
 
         <TableContainer
           component={Paper}
@@ -564,193 +355,28 @@ export function TransactionPreviewDialog({
             </TableHead>
             <TableBody>
               {editedTransactions.map((transaction, index) => {
-                const isDuplicate =
-                  importStatuses[index] === 'duplicate_detected';
-                const shouldImport = shouldImportFlags[index] ?? true;
-                const isCheckboxDisabled = isDuplicate && !duplicatesAllowed;
-                const hasNoBuckets =
-                  (!transaction.fromBucket ||
-                    transaction.fromBucket.trim() === '') &&
-                  (!transaction.toBucket || transaction.toBucket.trim() === '');
-                const showBucketError = shouldImport && hasNoBuckets;
+                const importingStatus = importStatuses[index];
 
                 return (
-                  <TableRow
+                  <TransactionRow
                     key={index}
-                    sx={{
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                      opacity: shouldImport ? 1 : 0.5,
-                    }}
-                  >
-                    <TableCell>
-                      <Checkbox
-                        checked={shouldImport}
-                        onChange={(e) =>
-                          handleShouldImportChange(index, e.target.checked)
-                        }
-                        disabled={isImporting || isCheckboxDisabled}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>{transaction.transactionDate}</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{
-                        color: (() => {
-                          const amount =
-                            parseFloat(
-                              transaction.transactionAmount.replace(
-                                /[^\d.-]/g,
-                                '',
-                              ),
-                            ) || 0;
-                          if (amount > 0) return 'success.main';
-                          if (amount < 0) return 'error.main';
-                          return 'inherit';
-                        })(),
-                        fontWeight: 500,
-                      }}
-                    >
-                      {formatMoney(
-                        parseFloat(
-                          transaction.transactionAmount.replace(/[^\d.-]/g, ''),
-                        ) || 0,
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        value={transaction.notes}
-                        onChange={(e) =>
-                          handleNotesChange(index, e.target.value)
-                        }
-                        variant="standard"
-                        size="small"
-                        fullWidth
-                        disabled={isImporting}
-                        placeholder="Add notes..."
-                        slotProps={{
-                          input: {
-                            disableUnderline: true,
-                          },
-                        }}
-                        sx={{
-                          maxWidth: 300,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <FormControl
-                        size="small"
-                        fullWidth
-                        error={showBucketError}
-                      >
-                        <Select
-                          value={transaction.fromBucket}
-                          onChange={(e) =>
-                            handleFromBucketChange(index, e.target.value)
-                          }
-                          displayEmpty
-                          disabled={isImporting}
-                        >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {buckets.map((bucket) => (
-                            <MenuItem
-                              key={bucket.id}
-                              value={bucket.id.toString()}
-                            >
-                              {bucket.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      <FormControl
-                        size="small"
-                        fullWidth
-                        error={showBucketError}
-                      >
-                        <Select
-                          value={transaction.toBucket}
-                          onChange={(e) =>
-                            handleToBucketChange(index, e.target.value)
-                          }
-                          displayEmpty
-                          disabled={isImporting}
-                        >
-                          <MenuItem value="">
-                            <em>None</em>
-                          </MenuItem>
-                          {buckets.map((bucket) => (
-                            <MenuItem
-                              key={bucket.id}
-                              value={bucket.id.toString()}
-                            >
-                              {bucket.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      {importStatuses[index] === 'validating' && (
-                        <Chip
-                          label="Validating..."
-                          size="small"
-                          variant="outlined"
-                          icon={<CircularProgress size={12} />}
-                        />
-                      )}
-                      {importStatuses[index] === 'ready' && (
-                        <Chip
-                          label="Ready"
-                          size="small"
-                          color="success"
-                          variant="outlined"
-                        />
-                      )}
-                      {importStatuses[index] === 'duplicate_detected' && (
-                        <Chip
-                          label="Duplicate Found"
-                          size="small"
-                          color="warning"
-                          variant="outlined"
-                        />
-                      )}
-                      {importStatuses[index] === 'importing' && (
-                        <Chip
-                          label="Importing..."
-                          size="small"
-                          color="info"
-                          icon={<CircularProgress size={12} />}
-                        />
-                      )}
-                      {importStatuses[index] === 'success' && (
-                        <Chip label="Imported" size="small" color="success" />
-                      )}
-                      {importStatuses[index] === 'duplicate_skipped' && (
-                        <Chip
-                          label="Duplicate Skipped"
-                          size="small"
-                          color="warning"
-                        />
-                      )}
-                      {importStatuses[index] === 'duplicate_imported' && (
-                        <Chip
-                          label="Duplicate Imported"
-                          size="small"
-                          color="info"
-                        />
-                      )}
-                      {importStatuses[index] === 'error' && (
-                        <Chip label="Error" size="small" color="error" />
-                      )}
-                    </TableCell>
-                  </TableRow>
+                    transaction={transaction}
+                    index={index}
+                    buckets={buckets}
+                    isImporting={isImporting}
+                    isImportComplete={isImportComplete}
+                    importingStatus={
+                      importingStatus === 'importing' ||
+                      importingStatus === 'success' ||
+                      importingStatus === 'error'
+                        ? importingStatus
+                        : undefined
+                    }
+                    onUpdateTransaction={handleUpdateTransaction}
+                    onStatusChange={handleStatusChange}
+                    onShouldImportChange={handleShouldImportChange}
+                    checkDuplicate={checkDuplicate}
+                  />
                 );
               })}
             </TableBody>
@@ -768,26 +394,44 @@ export function TransactionPreviewDialog({
             <Typography>No transactions to preview</Typography>
           </Box>
         )}
+
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} variant="outlined" disabled={isImporting}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleImport}
-          variant="contained"
-          disabled={
-            editedTransactions.length === 0 ||
-            isImporting ||
-            hasValidationErrors
-          }
-          startIcon={isImporting ? <CircularProgress size={16} /> : null}
-        >
-          {isImporting
-            ? 'Importing...'
-            : `Import Transactions (${importCount})`}
-        </Button>
+        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 2, alignItems: 'center', justifyContent: 'space-between', flex: 1 }}>
+        {alertMessage && (
+          <Alert
+            severity={alertSeverity}
+            onClose={() => setAlertMessage(null)}
+          >
+            {alertMessage}
+          </Alert>
+        )}
+        {isImportComplete ? (
+          <Button onClick={onClose} variant="contained">
+            Done
+          </Button>
+        ) : (
+          <>
+            <Button onClick={onClose} variant="outlined" disabled={isImporting}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleImport}
+              variant="contained"
+              disabled={
+                isImporting ||
+                importCount === 0
+              }
+              startIcon={isImporting ? <CircularProgress size={16} /> : null}
+            >
+              {isImporting
+                ? 'Importing...'
+                : `Import Transactions (${importCount})`}
+            </Button>
+          </>
+        )}
+        </Box>
       </DialogActions>
     </Dialog>
   );
