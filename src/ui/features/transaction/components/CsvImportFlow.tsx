@@ -9,13 +9,17 @@ export interface CsvRow {
   [key: string]: string;
 }
 
+// MappedTransaction now uses the same field names as TransactionFormData from transactionSchema
+// The bucket field is optional and only used during initial CSV mapping
 export interface MappedTransaction {
-  transactionDate: string;
-  transactionAmount: string;
-  notes: string;
-  bucket: string; // Bucket name from CSV (will be mapped to fromBucket or toBucket)
-  fromBucket: string; // Bucket ID for from_bucket_id
-  toBucket: string; // Bucket ID for to_bucket_id
+  transaction_date: string;
+  amount: string;
+  notes?: string; // Optional notes field
+  bucket?: string; // Optional: Bucket name from CSV (used only during initial mapping)
+  from_bucket_id?: string; // Bucket ID for from bucket
+  to_bucket_id?: string; // Bucket ID for to bucket
+  import_status: 'validating' | 'ready' | 'invalid' | 'duplicate_detected' | 'importing' | 'success' | 'error' | 'duplicate_skipped' | 'duplicate_imported';
+  should_import: boolean;
 }
 
 export function CsvImportFlow() {
@@ -108,14 +112,16 @@ export function CsvImportFlow() {
     // Map CSV data to transactions based on column mapping
     const mapped = csvData
       .map((row) => ({
-        transactionDate: row[mapping.transactionDate] || '',
-        transactionAmount: row[mapping.transactionAmount] || '',
+        transaction_date: row[mapping.transactionDate] || '',
+        amount: row[mapping.transactionAmount] || '',
         notes: row[mapping.notes] || '',
         bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
-        fromBucket: '', // Will be auto-mapped in preview dialog
-        toBucket: '', // Will be auto-mapped in preview dialog
+        from_bucket_id: '', // Will be auto-mapped in preview dialog
+        to_bucket_id: '', // Will be auto-mapped in preview dialog
+        import_status: 'validating' as const,
+        should_import: true,
       }))
-      .filter((t) => t.transactionDate && t.transactionAmount); // Filter out rows with missing required fields
+      .filter((t) => t.transaction_date && t.amount); // Filter out rows with missing required fields
 
     setMappedTransactions(mapped);
     setShowMappingDialog(false);

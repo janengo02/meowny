@@ -1,29 +1,23 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect } from 'react';
+import { TableRow, TableCell, Chip, CircularProgress } from '@mui/material';
 import {
-  TableRow,
-  TableCell,
-  Checkbox,
-  TextField,
-  FormControl,
-  Select,
-  MenuItem,
-  Chip,
-  CircularProgress,
-} from '@mui/material';
-import { type SelectChangeEvent } from '@mui/material';
+  useForm,
+  FormProvider,
+  useFormContext,
+  useWatch,
+} from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { type MappedTransaction } from './CsvImportFlow';
 import { formatMoney } from '../../../shared/utils';
-
-type ImportStatus =
-  | 'validating'
-  | 'ready'
-  | 'invalid'
-  | 'duplicate_detected'
-  | 'importing'
-  | 'success'
-  | 'error'
-  | 'duplicate_skipped'
-  | 'duplicate_imported';
+import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import { FormTextField } from '../../../shared/components/form/FormTextField';
+import { FormCheckbox } from '../../../shared/components/form/FormCheckbox';
+import {
+  transactionSchema,
+  type TransactionFormData,
+  type ImportStatus,
+} from '../schemas/transaction.schema';
+import { checkDuplicate } from '../utils/checkDuplicate';
 
 interface Bucket {
   id: number;
@@ -31,162 +25,129 @@ interface Bucket {
 }
 
 interface TransactionRowProps {
-  transaction: MappedTransaction;
+  initialTransaction: MappedTransaction;
   index: number;
   buckets: Bucket[];
-  isImporting: boolean;
-  isImportComplete: boolean;
-  importingStatus?: ImportStatus; // Optional: only used when parent triggers import
+  importingStatus?: 'importing' | 'success' | 'error'; // Status during/after import process
   onUpdateTransaction: (
     index: number,
-    field: keyof MappedTransaction,
-    value: string,
+    updatedFields: Partial<MappedTransaction>,
   ) => void;
-  onStatusChange: (index: number, status: ImportStatus) => void;
-  onShouldImportChange: (index: number, shouldImport: boolean) => void;
-  checkDuplicate: (
-    transactionDate: string,
-    amount: number,
-    fromBucketId: number | null,
-    toBucketId: number | null,
-    notes: string | null,
-  ) => Promise<boolean>;
 }
 
-export const TransactionRow = React.memo(
+// Inner component that uses FormContext
+const TransactionRowContent = React.memo(
   ({
-    transaction,
+    initialTransaction,
     index,
     buckets,
-    isImporting,
-    isImportComplete,
     importingStatus,
     onUpdateTransaction,
-    onStatusChange,
-    onShouldImportChange,
-    checkDuplicate,
   }: TransactionRowProps) => {
-    // Local state for uncontrolled inputs, status, and import flag
-    const [localNotes, setLocalNotes] = useState(transaction.notes);
-    const [localFromBucket, setLocalFromBucket] = useState(transaction.fromBucket);
-    const [localToBucket, setLocalToBucket] = useState(transaction.toBucket);
-    const [localStatus, setLocalStatus] = useState<ImportStatus>('validating');
-    const [shouldImport, setShouldImport] = useState(true);
+    const { setValue } = useFormContext<TransactionFormData>();
 
-    // Sync local status when parent updates it (e.g., during import)
-    React.useEffect(() => {
-      if (importingStatus === 'importing' || importingStatus === 'success' || importingStatus === 'error') {
-        setLocalStatus(importingStatus);
-      }
-    }, [importingStatus]);
+    const shouldImportWatch = useWatch({ name: 'should_import' });
+    const notesWatch = useWatch({ name: 'notes' });
+    const fromBucketIdWatch = useWatch({ name: 'from_bucket_id' });
+    const toBucketIdWatch = useWatch({ name: 'to_bucket_id' });
+    const importStatusWatch = useWatch({ name: 'import_status' });
 
-    // Run initial validation on mount
-    React.useEffect(() => {
-      validateTransaction(localNotes, localFromBucket, localToBucket);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only run on mount
+    const validateTransaction = useCallback(
+      async (
+        notesWatch: string,
+        fromBucketIdWatch: string,
+        toBucketIdWatch: string,
+      ) => {
+        // Validate transaction
+        const updatedFields = {
+          notes: notesWatch,
+          from_bucket_id: fromBucketIdWatch,
+          to_bucket_id: toBucketIdWatch,
+          import_status: 'validating' as ImportStatus,
+          should_import: true,
+        };
+        const hasNoBuckets =
+          (!fromBucketIdWatch || fromBucketIdWatch.trim() === '') &&
+          (!toBucketIdWatch || toBucketIdWatch.trim() === '');
 
-    // Auto-sync shouldImport based on status changes
-    React.useEffect(() => {
-      if (localStatus === 'ready') {
-        setShouldImport(true);
-        onShouldImportChange(index, true);
-      } else if (localStatus === 'invalid' || localStatus === 'duplicate_detected') {
-        setShouldImport(false);
-        onShouldImportChange(index, false);
-      }
-    }, [localStatus, index, onShouldImportChange]);
+        if (hasNoBuckets) {
+          setValue('import_status', 'invalid');
+          setValue('should_import', false);
+          updatedFields.import_status = 'invalid' as ImportStatus;
+          updatedFields.should_import = false;
+          onUpdateTransaction(index, updatedFields);
+          return;
+        }
+        setValue('import_status', 'validating');
+        const cleanAmount = initialTransaction.amount.replace(/[^\d.-]/g, '');
+        const amount = Math.abs(parseFloat(cleanAmount) || 0);
+        const fromBucketId = fromBucketIdWatch
+          ? parseInt(fromBucketIdWatch)
+          : null;
+        const toBucketId = toBucketIdWatch ? parseInt(toBucketIdWatch) : null;
+        const notesValue = notesWatch || null;
 
-    const hasNoBuckets =
-      (!localFromBucket || localFromBucket.trim() === '') &&
-      (!localToBucket || localToBucket.trim() === '');
-    const showBucketError = shouldImport && hasNoBuckets;
+        try {
+          const hasDuplicate = await checkDuplicate(
+            initialTransaction.transaction_date,
+            amount,
+            fromBucketId,
+            toBucketId,
+            notesValue,
+          );
+
+          const newStatus = hasDuplicate ? 'duplicate_detected' : 'ready';
+          const newShouldImportFlags = !hasDuplicate;
+          setValue('import_status', newStatus);
+          setValue('should_import', newShouldImportFlags);
+          updatedFields.import_status = newStatus as ImportStatus;
+          updatedFields.should_import = newShouldImportFlags;
+          onUpdateTransaction(index, updatedFields);
+        } catch (error) {
+          console.error('Error validating transaction:', error);
+          setValue('import_status', 'error');
+          setValue('should_import', false);
+          updatedFields.import_status = 'error' as ImportStatus;
+          updatedFields.should_import = false;
+          onUpdateTransaction(index, updatedFields);
+        }
+      },
+      [setValue, index, initialTransaction, onUpdateTransaction],
+    );
+
+    useEffect(() => {
+      if (importingStatus) return; // Skip validation if already importing or imported
+      validateTransaction(notesWatch, fromBucketIdWatch, toBucketIdWatch);
+    }, [
+      notesWatch,
+      fromBucketIdWatch,
+      toBucketIdWatch,
+      validateTransaction,
+      importingStatus,
+    ]);
 
     // Calculate if checkbox should be disabled - always disable duplicates
-    const isDuplicate = localStatus === 'duplicate_detected';
-    const isInvalid = localStatus === 'invalid';
-    const isCheckboxDisabled = isDuplicate || isInvalid;
+    const isDuplicate = importStatusWatch === 'duplicate_detected';
+    const isInvalid = importStatusWatch === 'invalid';
+    const isCheckboxDisabled = isDuplicate || isInvalid || !!importingStatus;
 
-    // Validation function - runs locally
-    const validateTransaction = async (
-      notes: string,
-      fromBucket: string,
-      toBucket: string,
-    ) => {
-      const hasNoBuckets =
-        (!fromBucket || fromBucket.trim() === '') &&
-        (!toBucket || toBucket.trim() === '');
-
-      if (hasNoBuckets) {
-        setLocalStatus('invalid');
-        onStatusChange(index, 'invalid');
-        return;
-      }
-
-      setLocalStatus('validating');
-      onStatusChange(index, 'validating');
-
-      const cleanAmount = transaction.transactionAmount.replace(/[^\d.-]/g, '');
-      const amount = Math.abs(parseFloat(cleanAmount) || 0);
-      const fromBucketId = fromBucket ? parseInt(fromBucket) : null;
-      const toBucketId = toBucket ? parseInt(toBucket) : null;
-      const notesValue = notes || null;
-
-      try {
-        const hasDuplicate = await checkDuplicate(
-          transaction.transactionDate,
-          amount,
-          fromBucketId,
-          toBucketId,
-          notesValue,
-        );
-
-        const newStatus = hasDuplicate ? 'duplicate_detected' : 'ready';
-        setLocalStatus(newStatus);
-        onStatusChange(index, newStatus);
-        // shouldImport will be auto-synced by useEffect
-      } catch (error) {
-        console.error('Error validating transaction:', error);
-        setLocalStatus('error');
-        onStatusChange(index, 'error');
-      }
-    };
+    const currentImportStatus = importingStatus || importStatusWatch;
 
     const handleShouldImportChange = (checked: boolean) => {
-      // Prevent enabling if duplicate detected
-      if (isDuplicate && checked) {
-        return;
-      }
-      setShouldImport(checked);
-      onShouldImportChange(index, checked);
+      const updatedFields = {
+        should_import: checked,
+      };
+      onUpdateTransaction(index, updatedFields);
     };
 
-    const handleNotesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setLocalNotes(value);
-      setTimeout(() => {
-        onUpdateTransaction(index, 'notes', value);
-        validateTransaction(value, localFromBucket, localToBucket);
-      }, 500);
-    };
-
-    const handleFromBucketChange = (event: SelectChangeEvent) => {
-      const value = event.target.value;
-      setLocalFromBucket(value);
-      setTimeout(() => {
-        onUpdateTransaction(index, 'fromBucket', value);
-        validateTransaction(localNotes, value, localToBucket);
-      }, 100);
-    };
-
-    const handleToBucketChange = (event: SelectChangeEvent) => {
-      const value = event.target.value;
-      setLocalToBucket(value);
-      setTimeout(() => {
-        onUpdateTransaction(index, 'toBucket', value);
-        validateTransaction(localNotes, localFromBucket, value);
-      }, 100);
-    };
+    // Convert buckets to options format for FormSelectField
+    const bucketOptions = [
+      { value: '', label: 'None' },
+      ...buckets.map((bucket) => ({
+        value: bucket.id.toString(),
+        label: bucket.name,
+      })),
+    ];
 
     return (
       <TableRow
@@ -194,26 +155,25 @@ export const TransactionRow = React.memo(
           '&:hover': {
             bgcolor: 'action.hover',
           },
-          opacity: shouldImport ? 1 : 0.5,
+          opacity: shouldImportWatch ? 1 : 0.5,
         }}
       >
         <TableCell>
-          <Checkbox
-            checked={shouldImport}
-            onChange={(e) => handleShouldImportChange(e.target.checked)}
-            disabled={isImporting || isImportComplete || isCheckboxDisabled}
+          <FormCheckbox
+            name="should_import"
+            onValueChange={handleShouldImportChange}
+            disabled={isCheckboxDisabled}
             size="small"
           />
         </TableCell>
-        <TableCell>{transaction.transactionDate}</TableCell>
+        <TableCell>{initialTransaction.transaction_date}</TableCell>
         <TableCell
           align="right"
           sx={{
             color: (() => {
               const amount =
-                parseFloat(
-                  transaction.transactionAmount.replace(/[^\d.-]/g, ''),
-                ) || 0;
+                parseFloat(initialTransaction.amount.replace(/[^\d.-]/g, '')) ||
+                0;
               if (amount > 0) return 'success.main';
               if (amount < 0) return 'error.main';
               return 'inherit';
@@ -222,18 +182,15 @@ export const TransactionRow = React.memo(
           }}
         >
           {formatMoney(
-            parseFloat(transaction.transactionAmount.replace(/[^\d.-]/g, '')) ||
-              0,
+            parseFloat(initialTransaction.amount.replace(/[^\d.-]/g, '')) || 0,
           )}
         </TableCell>
         <TableCell>
-          <TextField
-            value={localNotes}
-            onChange={handleNotesChange}
+          <FormTextField
+            name="notes"
             variant="standard"
             size="small"
-            fullWidth
-            disabled={isImporting || isImportComplete}
+            disabled={!!importingStatus}
             placeholder="Add notes..."
             slotProps={{
               input: {
@@ -246,45 +203,27 @@ export const TransactionRow = React.memo(
           />
         </TableCell>
         <TableCell>
-          <FormControl size="small" fullWidth error={showBucketError}>
-            <Select
-              value={localFromBucket}
-              onChange={handleFromBucketChange}
-              displayEmpty
-              disabled={isImporting || isImportComplete}
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {buckets.map((bucket) => (
-                <MenuItem key={bucket.id} value={bucket.id.toString()}>
-                  {bucket.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FormSelectField
+            name="from_bucket_id"
+            label=""
+            options={bucketOptions}
+            size="small"
+            displayEmpty
+            disabled={!!importingStatus}
+          />
         </TableCell>
         <TableCell>
-          <FormControl size="small" fullWidth error={showBucketError}>
-            <Select
-              value={localToBucket}
-              onChange={handleToBucketChange}
-              displayEmpty
-              disabled={isImporting || isImportComplete}
-            >
-              <MenuItem value="">
-                <em>None</em>
-              </MenuItem>
-              {buckets.map((bucket) => (
-                <MenuItem key={bucket.id} value={bucket.id.toString()}>
-                  {bucket.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <FormSelectField
+            name="to_bucket_id"
+            label=""
+            options={bucketOptions}
+            size="small"
+            displayEmpty
+            disabled={!!importingStatus}
+          />
         </TableCell>
         <TableCell>
-          {localStatus === 'validating' && (
+          {currentImportStatus === 'validating' && (
             <Chip
               label="Validating..."
               size="small"
@@ -292,7 +231,7 @@ export const TransactionRow = React.memo(
               icon={<CircularProgress size={12} />}
             />
           )}
-          {localStatus === 'ready' && (
+          {currentImportStatus === 'ready' && (
             <Chip
               label="Ready"
               size="small"
@@ -300,7 +239,7 @@ export const TransactionRow = React.memo(
               variant="outlined"
             />
           )}
-          {localStatus === 'duplicate_detected' && (
+          {currentImportStatus === 'duplicate_detected' && (
             <Chip
               label="Duplicate Found"
               size="small"
@@ -308,7 +247,7 @@ export const TransactionRow = React.memo(
               variant="outlined"
             />
           )}
-          {localStatus === 'importing' && (
+          {currentImportStatus === 'importing' && (
             <Chip
               label="Importing..."
               size="small"
@@ -316,27 +255,19 @@ export const TransactionRow = React.memo(
               icon={<CircularProgress size={12} />}
             />
           )}
-          {localStatus === 'success' && (
+          {currentImportStatus === 'success' && (
             <Chip label="Imported" size="small" color="success" />
           )}
-          {localStatus === 'duplicate_skipped' && (
-            <Chip
-              label="Duplicate Skipped"
-              size="small"
-              color="warning"
-            />
+          {currentImportStatus === 'duplicate_skipped' && (
+            <Chip label="Duplicate Skipped" size="small" color="warning" />
           )}
-          {localStatus === 'duplicate_imported' && (
-            <Chip
-              label="Duplicate Imported"
-              size="small"
-              color="info"
-            />
+          {currentImportStatus === 'duplicate_imported' && (
+            <Chip label="Duplicate Imported" size="small" color="info" />
           )}
-          {localStatus === 'invalid' && (
+          {currentImportStatus === 'invalid' && (
             <Chip label="Invalid" size="small" color="error" />
           )}
-          {localStatus === 'error' && (
+          {currentImportStatus === 'error' && (
             <Chip label="Error" size="small" color="error" />
           )}
         </TableCell>
@@ -344,5 +275,30 @@ export const TransactionRow = React.memo(
     );
   },
 );
+
+TransactionRowContent.displayName = 'TransactionRowContent';
+
+// Outer component that provides FormProvider
+export const TransactionRow = React.memo((props: TransactionRowProps) => {
+  const methods = useForm<TransactionFormData>({
+    resolver: zodResolver(transactionSchema),
+    mode: 'onChange',
+    defaultValues: {
+      transaction_date: props.initialTransaction.transaction_date,
+      amount: props.initialTransaction.amount,
+      notes: props.initialTransaction.notes || '',
+      from_bucket_id: props.initialTransaction.from_bucket_id,
+      to_bucket_id: props.initialTransaction.to_bucket_id,
+      import_status: props.initialTransaction.import_status,
+      should_import: props.initialTransaction.should_import,
+    },
+  });
+
+  return (
+    <FormProvider {...methods}>
+      <TransactionRowContent {...props} />
+    </FormProvider>
+  );
+});
 
 TransactionRow.displayName = 'TransactionRow';

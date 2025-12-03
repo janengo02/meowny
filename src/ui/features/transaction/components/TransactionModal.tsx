@@ -15,8 +15,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import {
-  transactionSchema,
-  type TransactionFormData,
+  baseTransactionSchema,
+  type BaseTransactionFormData,
 } from '../schemas/transaction.schema';
 import { useCreateTransactionMutation } from '../api/transactionApi';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
@@ -36,8 +36,8 @@ export function TransactionModal({
   const [createTransaction, { isLoading }] = useCreateTransactionMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
 
-  const form = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema),
+  const form = useForm<BaseTransactionFormData>({
+    resolver: zodResolver(baseTransactionSchema),
     mode: 'onChange',
     defaultValues: {
       from_bucket_id: '',
@@ -61,7 +61,7 @@ export function TransactionModal({
     }
   }, [open, bucketId, form]);
 
-  const onSubmit = async (data: TransactionFormData) => {
+  const onSubmit = async (data: BaseTransactionFormData) => {
     try {
       await createTransaction({
         from_bucket_id: data.from_bucket_id

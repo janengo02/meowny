@@ -1,19 +1,20 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Box,
   Typography,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 
 interface ColumnMappingDialogProps {
   open: boolean;
@@ -27,25 +28,67 @@ interface ColumnMappingDialogProps {
   }) => void;
 }
 
+// Validation schema - only transactionDate and transactionAmount are required
+const columnMappingSchema = z.object({
+  transactionDate: z.string().min(1, 'Transaction date column is required'),
+  transactionAmount: z.string().min(1, 'Transaction amount column is required'),
+  notes: z.string().optional(),
+  bucket: z.string().optional(),
+});
+
+type ColumnMappingFormData = z.infer<typeof columnMappingSchema>;
+
 export function ColumnMappingDialog({
   open,
   headers,
   onClose,
   onComplete,
 }: ColumnMappingDialogProps) {
-  const [transactionDate, setTransactionDate] = useState('');
-  const [transactionAmount, setTransactionAmount] = useState('');
-  const [notes, setNotes] = useState('');
-  const [bucket, setBucket] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleComplete = () => {
-    if (!transactionDate || !transactionAmount || !notes || !bucket) {
-      return;
+  const methods = useForm<ColumnMappingFormData>({
+    resolver: zodResolver(columnMappingSchema),
+    mode: 'onChange',
+    defaultValues: {
+      transactionDate: '',
+      transactionAmount: '',
+      notes: '',
+      bucket: '',
+    },
+  });
+
+  const {
+    handleSubmit,
+    formState: { isValid },
+  } = methods;
+
+  const onSubmit = async (data: ColumnMappingFormData) => {
+    setIsProcessing(true);
+    try {
+      // Use setTimeout to allow UI to update before heavy processing
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      onComplete({
+        transactionDate: data.transactionDate,
+        transactionAmount: data.transactionAmount,
+        notes: data.notes || '',
+        bucket: data.bucket || '',
+      });
+    } finally {
+      setIsProcessing(false);
     }
-    onComplete({ transactionDate, transactionAmount, notes, bucket });
   };
 
-  const isValid = transactionDate && transactionAmount && notes && bucket;
+  // Convert headers to options format
+  const headerOptions = useMemo(
+    () => [
+      { value: '', label: 'Select a column' },
+      ...headers.map((header) => ({
+        value: header,
+        label: header,
+      })),
+    ],
+    [headers],
+  );
 
   return (
     <Dialog
@@ -75,130 +118,63 @@ export function ColumnMappingDialog({
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ pt: 2 }}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          Map your CSV columns to the following fields:
-        </Typography>
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <DialogContent sx={{ pt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Map your CSV columns to the following fields:
+            </Typography>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <FormControl fullWidth>
-            <InputLabel>Transaction Date</InputLabel>
-            <Select
-              value={transactionDate}
-              label="Transaction Date"
-              onChange={(e) => setTransactionDate(e.target.value)}
-              MenuProps={{
-                sx: {
-                  '& .MuiPaper-root': {
-                    fontFamily:
-                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                  },
-                },
-              }}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <FormSelectField
+                name="transactionDate"
+                label="Transaction Date"
+                options={headerOptions}
+                disabled={isProcessing}
+              />
+
+              <FormSelectField
+                name="transactionAmount"
+                label="Transaction Amount"
+                options={headerOptions}
+                disabled={isProcessing}
+              />
+
+              <FormSelectField
+                name="notes"
+                label="Notes (Optional)"
+                options={headerOptions}
+                disabled={isProcessing}
+              />
+
+              <FormSelectField
+                name="bucket"
+                label="Bucket (Optional)"
+                options={headerOptions}
+                disabled={isProcessing}
+              />
+            </Box>
+          </DialogContent>
+
+          <DialogActions sx={{ px: 3, pb: 3 }}>
+            <Button
+              onClick={onClose}
+              variant="outlined"
+              disabled={isProcessing}
             >
-              <MenuItem value="">
-                <em>Select a column</em>
-              </MenuItem>
-              {headers.map((header) => (
-                <MenuItem key={header} value={header}>
-                  {header}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Transaction Amount</InputLabel>
-            <Select
-              value={transactionAmount}
-              label="Transaction Amount"
-              onChange={(e) => setTransactionAmount(e.target.value)}
-              MenuProps={{
-                sx: {
-                  '& .MuiPaper-root': {
-                    fontFamily:
-                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                  },
-                },
-              }}
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!isValid || isProcessing}
+              startIcon={isProcessing ? <CircularProgress size={16} /> : null}
             >
-              <MenuItem value="">
-                <em>Select a column</em>
-              </MenuItem>
-              {headers.map((header) => (
-                <MenuItem key={header} value={header}>
-                  {header}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Notes</InputLabel>
-            <Select
-              value={notes}
-              label="Notes"
-              onChange={(e) => setNotes(e.target.value)}
-              MenuProps={{
-                sx: {
-                  '& .MuiPaper-root': {
-                    fontFamily:
-                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                  },
-                },
-              }}
-            >
-              <MenuItem value="">
-                <em>Select a column</em>
-              </MenuItem>
-              {headers.map((header) => (
-                <MenuItem key={header} value={header}>
-                  {header}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          <FormControl fullWidth>
-            <InputLabel>Bucket</InputLabel>
-            <Select
-              value={bucket}
-              label="Bucket"
-              onChange={(e) => setBucket(e.target.value)}
-              MenuProps={{
-                sx: {
-                  '& .MuiPaper-root': {
-                    fontFamily:
-                      '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                  },
-                },
-              }}
-            >
-              <MenuItem value="">
-                <em>Select a column</em>
-              </MenuItem>
-              {headers.map((header) => (
-                <MenuItem key={header} value={header}>
-                  {header}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} variant="outlined">
-          Cancel
-        </Button>
-        <Button
-          onClick={handleComplete}
-          variant="contained"
-          disabled={!isValid}
-        >
-          Next
-        </Button>
-      </DialogActions>
+              {isProcessing ? 'Processing...' : 'Next'}
+            </Button>
+          </DialogActions>
+        </form>
+      </FormProvider>
     </Dialog>
   );
 }
