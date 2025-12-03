@@ -1,5 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
+import { getLatestBucketValueHistory } from './bucketValueHistory.js';
 
 export async function createBucket(
   params: CreateBucketParams,
@@ -111,4 +112,24 @@ export async function deleteBucket(id: number): Promise<void> {
     .eq('user_id', userId);
 
   if (error) throw new Error(error.message);
+}
+
+export async function updateBucketFromLatestHistory(
+  bucketId: number,
+): Promise<void> {
+  const latestHistory = await getLatestBucketValueHistory(bucketId);
+
+  if (!latestHistory) {
+    // No history records exist, reset bucket to 0
+    await updateBucket(bucketId, {
+      contributed_amount: 0,
+      market_value: 0,
+    });
+    return;
+  }
+
+  await updateBucket(bucketId, {
+    contributed_amount: latestHistory.contributed_amount,
+    market_value: latestHistory.market_value,
+  });
 }

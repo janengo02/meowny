@@ -13,7 +13,6 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { z } from 'zod';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
-import { useUpdateBucketMutation } from '../api/bucketApi';
 import { useCreateBucketValueHistoryMutation } from '../api/bucketValueHistoryApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 
@@ -28,7 +27,6 @@ type MarketValueFormData = z.infer<typeof marketValueSchema>;
 interface MarketValueModalProps {
   bucketId: number;
   currentMarketValue: number;
-  currentContributedAmount: number;
   open: boolean;
   onClose: () => void;
 }
@@ -36,16 +34,13 @@ interface MarketValueModalProps {
 export function MarketValueModal({
   bucketId,
   currentMarketValue,
-  currentContributedAmount,
   open,
   onClose,
 }: MarketValueModalProps) {
-  const [updateBucket, { isLoading: isUpdatingBucket }] =
-    useUpdateBucketMutation();
   const [createBucketValueHistory, { isLoading: isCreatingHistory }] =
     useCreateBucketValueHistoryMutation();
 
-  const isLoading = isUpdatingBucket || isCreatingHistory;
+  const isLoading = isCreatingHistory;
 
   const form = useForm<MarketValueFormData>({
     resolver: zodResolver(marketValueSchema),
@@ -74,19 +69,10 @@ export function MarketValueModal({
       // Create bucket value history record
       await createBucketValueHistory({
         bucket_id: bucketId,
-        contributed_amount: currentContributedAmount,
         market_value: newMarketValue,
         recorded_at: new Date(data.recorded_at).toISOString(),
         source_type: 'market',
         notes: data.notes || null,
-      }).unwrap();
-
-      // Update bucket market value
-      await updateBucket({
-        id: bucketId,
-        params: {
-          market_value: newMarketValue,
-        },
       }).unwrap();
 
       form.reset();
@@ -147,7 +133,7 @@ export function MarketValueModal({
                 label="Recorded Date & Time (Tokyo)"
                 type="datetime-local"
                 InputLabelProps={{ shrink: true }}
-                slotProps={{ htmlInput: { readOnly: true, step: 1 } }}
+                slotProps={{ htmlInput: { step: 1 } }}
               />
 
               <FormTextField name="notes" label="Notes" multiline rows={3} />

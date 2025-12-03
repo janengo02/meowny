@@ -159,7 +159,7 @@ export function TransactionModal({
                 label="Transaction Date & Time (Tokyo)"
                 type="datetime-local"
                 InputLabelProps={{ shrink: true }}
-                slotProps={{ htmlInput: { readOnly: true, step: 1 } }}
+                slotProps={{ htmlInput: { step: 1 } }}
               />
 
               {/* Notes */}

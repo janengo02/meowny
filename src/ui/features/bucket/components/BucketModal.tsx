@@ -461,7 +461,6 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
       <MarketValueModal
         bucketId={bucketId}
         currentMarketValue={bucket.market_value}
-        currentContributedAmount={bucket.contributed_amount}
         open={marketValueModalOpen}
         onClose={() => setMarketValueModalOpen(false)}
       />

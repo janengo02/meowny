@@ -40,7 +40,10 @@ function DashboardContent() {
             display: 'flex',
           }}
         >
-          <Container maxWidth="xl" sx={{ py: 4, flexShrink: 0, flexGrow: 0, width: '100%' }}>
+          <Container
+            maxWidth="xl"
+            sx={{ py: 4, flexShrink: 0, flexGrow: 0, width: '100%' }}
+          >
             {error && (
               <Alert severity="error" sx={{ mb: 3 }}>
                 {error}
@@ -55,10 +58,18 @@ function DashboardContent() {
             {/* 2. Left: Saving buckets, Right: Investment buckets */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <BucketList type="saving" title="Saving Buckets" onModalOpenChange={setIsModalOpen} />
+                <BucketList
+                  type="saving"
+                  title="Saving Buckets"
+                  onModalOpenChange={setIsModalOpen}
+                />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <BucketList type="investment" title="Investment Buckets" onModalOpenChange={setIsModalOpen} />
+                <BucketList
+                  type="investment"
+                  title="Investment Buckets"
+                  onModalOpenChange={setIsModalOpen}
+                />
               </Grid>
             </Grid>
 
@@ -81,7 +92,11 @@ function DashboardContent() {
             </Grid>
 
             {/* 4. Expense buckets */}
-            <BucketList type="expense" title="Expense Buckets" onModalOpenChange={setIsModalOpen} />
+            <BucketList
+              type="expense"
+              title="Expense Buckets"
+              onModalOpenChange={setIsModalOpen}
+            />
 
             {/* 5. Left: Income chart, Right: Income Vs Saving chart */}
             <Grid container spacing={3} sx={{ mb: 4 }}>

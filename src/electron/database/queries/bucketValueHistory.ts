@@ -1,5 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
+import { updateBucketFromLatestHistory } from './bucket.js';
 
 export async function createBucketValueHistory(
   params: CreateBucketValueHistoryParams,
@@ -14,14 +15,34 @@ export async function createBucketValueHistory(
     throw new Error('Source type is required');
   }
 
+  const recordedAt = params.recorded_at ?? new Date().toISOString();
+
+  // Determine contributed_amount based on source_type and previous record
+  let contributedAmount: number;
+
+  if (
+    params.contributed_amount !== undefined &&
+    params.contributed_amount !== null
+  ) {
+    // If explicitly provided, use it
+    contributedAmount = params.contributed_amount;
+  } else {
+    // Otherwise, get from previous record (or 0 if no previous record)
+    const previousRecord = await getLastBucketValueHistoryBefore(
+      params.bucket_id,
+      recordedAt,
+    );
+    contributedAmount = previousRecord ? previousRecord.contributed_amount : 0;
+  }
+
   const { data, error } = await supabase
     .from('bucket_value_history')
     .insert({
       user_id: userId,
       bucket_id: params.bucket_id,
-      contributed_amount: params.contributed_amount ?? 0,
+      contributed_amount: contributedAmount,
       market_value: params.market_value ?? 0,
-      recorded_at: params.recorded_at ?? new Date().toISOString(),
+      recorded_at: recordedAt,
       source_type: params.source_type,
       source_id: params.source_id ?? null,
       notes: params.notes ?? null,
@@ -30,6 +51,16 @@ export async function createBucketValueHistory(
     .single();
 
   if (error) throw new Error(error.message);
+
+  // If this is a market update, adjust subsequent records
+  if (params.source_type === 'market') {
+    await adjustBucketValueHistoryForHistoricalMarket(
+      params.bucket_id,
+      recordedAt,
+      params.market_value ?? 0,
+    );
+  }
+
   return data;
 }
 
@@ -175,4 +206,103 @@ export async function getAssetsValueHistory(): Promise<
   if (error) throw new Error(error.message);
 
   return data;
+}
+
+export async function getLastBucketValueHistoryBefore(
+  bucketId: number,
+  beforeDate: string,
+): Promise<BucketValueHistory | null> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('user_id', userId)
+    .eq('bucket_id', bucketId)
+    .lt('recorded_at', beforeDate)
+    .order('recorded_at', { ascending: false })
+    .limit(1);
+
+  if (error) throw new Error(error.message);
+  return data && data.length > 0 ? data[0] : null;
+}
+
+export async function getBucketValueHistoriesAfter(
+  bucketId: number,
+  afterDate: string,
+): Promise<BucketValueHistory[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('user_id', userId)
+    .eq('bucket_id', bucketId)
+    .gt('recorded_at', afterDate)
+    .order('recorded_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function getLatestBucketValueHistory(
+  bucketId: number,
+): Promise<BucketValueHistory | null> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('user_id', userId)
+    .eq('bucket_id', bucketId)
+    .order('recorded_at', { ascending: false })
+    .limit(1);
+
+  if (error) throw new Error(error.message);
+  return data && data.length > 0 ? data[0] : null;
+}
+
+async function adjustBucketValueHistoryForHistoricalMarket(
+  bucketId: number,
+  recordedAt: string,
+  newMarketValue: number,
+): Promise<void> {
+  // Get all records after this one
+  const recordsAfter = await getBucketValueHistoriesAfter(bucketId, recordedAt);
+
+  if (recordsAfter.length > 0) {
+    // Get the previous record to calculate the market value change
+    const previousRecord = await getLastBucketValueHistoryBefore(
+      bucketId,
+      recordedAt,
+    );
+
+    // Calculate the market value change
+    const marketValueChange = previousRecord
+      ? newMarketValue - previousRecord.market_value
+      : newMarketValue;
+
+    // Adjust subsequent records until we encounter another 'market' source_type
+    for (const record of recordsAfter) {
+      if (record.source_type === 'market') {
+        // Stop adjusting when we encounter the next market update
+        break;
+      }
+
+      // Adjust the market_value
+      const adjustedMarketValue = record.market_value + marketValueChange;
+      const normalizedMarketValue =
+        adjustedMarketValue < 0 ? 0 : adjustedMarketValue;
+
+      await updateBucketValueHistory(record.id, {
+        market_value: normalizedMarketValue,
+      });
+    }
+  }
+
+  // Update the bucket table with the latest values
+  await updateBucketFromLatestHistory(bucketId);
 }
