@@ -21,6 +21,7 @@ import {
 import { useCreateTransactionMutation } from '../api/transactionApi';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 import { getTokyoDateTime } from '../../../shared/utils';
+import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 
 interface TransactionModalProps {
   bucketId?: number;
@@ -42,7 +43,7 @@ export function TransactionModal({
     defaultValues: {
       from_bucket_id: '',
       to_bucket_id: bucketId ? String(bucketId) : '',
-      amount: '',
+      amount: 0,
       transaction_date: getTokyoDateTime(),
       notes: '',
     },
@@ -54,7 +55,7 @@ export function TransactionModal({
       form.reset({
         from_bucket_id: '',
         to_bucket_id: bucketId ? String(bucketId) : '',
-        amount: '',
+        amount: 0,
         transaction_date: getTokyoDateTime(),
         notes: '',
       });
@@ -68,7 +69,7 @@ export function TransactionModal({
           ? parseInt(data.from_bucket_id)
           : null,
         to_bucket_id: data.to_bucket_id ? parseInt(data.to_bucket_id) : null,
-        amount: parseFloat(data.amount),
+        amount: data.amount || 0,
         transaction_date: new Date(data.transaction_date).toISOString(),
         notes: data.notes || null,
       }).unwrap();
@@ -146,12 +147,7 @@ export function TransactionModal({
               </Grid>
 
               {/* Amount */}
-              <FormTextField
-                name="amount"
-                label="Amount"
-                type="number"
-                inputProps={{ min: 0, step: 0.01 }}
-              />
+              <FormMoneyInput name="amount" allowNegative={false} />
 
               {/* Transaction Date */}
               <FormTextField

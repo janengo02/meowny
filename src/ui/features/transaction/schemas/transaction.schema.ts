@@ -17,11 +17,8 @@ export const baseTransactionSchema = z
     from_bucket_id: z.string().optional(),
     to_bucket_id: z.string().optional(),
     amount: z
-      .string()
-      .min(1, { message: 'Amount is required' })
-      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
-        message: 'Amount must be greater than 0',
-      }),
+      .number({ message: 'Amount is required' })
+      .positive({ message: 'Amount must be greater than 0' }),
     transaction_date: z.string().min(1, { message: 'Date is required' }),
     notes: z.string().optional(),
   })

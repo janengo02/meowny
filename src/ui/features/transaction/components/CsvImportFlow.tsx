@@ -4,6 +4,8 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
 import { ColumnMappingDialog } from './ColumnMappingDialog';
 import { TransactionPreviewDialog } from './TransactionPreviewDialog';
+import type { ImportStatus } from '../schemas/transaction.schema';
+import { sanitizeMoneyInput } from '../../../shared/utils/formatMoney';
 
 export interface CsvRow {
   [key: string]: string;
@@ -13,12 +15,12 @@ export interface CsvRow {
 // The bucket field is optional and only used during initial CSV mapping
 export interface MappedTransaction {
   transaction_date: string;
-  amount: string;
+  amount: number;
   notes?: string; // Optional notes field
   bucket?: string; // Optional: Bucket name from CSV (used only during initial mapping)
   from_bucket_id?: string; // Bucket ID for from bucket
   to_bucket_id?: string; // Bucket ID for to bucket
-  import_status: 'validating' | 'ready' | 'invalid' | 'duplicate_detected' | 'importing' | 'success' | 'error' | 'duplicate_skipped' | 'duplicate_imported';
+  import_status: ImportStatus;
   should_import: boolean;
 }
 
@@ -46,10 +48,11 @@ export function CsvImportFlow() {
       let text: string;
 
       // Check for UTF-8 BOM (EF BB BF)
-      const hasUtf8Bom = uint8Array.length >= 3 &&
-        uint8Array[0] === 0xEF &&
-        uint8Array[1] === 0xBB &&
-        uint8Array[2] === 0xBF;
+      const hasUtf8Bom =
+        uint8Array.length >= 3 &&
+        uint8Array[0] === 0xef &&
+        uint8Array[1] === 0xbb &&
+        uint8Array[2] === 0xbf;
 
       if (hasUtf8Bom) {
         // If UTF-8 BOM is present, decode as UTF-8 and skip BOM
@@ -111,16 +114,21 @@ export function CsvImportFlow() {
   }) => {
     // Map CSV data to transactions based on column mapping
     const mapped = csvData
-      .map((row) => ({
-        transaction_date: row[mapping.transactionDate] || '',
-        amount: row[mapping.transactionAmount] || '',
-        notes: row[mapping.notes] || '',
-        bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
-        from_bucket_id: '', // Will be auto-mapped in preview dialog
-        to_bucket_id: '', // Will be auto-mapped in preview dialog
-        import_status: 'validating' as const,
-        should_import: true,
-      }))
+      .map((row) => {
+        // Parse amount string to number, removing any currency symbols and commas
+        const amount = sanitizeMoneyInput(row[mapping.transactionAmount] || '');
+
+        return {
+          transaction_date: row[mapping.transactionDate] || '',
+          amount: amount,
+          notes: row[mapping.notes] || '',
+          bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
+          from_bucket_id: '', // Will be auto-mapped in preview dialog
+          to_bucket_id: '', // Will be auto-mapped in preview dialog
+          import_status: 'validating' as ImportStatus,
+          should_import: true,
+        };
+      })
       .filter((t) => t.transaction_date && t.amount); // Filter out rows with missing required fields
 
     setMappedTransactions(mapped);

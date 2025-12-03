@@ -8,10 +8,10 @@ import {
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type MappedTransaction } from './CsvImportFlow';
-import { formatMoney } from '../../../shared/utils';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormCheckbox } from '../../../shared/components/form/FormCheckbox';
+import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import {
   transactionSchema,
   type TransactionFormData,
@@ -38,39 +38,45 @@ interface TransactionRowProps {
 // Inner component that uses FormContext
 const TransactionRowContent = React.memo(
   ({
-    initialTransaction,
     index,
     buckets,
     importingStatus,
     onUpdateTransaction,
   }: TransactionRowProps) => {
-    const { setValue } = useFormContext<TransactionFormData>();
+    const { setValue, trigger } = useFormContext<TransactionFormData>();
 
     const shouldImportWatch = useWatch({ name: 'should_import' });
     const notesWatch = useWatch({ name: 'notes' });
     const fromBucketIdWatch = useWatch({ name: 'from_bucket_id' });
     const toBucketIdWatch = useWatch({ name: 'to_bucket_id' });
     const importStatusWatch = useWatch({ name: 'import_status' });
+    const transactionDateWatch = useWatch({ name: 'transaction_date' });
+    const amountWatch = useWatch({ name: 'amount' }); // Still needed for validation
 
     const validateTransaction = useCallback(
       async (
+        transactionDateWatch: string,
+        amountWatch: number,
         notesWatch: string,
         fromBucketIdWatch: string,
         toBucketIdWatch: string,
       ) => {
         // Validate transaction
         const updatedFields = {
+          transaction_date: new Date(transactionDateWatch).toISOString(),
+          amount: amountWatch,
           notes: notesWatch,
           from_bucket_id: fromBucketIdWatch,
           to_bucket_id: toBucketIdWatch,
           import_status: 'validating' as ImportStatus,
           should_import: true,
         };
-        const hasNoBuckets =
-          (!fromBucketIdWatch || fromBucketIdWatch.trim() === '') &&
-          (!toBucketIdWatch || toBucketIdWatch.trim() === '');
 
-        if (hasNoBuckets) {
+        // Trigger validation and get the latest errors state
+        const isValid = await trigger();
+        const hasFormErrors = !isValid;
+
+        if (hasFormErrors) {
           setValue('import_status', 'invalid');
           setValue('should_import', false);
           updatedFields.import_status = 'invalid' as ImportStatus;
@@ -79,8 +85,7 @@ const TransactionRowContent = React.memo(
           return;
         }
         setValue('import_status', 'validating');
-        const cleanAmount = initialTransaction.amount.replace(/[^\d.-]/g, '');
-        const amount = Math.abs(parseFloat(cleanAmount) || 0);
+        const amount = Math.abs(amountWatch);
         const fromBucketId = fromBucketIdWatch
           ? parseInt(fromBucketIdWatch)
           : null;
@@ -89,7 +94,7 @@ const TransactionRowContent = React.memo(
 
         try {
           const hasDuplicate = await checkDuplicate(
-            initialTransaction.transaction_date,
+            new Date(transactionDateWatch).toISOString(),
             amount,
             fromBucketId,
             toBucketId,
@@ -112,13 +117,21 @@ const TransactionRowContent = React.memo(
           onUpdateTransaction(index, updatedFields);
         }
       },
-      [setValue, index, initialTransaction, onUpdateTransaction],
+      [setValue, index, onUpdateTransaction, trigger],
     );
 
     useEffect(() => {
       if (importingStatus) return; // Skip validation if already importing or imported
-      validateTransaction(notesWatch, fromBucketIdWatch, toBucketIdWatch);
+      validateTransaction(
+        transactionDateWatch,
+        amountWatch,
+        notesWatch,
+        fromBucketIdWatch,
+        toBucketIdWatch,
+      );
     }, [
+      transactionDateWatch,
+      amountWatch,
       notesWatch,
       fromBucketIdWatch,
       toBucketIdWatch,
@@ -166,24 +179,26 @@ const TransactionRowContent = React.memo(
             size="small"
           />
         </TableCell>
-        <TableCell>{initialTransaction.transaction_date}</TableCell>
-        <TableCell
-          align="right"
-          sx={{
-            color: (() => {
-              const amount =
-                parseFloat(initialTransaction.amount.replace(/[^\d.-]/g, '')) ||
-                0;
-              if (amount > 0) return 'success.main';
-              if (amount < 0) return 'error.main';
-              return 'inherit';
-            })(),
-            fontWeight: 500,
-          }}
-        >
-          {formatMoney(
-            parseFloat(initialTransaction.amount.replace(/[^\d.-]/g, '')) || 0,
-          )}
+        <TableCell>
+          <FormTextField
+            name="transaction_date"
+            type="datetime-local"
+            variant="standard"
+            size="small"
+            disabled={!!importingStatus}
+            slotProps={{
+              input: {
+                disableUnderline: true,
+              },
+            }}
+          />
+        </TableCell>
+        <TableCell align="right">
+          <FormMoneyInput
+            name="amount"
+            disabled={!!importingStatus}
+            allowNegative={false}
+          />
         </TableCell>
         <TableCell>
           <FormTextField
@@ -197,9 +212,6 @@ const TransactionRowContent = React.memo(
                 disableUnderline: true,
               },
             }}
-            sx={{
-              maxWidth: 300,
-            }}
           />
         </TableCell>
         <TableCell>
@@ -210,6 +222,9 @@ const TransactionRowContent = React.memo(
             size="small"
             displayEmpty
             disabled={!!importingStatus}
+            sx={{
+              opacity: fromBucketIdWatch ? 1 : 0.5,
+            }}
           />
         </TableCell>
         <TableCell>
@@ -220,6 +235,9 @@ const TransactionRowContent = React.memo(
             size="small"
             displayEmpty
             disabled={!!importingStatus}
+            sx={{
+              opacity: toBucketIdWatch ? 1 : 0.5,
+            }}
           />
         </TableCell>
         <TableCell>

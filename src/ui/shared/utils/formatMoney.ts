@@ -12,16 +12,14 @@ interface FormatMoneyOptions {
  */
 export function formatMoney(
   value: number,
-  options: FormatMoneyOptions = {}
+  options: FormatMoneyOptions = {},
 ): string {
-  const {
-    currency = '￥',
-    decimals = 0,
-    showSign = false,
-  } = options;
+  const { currency = '￥', decimals = 0, showSign = false } = options;
 
   const sign = showSign && value > 0 ? '+' : '';
-  const formattedValue = value.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const formattedValue = value
+    .toFixed(decimals)
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
   return `${sign}${currency}${formattedValue}`;
 }
@@ -36,8 +34,14 @@ export function formatMoney(
 export function formatPercent(
   value: number,
   decimals: number = 2,
-  showSign: boolean = false
+  showSign: boolean = false,
 ): string {
   const sign = showSign && value > 0 ? '+' : '';
   return `${sign}${value.toFixed(decimals)}%`;
+}
+
+export function sanitizeMoneyInput(input: string): number {
+  const cleanValue = input.replace(/[^0-9.-]/g, '');
+  const sanitizedAmount = parseFloat(cleanValue || '0');
+  return sanitizedAmount;
 }

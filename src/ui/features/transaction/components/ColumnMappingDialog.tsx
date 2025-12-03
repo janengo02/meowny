@@ -8,7 +8,6 @@ import {
   Box,
   Typography,
   IconButton,
-  CircularProgress,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useForm, FormProvider } from 'react-hook-form';
@@ -112,7 +111,7 @@ export function ColumnMappingDialog({
           pb: 1,
         }}
       >
-        <Typography variant="h2">Map CSV Columns</Typography>
+        Map CSV Columns
         <IconButton onClick={onClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -168,7 +167,6 @@ export function ColumnMappingDialog({
               type="submit"
               variant="contained"
               disabled={!isValid || isProcessing}
-              startIcon={isProcessing ? <CircularProgress size={16} /> : null}
             >
               {isProcessing ? 'Processing...' : 'Next'}
             </Button>

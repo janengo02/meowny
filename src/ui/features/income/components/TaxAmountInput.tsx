@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TextField, Typography } from '@mui/material';
 import { formatMoney } from '../../../shared/utils';
+import { sanitizeMoneyInput } from '../../../shared/utils/formatMoney';
 
 interface TaxAmountInputProps {
   value: number;
@@ -19,8 +20,7 @@ export function TaxAmountInput({ value, onSave }: TaxAmountInputProps) {
 
   const handleBlur = async (newValue: string) => {
     // Remove all symbols and parse only the meaningful number
-    const cleanValue = newValue.replace(/[^0-9.-]/g, '');
-    const newAmount = parseFloat(cleanValue || '0');
+    const newAmount = sanitizeMoneyInput(newValue);
 
     // Set optimistic value for immediate UI update
     setDisplayValue(newAmount);

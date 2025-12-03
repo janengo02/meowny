@@ -26,7 +26,7 @@ import { type RootState } from '../../../store/store';
 import { useCreateTransactionMutation } from '../api/transactionApi';
 import { TransactionRow } from './TransactionRow';
 import { type TransactionFormData } from '../schemas/transaction.schema';
-
+import { formatToDateTimeLocal } from '../../../shared/utils/dateTime';
 interface TransactionPreviewDialogProps {
   open: boolean;
   transactions: MappedTransaction[];
@@ -93,20 +93,20 @@ export function TransactionPreviewDialog({
       const bucketId = bucketNameToIdMap.get(bucketName);
       const bucketIdStr = bucketId ? bucketId.toString() : '';
 
-      // Parse amount to determine direction
-      const cleanAmount = transaction.amount.replace(/[^\d.-]/g, '');
-      const amount = parseFloat(cleanAmount) || 0;
-
       // MappedTransaction already uses TransactionFormData field names
       return {
-        transaction_date: transaction.transaction_date,
-        amount: transaction.amount,
+        transaction_date: formatToDateTimeLocal(transaction.transaction_date),
+        amount: Math.abs(transaction.amount),
         notes: transaction.notes || '',
         // If positive amount, set to_bucket_id; if negative, set from_bucket_id
         from_bucket_id:
-          amount < 0 ? bucketIdStr : transaction.from_bucket_id || '',
+          transaction.amount < 0
+            ? bucketIdStr
+            : transaction.from_bucket_id || '',
         to_bucket_id:
-          amount >= 0 ? bucketIdStr : transaction.to_bucket_id || '',
+          transaction.amount >= 0
+            ? bucketIdStr
+            : transaction.to_bucket_id || '',
         import_status: transaction.import_status,
         should_import: transaction.should_import,
       };
@@ -179,9 +179,8 @@ export function TransactionPreviewDialog({
             return updated;
           });
 
-          // Parse amount and remove any non-numeric characters (like commas, currency symbols)
-          const cleanAmount = transaction.amount.replace(/[^\d.-]/g, '');
-          const amount = Math.abs(parseFloat(cleanAmount) || 0);
+          // Get the absolute value of the amount (already a number)
+          const amount = Math.abs(transaction.amount);
 
           const fromBucketId = transaction.from_bucket_id
             ? parseInt(transaction.from_bucket_id)
@@ -310,9 +309,7 @@ export function TransactionPreviewDialog({
           <Table size="small" stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', width: 100 }}>
-                  Import
-                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Import</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>
                   Transaction Date
                 </TableCell>
@@ -320,15 +317,9 @@ export function TransactionPreviewDialog({
                   Transaction Amount
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>
-                  From Bucket
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>
-                  To Bucket
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>
-                  Status
-                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>From Bucket</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>To Bucket</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
