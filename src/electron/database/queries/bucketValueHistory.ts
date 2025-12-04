@@ -72,7 +72,8 @@ export async function getBucketValueHistories(): Promise<BucketValueHistory[]> {
     .from('bucket_value_history')
     .select()
     .eq('user_id', userId)
-    .order('recorded_at', { ascending: false });
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
   return data;
@@ -106,7 +107,8 @@ export async function getBucketValueHistoriesByBucket(
     .select()
     .eq('user_id', userId)
     .eq('bucket_id', bucketId)
-    .order('recorded_at', { ascending: false });
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
   return data;
@@ -201,7 +203,8 @@ export async function getAssetsValueHistory(): Promise<
     .select('*, bucket:bucket_id(id, name, type)')
     .eq('user_id', userId)
     .in('bucket_id', bucketIds)
-    .order('recorded_at', { ascending: true });
+    .order('recorded_at', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
 
@@ -220,8 +223,9 @@ export async function getLastBucketValueHistoryBefore(
     .select()
     .eq('user_id', userId)
     .eq('bucket_id', bucketId)
-    .lt('recorded_at', beforeDate)
+    .lte('recorded_at', beforeDate)
     .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(1);
 
   if (error) throw new Error(error.message);
@@ -241,7 +245,8 @@ export async function getBucketValueHistoriesAfter(
     .eq('user_id', userId)
     .eq('bucket_id', bucketId)
     .gt('recorded_at', afterDate)
-    .order('recorded_at', { ascending: true });
+    .order('recorded_at', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -259,6 +264,7 @@ export async function getLatestBucketValueHistory(
     .eq('user_id', userId)
     .eq('bucket_id', bucketId)
     .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(1);
 
   if (error) throw new Error(error.message);
