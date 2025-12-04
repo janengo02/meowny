@@ -3,19 +3,19 @@ import { TableRow, TableCell, Chip, CircularProgress } from '@mui/material';
 import {
   useForm,
   FormProvider,
-  useFormContext,
   useWatch,
+  useFormContext,
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { type MappedTransaction } from './CsvImportFlow';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormCheckbox } from '../../../shared/components/form/FormCheckbox';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import {
-  transactionSchema,
-  type TransactionFormData,
+  transactionImportSchema,
   type ImportStatus,
+  type MappedTransaction,
+  type TransactionImportFormData,
 } from '../schemas/transaction.schema';
 import { checkDuplicate } from '../utils/checkDuplicate';
 
@@ -43,7 +43,7 @@ const TransactionRowContent = React.memo(
     importingStatus,
     onUpdateTransaction,
   }: TransactionRowProps) => {
-    const { setValue, trigger } = useFormContext<TransactionFormData>();
+    const { setValue, trigger } = useFormContext<TransactionImportFormData>();
 
     const shouldImportWatch = useWatch({ name: 'should_import' });
     const notesWatch = useWatch({ name: 'notes' });
@@ -63,7 +63,7 @@ const TransactionRowContent = React.memo(
       ) => {
         // Validate transaction
         const updatedFields = {
-          transaction_date: new Date(transactionDateWatch).toISOString(),
+          transaction_date: transactionDateWatch,
           amount: amountWatch,
           notes: notesWatch,
           from_bucket_id: fromBucketIdWatch,
@@ -298,8 +298,8 @@ TransactionRowContent.displayName = 'TransactionRowContent';
 
 // Outer component that provides FormProvider
 export const TransactionRow = React.memo((props: TransactionRowProps) => {
-  const methods = useForm<TransactionFormData>({
-    resolver: zodResolver(transactionSchema),
+  const methods = useForm<TransactionImportFormData>({
+    resolver: zodResolver(transactionImportSchema),
     mode: 'onChange',
     defaultValues: {
       transaction_date: props.initialTransaction.transaction_date,

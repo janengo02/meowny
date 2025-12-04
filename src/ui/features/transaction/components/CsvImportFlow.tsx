@@ -4,24 +4,14 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
 import { ColumnMappingDialog } from './ColumnMappingDialog';
 import { TransactionPreviewDialog } from './TransactionPreviewDialog';
-import type { ImportStatus } from '../schemas/transaction.schema';
 import { sanitizeMoneyInput } from '../../../shared/utils/formatMoney';
-
-export interface CsvRow {
+import { formatToDateTimeLocal } from '../../../shared/utils/dateTime';
+import type {
+  ImportStatus,
+  MappedTransaction,
+} from '../schemas/transaction.schema';
+interface CsvRow {
   [key: string]: string;
-}
-
-// MappedTransaction now uses the same field names as TransactionFormData from transactionSchema
-// The bucket field is optional and only used during initial CSV mapping
-export interface MappedTransaction {
-  transaction_date: string;
-  amount: number;
-  notes?: string; // Optional notes field
-  bucket?: string; // Optional: Bucket name from CSV (used only during initial mapping)
-  from_bucket_id?: string; // Bucket ID for from bucket
-  to_bucket_id?: string; // Bucket ID for to bucket
-  import_status: ImportStatus;
-  should_import: boolean;
 }
 
 export function CsvImportFlow() {
@@ -113,23 +103,20 @@ export function CsvImportFlow() {
     bucket: string;
   }) => {
     // Map CSV data to transactions based on column mapping
-    const mapped = csvData
-      .map((row) => {
-        // Parse amount string to number, removing any currency symbols and commas
-        const amount = sanitizeMoneyInput(row[mapping.transactionAmount] || '');
-
-        return {
-          transaction_date: row[mapping.transactionDate] || '',
-          amount: amount,
-          notes: row[mapping.notes] || '',
-          bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
-          from_bucket_id: '', // Will be auto-mapped in preview dialog
-          to_bucket_id: '', // Will be auto-mapped in preview dialog
-          import_status: 'validating' as ImportStatus,
-          should_import: true,
-        };
-      })
-      .filter((t) => t.transaction_date && t.amount); // Filter out rows with missing required fields
+    const mapped = csvData.map((row) => {
+      return {
+        transaction_date: formatToDateTimeLocal(
+          row[mapping.transactionDate] || '',
+        ),
+        amount: sanitizeMoneyInput(row[mapping.transactionAmount] || ''),
+        notes: row[mapping.notes] || '',
+        bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
+        from_bucket_id: '', // Will be auto-mapped in preview dialog
+        to_bucket_id: '', // Will be auto-mapped in preview dialog
+        import_status: 'validating' as ImportStatus,
+        should_import: true,
+      };
+    });
 
     setMappedTransactions(mapped);
     setShowMappingDialog(false);

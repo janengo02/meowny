@@ -12,8 +12,11 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import {
+  columnMappingSchema,
+  type ColumnMappingFormData,
+} from '../schemas/transaction.schema';
 
 interface ColumnMappingDialogProps {
   open: boolean;
@@ -26,16 +29,6 @@ interface ColumnMappingDialogProps {
     bucket: string;
   }) => void;
 }
-
-// Validation schema - only transactionDate and transactionAmount are required
-const columnMappingSchema = z.object({
-  transactionDate: z.string().min(1, 'Transaction date column is required'),
-  transactionAmount: z.string().min(1, 'Transaction amount column is required'),
-  notes: z.string().optional(),
-  bucket: z.string().optional(),
-});
-
-type ColumnMappingFormData = z.infer<typeof columnMappingSchema>;
 
 export function ColumnMappingDialog({
   open,

@@ -20,13 +20,14 @@ import {
   Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { type MappedTransaction } from './CsvImportFlow';
 import { useAppSelector } from '../../../store/hooks';
 import { type RootState } from '../../../store/store';
 import { useCreateTransactionMutation } from '../api/transactionApi';
 import { TransactionRow } from './TransactionRow';
-import { type TransactionFormData } from '../schemas/transaction.schema';
-import { formatToDateTimeLocal } from '../../../shared/utils/dateTime';
+import {
+  type MappedTransaction,
+  type TransactionImportFormData,
+} from '../schemas/transaction.schema';
 interface TransactionPreviewDialogProps {
   open: boolean;
   transactions: MappedTransaction[];
@@ -67,7 +68,7 @@ export function TransactionPreviewDialog({
   >([]);
 
   // Import status - combines isImporting and isImportComplete
-  const [importStatus, setImportStatus] = useState<
+  const [batchImportStatus, setBatchImportStatus] = useState<
     'idle' | 'importing' | 'complete'
   >('idle');
 
@@ -88,29 +89,31 @@ export function TransactionPreviewDialog({
 
   // Auto-map bucket names from CSV to bucket IDs and sort by date
   const initialMappedTransactions = useMemo(() => {
-    const mapped = transactions.map((transaction): TransactionFormData => {
-      const bucketName = (transaction.bucket || '').toLowerCase().trim();
-      const bucketId = bucketNameToIdMap.get(bucketName);
-      const bucketIdStr = bucketId ? bucketId.toString() : '';
+    const mapped = transactions.map(
+      (transaction): TransactionImportFormData => {
+        const bucketName = (transaction.bucket || '').toLowerCase().trim();
+        const bucketId = bucketNameToIdMap.get(bucketName);
+        const bucketIdStr = bucketId ? bucketId.toString() : '';
 
-      // MappedTransaction already uses TransactionFormData field names
-      return {
-        transaction_date: formatToDateTimeLocal(transaction.transaction_date),
-        amount: Math.abs(transaction.amount),
-        notes: transaction.notes || '',
-        // If positive amount, set to_bucket_id; if negative, set from_bucket_id
-        from_bucket_id:
-          transaction.amount < 0
-            ? bucketIdStr
-            : transaction.from_bucket_id || '',
-        to_bucket_id:
-          transaction.amount >= 0
-            ? bucketIdStr
-            : transaction.to_bucket_id || '',
-        import_status: transaction.import_status,
-        should_import: transaction.should_import,
-      };
-    });
+        // MappedTransaction already uses TransactionImportFormData field names
+        return {
+          transaction_date: transaction.transaction_date,
+          amount: Math.abs(transaction.amount),
+          notes: transaction.notes || '',
+          // If positive amount, set to_bucket_id; if negative, set from_bucket_id
+          from_bucket_id:
+            transaction.amount < 0
+              ? bucketIdStr
+              : transaction.from_bucket_id || '',
+          to_bucket_id:
+            transaction.amount >= 0
+              ? bucketIdStr
+              : transaction.to_bucket_id || '',
+          import_status: transaction.import_status,
+          should_import: transaction.should_import,
+        };
+      },
+    );
 
     // Sort by transaction_date in ascending order (oldest first)
     return mapped.sort((a, b) => {
@@ -148,7 +151,7 @@ export function TransactionPreviewDialog({
   );
 
   const handleImport = async () => {
-    setImportStatus('importing');
+    setBatchImportStatus('importing');
     setAlert(null); // Clear previous messages
     let successCount = 0;
     let skipCount = 0;
@@ -179,9 +182,6 @@ export function TransactionPreviewDialog({
             return updated;
           });
 
-          // Get the absolute value of the amount (already a number)
-          const amount = Math.abs(transaction.amount);
-
           const fromBucketId = transaction.from_bucket_id
             ? parseInt(transaction.from_bucket_id)
             : null;
@@ -194,8 +194,10 @@ export function TransactionPreviewDialog({
           await createTransaction({
             from_bucket_id: fromBucketId,
             to_bucket_id: toBucketId,
-            amount: amount,
-            transaction_date: transaction.transaction_date,
+            amount: transaction.amount,
+            transaction_date: new Date(
+              transaction.transaction_date,
+            ).toISOString(),
             notes: notes,
           }).unwrap();
 
@@ -247,14 +249,14 @@ export function TransactionPreviewDialog({
         severity: 'error',
       });
     } finally {
-      setImportStatus('complete');
+      setBatchImportStatus('complete');
     }
   };
 
   const handleClose = () => {
     // Reset state on close
     setEditedTransactions([]);
-    setImportStatus('idle');
+    setBatchImportStatus('idle');
     setAlert(null);
     onClose();
   };
@@ -373,7 +375,7 @@ export function TransactionPreviewDialog({
           }}
         >
           {alert && <Alert severity={alert.severity}>{alert.message}</Alert>}
-          {importStatus === 'complete' ? (
+          {batchImportStatus === 'complete' ? (
             <Button onClick={handleClose} variant="contained">
               Done
             </Button>
@@ -382,21 +384,23 @@ export function TransactionPreviewDialog({
               <Button
                 onClick={handleClose}
                 variant="outlined"
-                disabled={importStatus === 'importing'}
+                disabled={batchImportStatus === 'importing'}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleImport}
                 variant="contained"
-                disabled={importStatus === 'importing' || importCount === 0}
+                disabled={
+                  batchImportStatus === 'importing' || importCount === 0
+                }
                 startIcon={
-                  importStatus === 'importing' ? (
+                  batchImportStatus === 'importing' ? (
                     <CircularProgress size={16} />
                   ) : null
                 }
               >
-                {importStatus === 'importing'
+                {batchImportStatus === 'importing'
                   ? 'Importing...'
                   : `Import Transactions (${importCount})`}
               </Button>
