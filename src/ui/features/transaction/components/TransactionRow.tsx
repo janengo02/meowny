@@ -28,7 +28,8 @@ interface TransactionRowProps {
   initialTransaction: MappedTransaction;
   index: number;
   buckets: Bucket[];
-  importingStatus?: 'importing' | 'success' | 'error'; // Status during/after import process
+  isBatchImporting: boolean;
+  importResult?: 'importing' | 'success' | 'error'; // Status during/after import process
   onUpdateTransaction: (
     index: number,
     updatedFields: Partial<MappedTransaction>,
@@ -40,7 +41,8 @@ const TransactionRowContent = React.memo(
   ({
     index,
     buckets,
-    importingStatus,
+    isBatchImporting,
+    importResult,
     onUpdateTransaction,
   }: TransactionRowProps) => {
     const { setValue, trigger } = useFormContext<TransactionImportFormData>();
@@ -121,7 +123,7 @@ const TransactionRowContent = React.memo(
     );
 
     useEffect(() => {
-      if (importingStatus) return; // Skip validation if already importing or imported
+      if (isBatchImporting || importResult) return; // Skip validation if already importing or imported
       validateTransaction(
         transactionDateWatch,
         amountWatch,
@@ -136,15 +138,17 @@ const TransactionRowContent = React.memo(
       fromBucketIdWatch,
       toBucketIdWatch,
       validateTransaction,
-      importingStatus,
+      isBatchImporting,
+      importResult,
     ]);
 
     // Calculate if checkbox should be disabled - always disable duplicates
     const isDuplicate = importStatusWatch === 'duplicate_detected';
     const isInvalid = importStatusWatch === 'invalid';
-    const isCheckboxDisabled = isDuplicate || isInvalid || !!importingStatus;
+    const isCheckboxDisabled =
+      isDuplicate || isInvalid || isBatchImporting || !!importResult;
 
-    const currentImportStatus = importingStatus || importStatusWatch;
+    const currentImportStatus = importResult || importStatusWatch;
 
     const handleShouldImportChange = (checked: boolean) => {
       const updatedFields = {
@@ -185,7 +189,7 @@ const TransactionRowContent = React.memo(
             type="datetime-local"
             variant="standard"
             size="small"
-            disabled={!!importingStatus}
+            disabled={isBatchImporting || !!importResult}
             slotProps={{
               input: {
                 disableUnderline: true,
@@ -196,7 +200,7 @@ const TransactionRowContent = React.memo(
         <TableCell align="right">
           <FormMoneyInput
             name="amount"
-            disabled={!!importingStatus}
+            disabled={isBatchImporting || !!importResult}
             allowNegative={false}
           />
         </TableCell>
@@ -205,7 +209,7 @@ const TransactionRowContent = React.memo(
             name="notes"
             variant="standard"
             size="small"
-            disabled={!!importingStatus}
+            disabled={isBatchImporting || !!importResult}
             placeholder="Add notes..."
             slotProps={{
               input: {
@@ -221,7 +225,7 @@ const TransactionRowContent = React.memo(
             options={bucketOptions}
             size="small"
             displayEmpty
-            disabled={!!importingStatus}
+            disabled={isBatchImporting || !!importResult}
             sx={{
               opacity: fromBucketIdWatch ? 1 : 0.5,
             }}
@@ -234,7 +238,7 @@ const TransactionRowContent = React.memo(
             options={bucketOptions}
             size="small"
             displayEmpty
-            disabled={!!importingStatus}
+            disabled={isBatchImporting || !!importResult}
             sx={{
               opacity: toBucketIdWatch ? 1 : 0.5,
             }}

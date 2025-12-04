@@ -334,7 +334,8 @@ export function TransactionPreviewDialog({
                       initialTransaction={initialTransaction}
                       index={index}
                       buckets={buckets}
-                      importingStatus={
+                      isBatchImporting={batchImportStatus === 'importing'}
+                      importResult={
                         editedTransaction?.import_status === 'importing' ||
                         editedTransaction?.import_status === 'success' ||
                         editedTransaction?.import_status === 'error'
