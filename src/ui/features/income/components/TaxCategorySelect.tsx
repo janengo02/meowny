@@ -1,4 +1,4 @@
-import { ChipAutocomplete } from '../../../shared/components/ChipAutocomplete';
+import { ChipAutocomplete } from '../../../shared/components/form/ChipAutocomplete';
 import {
   useGetTaxCategoriesQuery,
   useCreateTaxCategoryMutation,
@@ -9,10 +9,7 @@ interface TaxCategorySelectProps {
   onChange: (categoryId: number | null) => void;
 }
 
-export function TaxCategorySelect({
-  value,
-  onChange,
-}: TaxCategorySelectProps) {
+export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
   const { data: taxCategories = [] } = useGetTaxCategoriesQuery();
   const [createTaxCategory] = useCreateTaxCategoryMutation();
 

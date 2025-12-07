@@ -3,6 +3,7 @@ import {
   Avatar,
   Box,
   Button,
+  IconButton,
   Toolbar,
   Typography,
 } from '@mui/material';
@@ -11,6 +12,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { useSignOutMutation } from '../../auth/api/authApi';
 import { useDashboardError } from '../hooks/useDashboardError';
 import { CsvImportFlow } from '../../transaction/components/CsvImportFlow';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -25,6 +27,10 @@ export function Navbar() {
     } catch {
       setError('Logout failed. Please try again.');
     }
+  };
+  const handleRefresh = () => {
+    // Trigger refetch by invalidating the cache
+    window.location.reload();
   };
 
   return (
@@ -51,6 +57,14 @@ export function Navbar() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
+          <IconButton
+            onClick={handleRefresh}
+            size="small"
+            disabled={isSigningOut}
+            title="Reload chart data"
+          >
+            <RefreshIcon />
+          </IconButton>
           <CsvImportFlow />
           <Button
             variant="outlined"

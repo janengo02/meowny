@@ -1,4 +1,4 @@
-import { ChipSelect } from '../../../shared/components/ChipSelect';
+import { ChipSelect } from '../../../shared/components/form/ChipSelect';
 import { useUpdateBucketMutation } from '../api/bucketApi';
 
 const BUCKET_TYPES: BucketTypeEnum[] = ['expense', 'saving', 'investment'];

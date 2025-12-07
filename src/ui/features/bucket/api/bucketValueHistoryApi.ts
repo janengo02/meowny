@@ -21,10 +21,13 @@ export const bucketValueHistoryApi = baseApi.injectEndpoints({
         { type: 'Bucket', id: bucketId },
       ],
     }),
-    getAssetsValueHistory: builder.query<BucketValueHistoryWithBucket[], void>({
-      queryFn: async () => {
+    getAssetsValueHistory: builder.query<
+      AssetsValueHistoryResponse,
+      GetAssetsValueHistoryParams
+    >({
+      queryFn: async (params) => {
         try {
-          const data = await window.electron.getAssetsValueHistory();
+          const data = await window.electron.getAssetsValueHistory(params);
           return { data };
         } catch (error) {
           return { error: { message: (error as Error).message } };

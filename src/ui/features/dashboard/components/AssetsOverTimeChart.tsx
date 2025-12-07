@@ -4,7 +4,10 @@ import {
   Typography,
   Box,
   CircularProgress,
+  Stack,
 } from '@mui/material';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import dayjs from 'dayjs';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -17,9 +20,27 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import type { ChartOptions } from 'chart.js';
 import { useGetAssetsValueHistoryQuery } from '../../bucket/api/bucketValueHistoryApi';
 import { useMemo } from 'react';
+import { useForm, FormProvider, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  DatePickerField,
+  FormSelectField,
+} from '../../../shared/components/form';
+import {
+  CHART_COLORS,
+  getCheckpointLabels,
+  getCheckpoints,
+  getValueAtCheckpoint,
+  lineStackedChartDefaultOptions,
+} from '../../../shared/utils/chart';
+import {
+  chartFilterSchema,
+  type ChartFilterFormData,
+} from '../schemas/dashboard.schemas';
+import { ErrorState } from '../../../shared/components/layout/ErrorState';
+import { EmptyState } from '../../../shared/components/layout/EmptyState';
 
 // Register Chart.js components
 ChartJS.register(
@@ -33,146 +54,82 @@ ChartJS.register(
   Filler,
 );
 
-const COLORS = [
-  'rgba(136, 132, 216, 0.8)',
-  'rgba(130, 202, 157, 0.8)',
-  'rgba(255, 198, 88, 0.8)',
-  'rgba(255, 124, 124, 0.8)',
-  'rgba(164, 222, 108, 0.8)',
-  'rgba(216, 136, 132, 0.8)',
-  'rgba(141, 209, 225, 0.8)',
-  'rgba(208, 132, 216, 0.8)',
-  'rgba(255, 179, 71, 0.8)',
-  'rgba(131, 166, 237, 0.8)',
-];
-
 export function AssetsOverTimeChart() {
-  const { data, isLoading, error } = useGetAssetsValueHistoryQuery();
+  const methods = useForm<ChartFilterFormData>({
+    resolver: zodResolver(chartFilterSchema),
+    mode: 'onChange',
+    defaultValues: {
+      mode: 'month',
+      periodFrom: dayjs().startOf('year'),
+      periodTo: dayjs().endOf('year'),
+    },
+  });
+
+  const {
+    control,
+    setValue,
+    formState: { errors },
+  } = methods;
+
+  const mode = useWatch({ control, name: 'mode' });
+  const periodFrom = useWatch({ control, name: 'periodFrom' });
+  const periodTo = useWatch({ control, name: 'periodTo' });
+
+  // Prepare query params
+  const queryParams = useMemo((): GetAssetsValueHistoryParams | null => {
+    // Don't query if there are validation errors
+    if (Object.keys(errors).length > 0) return null;
+
+    // Convert period inputs to ISO date strings
+    const startDate = periodFrom.format('YYYY-MM-DDTHH:mm:ss');
+    const endDate = periodTo.format('YYYY-MM-DDTHH:mm:ss');
+
+    return {
+      startDate,
+      endDate,
+    };
+  }, [periodFrom, periodTo, errors]);
+
+  const { data, isLoading, error } = useGetAssetsValueHistoryQuery(
+    queryParams!,
+    {
+      skip: !queryParams,
+    },
+  );
 
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) {
+    if (Object.keys(errors).length > 0) return null;
+
+    if (!data || !data.buckets || data.buckets.length === 0) {
       return null;
     }
 
-    // Group data by date and bucket
-    const dateMap = new Map<string, Record<string, number>>();
-    const bucketNamesSet = new Set<string>();
+    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
+    if (checkpoints.length === 0) return null;
 
-    data.forEach((item) => {
-      // Skip if bucket data is missing
-      if (!item.bucket) return;
-
-      const date = new Date(item.recorded_at).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-      const bucketName = item.bucket.name;
-      bucketNamesSet.add(bucketName);
-
-      if (!dateMap.has(date)) {
-        dateMap.set(date, {});
-      }
-
-      const dateData = dateMap.get(date)!;
-      // Use market_value for the chart (which includes both contributed amount and market gains)
-      dateData[bucketName] = item.market_value;
-    });
-
-    // Convert to array format and sort by date
-    const sortedDates = Array.from(dateMap.keys()).sort(
-      (a, b) => new Date(a).getTime() - new Date(b).getTime(),
-    );
-
-    const bucketNames = Array.from(bucketNamesSet);
+    // Format checkpoint labels
+    const labels = getCheckpointLabels(checkpoints, mode);
 
     // Create datasets for each bucket
-    const datasets = bucketNames.map((bucketName, index) => {
-      const color = COLORS[index % COLORS.length];
+    const datasets = data.buckets.map((bucket, index) => {
+      const color = CHART_COLORS[index % CHART_COLORS.length];
       return {
-        label: bucketName,
-        data: sortedDates.map((date) => dateMap.get(date)?.[bucketName] || 0),
+        label: bucket.name,
+        data: checkpoints.map((checkpoint) =>
+          getValueAtCheckpoint(bucket.history, checkpoint),
+        ),
         borderColor: color,
         backgroundColor: color.replace('0.8', '0.5'),
         fill: true,
-        tension: 0.4,
+        tension: 0, // Straight lines
       };
     });
 
     return {
-      labels: sortedDates,
+      labels,
       datasets,
     };
-  }, [data]);
-
-  const options: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      mode: 'index' as const,
-      intersect: false,
-    },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          boxWidth: 12,
-          padding: 10,
-          font: {
-            size: 11,
-          },
-        },
-      },
-      tooltip: {
-        callbacks: {
-          label: function (context) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.parsed.y !== null) {
-              label += '¥' + context.parsed.y.toLocaleString();
-            }
-            return label;
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        display: true,
-        ticks: {
-          maxRotation: 45,
-          minRotation: 45,
-          font: {
-            size: 10,
-          },
-        },
-      },
-      y: {
-        display: true,
-        stacked: true,
-        ticks: {
-          callback: function (value) {
-            return '¥' + Number(value).toLocaleString();
-          },
-          font: {
-            size: 10,
-          },
-        },
-      },
-    },
-  };
-
-  if (error) {
-    return (
-      <Card sx={{ height: 300 }}>
-        <CardContent>
-          <Typography color="error">Failed to load assets data</Typography>
-        </CardContent>
-      </Card>
-    );
-  }
+  }, [data, mode, periodFrom, periodTo, errors]);
 
   if (isLoading) {
     return (
@@ -191,36 +148,99 @@ export function AssetsOverTimeChart() {
     );
   }
 
-  if (!chartData) {
-    return (
-      <Card sx={{ height: 300 }}>
-        <CardContent
-          sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Typography color="text.secondary">
-            No asset history data available
-          </Typography>
+  return (
+    <FormProvider {...methods}>
+      <Card>
+        <CardContent>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 1,
+            }}
+          >
+            <Typography variant="h6">Assets Over Time</Typography>
+          </Box>
+
+          {/* Controls */}
+          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            {/* Mode Select */}
+            <Box sx={{ minWidth: 150 }}>
+              <FormSelectField
+                name="mode"
+                label="View Mode"
+                size="small"
+                options={[
+                  { value: 'month', label: 'By Month' },
+                  { value: 'year', label: 'By Year' },
+                ]}
+                onChange={(e) => {
+                  const newMode = e.target.value as 'month' | 'year';
+                  setValue('mode', newMode);
+                  // Adjust periodFrom and periodTo to fit the new mode
+                  setValue('periodFrom', periodFrom.startOf(newMode));
+                  setValue('periodTo', periodTo.endOf(newMode));
+                }}
+              />
+            </Box>
+
+            {/* Period Filters */}
+            <Stack direction="row">
+              <DatePickerField
+                name="periodFrom"
+                label="From"
+                views={mode === 'month' ? ['year', 'month'] : ['year']}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setValue('periodFrom', newValue.startOf(mode), {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+              />
+              <Typography variant="caption" sx={{ mx: 1, mt: 1 }}>
+                -
+              </Typography>
+              <DatePickerField
+                name="periodTo"
+                label="To"
+                views={mode === 'month' ? ['month', 'year'] : ['year']}
+                maxDate={dayjs().endOf(mode === 'month' ? 'month' : 'year')}
+                onChange={(newValue) => {
+                  if (newValue) {
+                    setValue('periodTo', newValue.endOf(mode), {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
+              />
+            </Stack>
+          </Stack>
+
+          {/* Chart */}
+          <Box sx={{ width: '100%', height: 400 }}>
+            {error ? (
+              <ErrorState
+                title="Failed to load assets data"
+                description="Please try refreshing the page"
+              />
+            ) : chartData ? (
+              <Line data={chartData} options={lineStackedChartDefaultOptions} />
+            ) : (
+              <EmptyState
+                icon={
+                  <ShowChartIcon
+                    sx={{ fontSize: 64, color: 'text.disabled', opacity: 0.5 }}
+                  />
+                }
+                title="No asset history data available"
+                description="Add transactions to see your assets over time"
+              />
+            )}
+          </Box>
         </CardContent>
       </Card>
-    );
-  }
-
-  return (
-    <Card sx={{ height: 300 }}>
-      <CardContent sx={{ height: '100%', pb: 2 }}>
-        <Typography variant="h6" gutterBottom>
-          Assets Over Time
-        </Typography>
-        <Box sx={{ width: '100%', height: 'calc(100% - 40px)' }}>
-          <Line data={chartData} options={options} />
-        </Box>
-      </CardContent>
-    </Card>
+    </FormProvider>
   );
 }

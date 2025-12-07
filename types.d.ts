@@ -256,6 +256,11 @@ type UpdateBucketValueHistoryParams = {
   notes?: string | null;
 };
 
+type GetAssetsValueHistoryParams = {
+  startDate: string;
+  endDate: string;
+};
+
 // Transaction
 type CreateTransactionParams = {
   from_bucket_id?: number | null;
@@ -385,6 +390,36 @@ type BucketValueHistoryWithBucket = BucketValueHistory & {
   };
 };
 
+// Assets value history grouped by bucket
+type AssetsBucketData = {
+  id: number;
+  name: string;
+  type: BucketTypeEnum;
+  category: {
+    id: number;
+    name: string;
+    color: ColorEnum;
+  } | null;
+  location: {
+    id: number;
+    name: string;
+    color: ColorEnum;
+  } | null;
+  history: Pick<
+    BucketValueHistory,
+    | 'id'
+    | 'market_value'
+    | 'contributed_amount'
+    | 'recorded_at'
+    | 'source_type'
+    | 'created_at'
+  >[];
+};
+
+type AssetsValueHistoryResponse = {
+  buckets: AssetsBucketData[];
+};
+
 // ============================================
 // IPC EVENT TYPES
 // ============================================
@@ -419,7 +454,7 @@ type EventPayloadMapping = {
   'db:checkDuplicateTransaction': boolean;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:createBucketValueHistory': BucketValueHistory;
-  'db:getAssetsValueHistory': BucketValueHistoryWithBucket[];
+  'db:getAssetsValueHistory': AssetsValueHistoryResponse;
   'db:getBucketGoalsWithStatus': BucketGoalWithStatus[];
   'db:createBucketGoal': BucketGoal;
   'db:updateBucketGoal': BucketGoal;
@@ -484,7 +519,9 @@ interface Window {
     getTransactions: () => Promise<Transaction[]>;
     getTransaction: (id: number) => Promise<Transaction>;
     getTransactionsByBucket: (bucketId: number) => Promise<Transaction[]>;
-    createTransaction: (params: CreateTransactionParams) => Promise<Transaction>;
+    createTransaction: (
+      params: CreateTransactionParams,
+    ) => Promise<Transaction>;
     updateTransaction: (
       id: number,
       params: UpdateTransactionParams,
@@ -503,8 +540,12 @@ interface Window {
     createBucketValueHistory: (
       params: CreateBucketValueHistoryParams,
     ) => Promise<BucketValueHistory>;
-    getAssetsValueHistory: () => Promise<BucketValueHistoryWithBucket[]>;
-    getBucketGoalsWithStatus: (bucketId: number) => Promise<BucketGoalWithStatus[]>;
+    getAssetsValueHistory: (
+      params: GetAssetsValueHistoryParams,
+    ) => Promise<AssetsValueHistoryResponse>;
+    getBucketGoalsWithStatus: (
+      bucketId: number,
+    ) => Promise<BucketGoalWithStatus[]>;
     createBucketGoal: (params: CreateBucketGoalParams) => Promise<BucketGoal>;
     updateBucketGoal: (
       id: number,
@@ -515,7 +556,9 @@ interface Window {
     // Income Source methods
     getIncomeSources: () => Promise<IncomeSource[]>;
     getIncomeSource: (id: number) => Promise<IncomeSource>;
-    createIncomeSource: (params: CreateIncomeSourceParams) => Promise<IncomeSource>;
+    createIncomeSource: (
+      params: CreateIncomeSourceParams,
+    ) => Promise<IncomeSource>;
     updateIncomeSource: (
       id: number,
       params: UpdateIncomeSourceParams,
@@ -525,7 +568,9 @@ interface Window {
     // Income Category methods
     getIncomeCategories: () => Promise<IncomeCategory[]>;
     getIncomeCategory: (id: number) => Promise<IncomeCategory>;
-    createIncomeCategory: (params: CreateIncomeCategoryParams) => Promise<IncomeCategory>;
+    createIncomeCategory: (
+      params: CreateIncomeCategoryParams,
+    ) => Promise<IncomeCategory>;
     updateIncomeCategory: (
       id: number,
       params: UpdateIncomeCategoryParams,
@@ -536,7 +581,9 @@ interface Window {
     getIncomeHistories: () => Promise<IncomeHistory[]>;
     getIncomeHistory: (id: number) => Promise<IncomeHistory>;
     getIncomeHistoriesBySource: (incomeId: number) => Promise<IncomeHistory[]>;
-    createIncomeHistory: (params: CreateIncomeHistoryParams) => Promise<IncomeHistory>;
+    createIncomeHistory: (
+      params: CreateIncomeHistoryParams,
+    ) => Promise<IncomeHistory>;
     updateIncomeHistory: (
       id: number,
       params: UpdateIncomeHistoryParams,
@@ -546,7 +593,9 @@ interface Window {
     // Income Tax methods
     getIncomeTaxes: () => Promise<IncomeTax[]>;
     getIncomeTax: (id: number) => Promise<IncomeTax>;
-    getIncomeTaxesByIncomeHistory: (incomeHistoryId: number) => Promise<IncomeTax[]>;
+    getIncomeTaxesByIncomeHistory: (
+      incomeHistoryId: number,
+    ) => Promise<IncomeTax[]>;
     createIncomeTax: (params: CreateIncomeTaxParams) => Promise<IncomeTax>;
     updateIncomeTax: (
       id: number,
@@ -557,7 +606,9 @@ interface Window {
     // Tax Category methods
     getTaxCategories: () => Promise<TaxCategory[]>;
     getTaxCategory: (id: number) => Promise<TaxCategory>;
-    createTaxCategory: (params: CreateTaxCategoryParams) => Promise<TaxCategory>;
+    createTaxCategory: (
+      params: CreateTaxCategoryParams,
+    ) => Promise<TaxCategory>;
     updateTaxCategory: (
       id: number,
       params: UpdateTaxCategoryParams,

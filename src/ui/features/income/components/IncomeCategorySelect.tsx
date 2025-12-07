@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ChipAutocomplete } from '../../../shared/components/ChipAutocomplete';
+import { ChipAutocomplete } from '../../../shared/components/form/ChipAutocomplete';
 import {
   useGetIncomeCategoriesQuery,
   useCreateIncomeCategoryMutation,

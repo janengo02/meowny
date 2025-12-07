@@ -179,36 +179,79 @@ export async function getValueHistoryWithTransactionsByBucket(
   return data;
 }
 
-export async function getAssetsValueHistory(): Promise<
-  BucketValueHistoryWithBucket[]
-> {
+export async function getAssetsValueHistory(
+  params: GetAssetsValueHistoryParams,
+): Promise<AssetsValueHistoryResponse> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // First get all saving and investment buckets for the user
+  console.log('Fetching assets value history with params:', params);
+  // Use specified bucket types
+  const bucketTypes = ['saving', 'investment'];
+
+  // First get all buckets of the specified types with category and location
   const { data: buckets, error: bucketsError } = await supabase
     .from('bucket')
-    .select('id')
+    .select(
+      `
+      id,
+      name,
+      type,
+      bucket_category_id,
+      bucket_location_id,
+      category:bucket_category_id(id, name, color),
+      location:bucket_location_id(id, name, color)
+    `,
+    )
     .eq('user_id', userId)
-    .in('type', ['saving', 'investment']);
+    .in('type', bucketTypes);
 
   if (bucketsError) throw new Error(bucketsError.message);
-  if (!buckets || buckets.length === 0) return [];
+  if (!buckets || buckets.length === 0) {
+    return { buckets: [] };
+  }
 
   const bucketIds = buckets.map((b) => b.id);
 
-  // Then get value history for those buckets with bucket details
-  const { data, error } = await supabase
+  // Get value history for all buckets
+  const { data: historyData, error: historyError } = await supabase
     .from('bucket_value_history')
-    .select('*, bucket:bucket_id(id, name, type)')
+    .select(
+      'id, bucket_id, market_value, contributed_amount, recorded_at, source_type, created_at',
+    )
     .eq('user_id', userId)
     .in('bucket_id', bucketIds)
+    .gte('recorded_at', params.startDate)
+    .lte('recorded_at', params.endDate)
     .order('recorded_at', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(error.message);
+  if (historyError) throw new Error(historyError.message);
 
-  return data;
+  // Map history data by bucket
+  const historyByBucket = new Map<number, AssetsBucketData['history']>();
+  historyData?.forEach((item) => {
+    if (!historyByBucket.has(item.bucket_id)) {
+      historyByBucket.set(item.bucket_id, []);
+    }
+    historyByBucket.get(item.bucket_id)!.push(item);
+  });
+
+  // Combine bucket info with history
+  const result: AssetsBucketData[] = buckets.map((bucket) => ({
+    id: bucket.id,
+    name: bucket.name,
+    type: bucket.type,
+    category: Array.isArray(bucket.category)
+      ? bucket.category[0] || null
+      : bucket.category || null,
+    location: Array.isArray(bucket.location)
+      ? bucket.location[0] || null
+      : bucket.location || null,
+    history: historyByBucket.get(bucket.id) || [],
+  }));
+
+  return { buckets: result };
 }
 
 export async function getLastBucketValueHistoryBefore(
