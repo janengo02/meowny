@@ -62,6 +62,7 @@ export function AssetsOverTimeChart() {
       mode: 'month',
       periodFrom: dayjs().startOf('year'),
       periodTo: dayjs().endOf('year'),
+      groupBy: 'bucket',
     },
   });
 
@@ -74,6 +75,7 @@ export function AssetsOverTimeChart() {
   const mode = useWatch({ control, name: 'mode' });
   const periodFrom = useWatch({ control, name: 'periodFrom' });
   const periodTo = useWatch({ control, name: 'periodTo' });
+  const groupBy = useWatch({ control, name: 'groupBy' });
 
   // Prepare query params
   const queryParams = useMemo((): GetAssetsValueHistoryParams | null => {
@@ -109,14 +111,46 @@ export function AssetsOverTimeChart() {
 
     // Format checkpoint labels
     const labels = getCheckpointLabels(checkpoints, mode);
-
+    // Map history data by bucket
+    const bucketGroup = new Map();
+    data.buckets?.forEach((bucket) => {
+      let groupKey;
+      let groupName;
+      switch (groupBy) {
+        case 'category':
+          groupKey = bucket.category ? bucket.category.id : 'no_group';
+          groupName = bucket.category ? bucket.category.name : 'No Category';
+          break;
+        case 'location':
+          groupKey = bucket.location ? bucket.location.id : 'no_group';
+          groupName = bucket.location ? bucket.location.name : 'No Location';
+          break;
+        case 'bucket':
+        default:
+          groupKey = bucket.id;
+          groupName = bucket.name;
+          break;
+      }
+      if (!bucketGroup.has(groupKey)) {
+        bucketGroup.set(groupKey, {
+          id: groupKey,
+          name: groupName,
+          buckets: [],
+        });
+      }
+      bucketGroup.get(groupKey)!.buckets.push(bucket);
+    });
     // Create datasets for each bucket
-    const datasets = data.buckets.map((bucket, index) => {
+    const datasets = Array.from(bucketGroup.values()).map((group, index) => {
       const color = CHART_COLORS[index % CHART_COLORS.length];
       return {
-        label: bucket.name,
+        label: group.name,
         data: checkpoints.map((checkpoint) =>
-          getValueAtCheckpoint(bucket.history, checkpoint),
+          group.buckets.reduce(
+            (sum: number, bucket: AssetsBucketData) =>
+              sum + getValueAtCheckpoint(bucket.history, checkpoint),
+            0,
+          ),
         ),
         borderColor: color,
         backgroundColor: color.replace('0.8', '0.5'),
@@ -129,7 +163,7 @@ export function AssetsOverTimeChart() {
       labels,
       datasets,
     };
-  }, [data, mode, periodFrom, periodTo, errors]);
+  }, [data, mode, periodFrom, periodTo, groupBy, errors]);
 
   if (isLoading) {
     return (
@@ -164,16 +198,16 @@ export function AssetsOverTimeChart() {
           </Box>
 
           {/* Controls */}
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-            {/* Mode Select */}
-            <Box sx={{ minWidth: 150 }}>
+          <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Stack direction="row" spacing={2}>
+              {/* Mode Select */}
               <FormSelectField
                 name="mode"
                 label="View Mode"
                 size="small"
                 options={[
-                  { value: 'month', label: 'By Month' },
-                  { value: 'year', label: 'By Year' },
+                  { value: 'month', label: 'Month' },
+                  { value: 'year', label: 'Year' },
                 ]}
                 onChange={(e) => {
                   const newMode = e.target.value as 'month' | 'year';
@@ -183,14 +217,13 @@ export function AssetsOverTimeChart() {
                   setValue('periodTo', periodTo.endOf(newMode));
                 }}
               />
-            </Box>
 
-            {/* Period Filters */}
-            <Stack direction="row">
+              {/* Period Filters */}
               <DatePickerField
                 name="periodFrom"
                 label="From"
                 views={mode === 'month' ? ['year', 'month'] : ['year']}
+                maxDate={dayjs().endOf(mode === 'month' ? 'month' : 'year')}
                 onChange={(newValue) => {
                   if (newValue) {
                     setValue('periodFrom', newValue.startOf(mode), {
@@ -199,7 +232,7 @@ export function AssetsOverTimeChart() {
                   }
                 }}
               />
-              <Typography variant="caption" sx={{ mx: 1, mt: 1 }}>
+              <Typography variant="caption" sx={{ mx: 1, pt: 1 }}>
                 -
               </Typography>
               <DatePickerField
@@ -214,6 +247,18 @@ export function AssetsOverTimeChart() {
                     });
                   }
                 }}
+              />
+            </Stack>
+            <Stack>
+              <FormSelectField
+                name="groupBy"
+                label="Group By"
+                size="small"
+                options={[
+                  { value: 'bucket', label: 'Bucket' },
+                  { value: 'category', label: 'Category' },
+                  { value: 'location', label: 'Location' },
+                ]}
               />
             </Stack>
           </Stack>

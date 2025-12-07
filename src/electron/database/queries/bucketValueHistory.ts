@@ -185,7 +185,6 @@ export async function getAssetsValueHistory(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  console.log('Fetching assets value history with params:', params);
   // Use specified bucket types
   const bucketTypes = ['saving', 'investment'];
 
@@ -204,7 +203,8 @@ export async function getAssetsValueHistory(
     `,
     )
     .eq('user_id', userId)
-    .in('type', bucketTypes);
+    .in('type', bucketTypes)
+    .order('type', { ascending: true });
 
   if (bucketsError) throw new Error(bucketsError.message);
   if (!buckets || buckets.length === 0) {
