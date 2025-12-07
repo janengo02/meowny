@@ -4,6 +4,7 @@ import { NumericFormat } from 'react-number-format';
 
 interface FormMoneyInputProps {
   name: string;
+  label?: string;
   disabled?: boolean;
   prefix?: string;
   placeholder?: string;
@@ -20,6 +21,7 @@ interface FormMoneyInputProps {
 
 export function FormMoneyInput({
   name,
+  label,
   disabled = false,
   prefix = '¥',
   placeholder = '0.00',
@@ -65,6 +67,7 @@ export function FormMoneyInput({
         }
       }}
       customInput={TextField}
+      label={label}
       prefix={prefix}
       thousandSeparator=","
       decimalScale={decimalScale}

@@ -1,3 +1,6 @@
+import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+
 /**
  * Gets the current date and time in Tokyo timezone
  * @returns ISO string formatted to datetime-local input format (YYYY-MM-DDTHH:mm:ss)
@@ -86,4 +89,10 @@ export const formatToDateOnly = (dateString: string): string => {
     console.error(`Error formatting date: ${dateString}`, error);
     return '';
   }
+};
+
+export const formatDateForDB = (date: string | Date | Dayjs): string => {
+  if (!date) return '';
+  const formattedDate = dayjs(date);
+  return formattedDate.toISOString();
 };

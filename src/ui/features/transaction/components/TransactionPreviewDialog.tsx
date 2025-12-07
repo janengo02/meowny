@@ -28,6 +28,7 @@ import {
   type MappedTransaction,
   type TransactionImportFormData,
 } from '../schemas/transaction.schema';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 interface TransactionPreviewDialogProps {
   open: boolean;
   transactions: MappedTransaction[];
@@ -195,9 +196,7 @@ export function TransactionPreviewDialog({
             from_bucket_id: fromBucketId,
             to_bucket_id: toBucketId,
             amount: transaction.amount,
-            transaction_date: new Date(
-              transaction.transaction_date,
-            ).toISOString(),
+            transaction_date: formatDateForDB(transaction.transaction_date),
             notes: notes,
           }).unwrap();
 

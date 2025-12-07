@@ -22,6 +22,7 @@ import { useCreateTransactionMutation } from '../api/transactionApi';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface TransactionModalProps {
   bucketId?: number;
@@ -70,7 +71,7 @@ export function TransactionModal({
           : null,
         to_bucket_id: data.to_bucket_id ? parseInt(data.to_bucket_id) : null,
         amount: data.amount || 0,
-        transaction_date: new Date(data.transaction_date).toISOString(),
+        transaction_date: formatDateForDB(data.transaction_date),
         notes: data.notes || null,
       }).unwrap();
 

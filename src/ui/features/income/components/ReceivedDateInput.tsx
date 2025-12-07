@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TextField, Typography } from '@mui/material';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface ReceivedDateInputProps {
   value: string; // ISO date string
@@ -37,8 +38,7 @@ export function ReceivedDateInput({ value, onSave }: ReceivedDateInputProps) {
     }
 
     // Convert date to ISO string (keeping only the date part)
-    const date = new Date(newValue);
-    const isoDate = date.toISOString();
+    const isoDate = formatDateForDB(newValue);
 
     // Set optimistic value for immediate UI update
     setDisplayValue(isoDate);

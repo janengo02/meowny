@@ -18,6 +18,7 @@ import {
   type TransactionImportFormData,
 } from '../schemas/transaction.schema';
 import { checkDuplicate } from '../utils/checkDuplicate';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface Bucket {
   id: number;
@@ -96,7 +97,7 @@ const TransactionRowContent = React.memo(
 
         try {
           const hasDuplicate = await checkDuplicate(
-            new Date(transactionDateWatch).toISOString(),
+            formatDateForDB(transactionDateWatch),
             amount,
             fromBucketId,
             toBucketId,

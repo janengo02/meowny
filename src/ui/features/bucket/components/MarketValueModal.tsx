@@ -11,18 +11,16 @@ import {
   IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { z } from 'zod';
+import dayjs from 'dayjs';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
+import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
+import { DateTimePickerField } from '../../../shared/components/form/DateTimePickerField';
 import { useCreateBucketValueHistoryMutation } from '../api/bucketValueHistoryApi';
-import { getTokyoDateTime } from '../../../shared/utils';
-
-const marketValueSchema = z.object({
-  market_value: z.string().min(1, 'Market value is required'),
-  recorded_at: z.string().min(1, 'Recorded date is required'),
-  notes: z.string().optional(),
-});
-
-type MarketValueFormData = z.infer<typeof marketValueSchema>;
+import {
+  marketValueSchema,
+  type MarketValueFormData,
+} from '../schemas/bucket.schemas';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface MarketValueModalProps {
   bucketId: number;
@@ -46,8 +44,8 @@ export function MarketValueModal({
     resolver: zodResolver(marketValueSchema),
     mode: 'onChange',
     defaultValues: {
-      market_value: String(currentMarketValue),
-      recorded_at: getTokyoDateTime(),
+      market_value: currentMarketValue,
+      recorded_at: dayjs(),
       notes: '',
     },
   });
@@ -55,8 +53,8 @@ export function MarketValueModal({
   useEffect(() => {
     if (open) {
       form.reset({
-        market_value: String(currentMarketValue),
-        recorded_at: getTokyoDateTime(),
+        market_value: currentMarketValue,
+        recorded_at: dayjs(),
         notes: '',
       });
     }
@@ -64,13 +62,11 @@ export function MarketValueModal({
 
   const onSubmit = async (data: MarketValueFormData) => {
     try {
-      const newMarketValue = parseFloat(data.market_value);
-
       // Create bucket value history record
       await createBucketValueHistory({
         bucket_id: bucketId,
-        market_value: newMarketValue,
-        recorded_at: new Date(data.recorded_at).toISOString(),
+        market_value: data.market_value,
+        recorded_at: formatDateForDB(data.recorded_at),
         source_type: 'market',
         notes: data.notes || null,
       }).unwrap();
@@ -121,19 +117,18 @@ export function MarketValueModal({
             <Box
               sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}
             >
-              <FormTextField
+              <FormMoneyInput
                 name="market_value"
                 label="Market Value"
-                type="number"
-                inputProps={{ min: 0, step: 0.01 }}
+                variant="outlined"
+                allowNegative={false}
               />
 
-              <FormTextField
+              <DateTimePickerField
                 name="recorded_at"
-                label="Recorded Date & Time (Tokyo)"
-                type="datetime-local"
-                InputLabelProps={{ shrink: true }}
-                slotProps={{ htmlInput: { step: 1 } }}
+                label="Recorded Date & Time"
+                format="YYYY-MM-DD HH:mm:ss"
+                ampm={false}
               />
 
               <FormTextField name="notes" label="Notes" multiline rows={3} />

@@ -24,10 +24,8 @@ import { useGetAssetsValueHistoryQuery } from '../../bucket/api/bucketValueHisto
 import { useMemo } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  DatePickerField,
-  FormSelectField,
-} from '../../../shared/components/form';
+import { DatePickerField } from '../../../shared/components/form/DatePickerField';
+import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import {
   CHART_COLORS,
   getCheckpointLabels,
@@ -42,6 +40,7 @@ import {
 } from '../schemas/dashboard.schemas';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 // Register Chart.js components
 ChartJS.register(
@@ -84,8 +83,8 @@ export function AssetsOverTimeChart() {
     if (Object.keys(errors).length > 0) return null;
 
     // Convert period inputs to ISO date strings
-    const startDate = periodFrom.format('YYYY-MM-DDTHH:mm:ss');
-    const endDate = periodTo.format('YYYY-MM-DDTHH:mm:ss');
+    const startDate = formatDateForDB(periodFrom);
+    const endDate = formatDateForDB(periodTo);
 
     return {
       startDate,
@@ -225,6 +224,7 @@ export function AssetsOverTimeChart() {
                 label="From"
                 views={mode === 'month' ? ['year', 'month'] : ['year']}
                 maxDate={dayjs().endOf(mode === 'month' ? 'month' : 'year')}
+                format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
                 onChange={(newValue) => {
                   if (newValue) {
                     setValue('periodFrom', newValue.startOf(mode), {
@@ -241,6 +241,7 @@ export function AssetsOverTimeChart() {
                 label="To"
                 views={mode === 'month' ? ['month', 'year'] : ['year']}
                 maxDate={dayjs().endOf(mode === 'month' ? 'month' : 'year')}
+                format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
                 onChange={(newValue) => {
                   if (newValue) {
                     setValue('periodTo', newValue.endOf(mode), {

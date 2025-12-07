@@ -30,6 +30,8 @@ import { IncomeGrossInput } from './IncomeGrossInput';
 import { ReceivedDateInput } from './ReceivedDateInput';
 import { TaxCell } from './TaxCell';
 import { NetAmountCell } from './NetAmountCell';
+import dayjs from 'dayjs';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface IncomeHistoryTableProps {
   incomeSourceId: number;
@@ -57,14 +59,12 @@ function IncomeHistoryRowActions({
 
   const handleDuplicate = async () => {
     try {
-      const now = new Date().toISOString();
-
       // Create new income history with same values
       const newHistory = await createIncomeHistory({
         income_id: incomeId,
         income_category_id: incomeCategoryId,
         gross_amount: grossAmount,
-        received_date: now,
+        received_date: formatDateForDB(dayjs()),
       }).unwrap();
 
       // Duplicate all taxes associated with the original income history
@@ -126,11 +126,10 @@ export function IncomeHistoryTable({
 
   const handleAddIncomeHistory = async () => {
     try {
-      const now = new Date().toISOString();
       await createIncomeHistory({
         income_id: incomeSourceId,
         gross_amount: 0,
-        received_date: now,
+        received_date: formatDateForDB(dayjs()),
       }).unwrap();
     } catch (error) {
       console.error('Failed to create income history:', error);
