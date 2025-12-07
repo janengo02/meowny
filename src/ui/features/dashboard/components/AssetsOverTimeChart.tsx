@@ -34,6 +34,7 @@ import {
   getCheckpoints,
   getValueAtCheckpoint,
   lineStackedChartDefaultOptions,
+  totalLabelPlugin,
 } from '../../../shared/utils/chart';
 import {
   chartFilterSchema,
@@ -271,7 +272,11 @@ export function AssetsOverTimeChart() {
                 description="Please try refreshing the page"
               />
             ) : chartData ? (
-              <Line data={chartData} options={lineStackedChartDefaultOptions} />
+              <Line
+                data={chartData}
+                options={lineStackedChartDefaultOptions}
+                plugins={[totalLabelPlugin]}
+              />
             ) : (
               <EmptyState
                 icon={

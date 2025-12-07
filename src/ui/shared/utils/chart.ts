@@ -1,4 +1,4 @@
-import type { ChartOptions } from 'chart.js';
+import type { ChartOptions, Chart as ChartJS } from 'chart.js';
 import dayjs, { type Dayjs } from 'dayjs';
 
 export const CHART_COLORS = [
@@ -17,6 +17,11 @@ export const CHART_COLORS = [
 export const lineStackedChartDefaultOptions: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
+  layout: {
+    padding: {
+      right: 50, // Add padding on the right for total labels
+    },
+  },
   interaction: {
     mode: 'index' as const,
     intersect: false,
@@ -70,6 +75,48 @@ export const lineStackedChartDefaultOptions: ChartOptions<'line'> = {
         },
       },
     },
+  },
+};
+
+// Plugin to display total values on top of the chart
+export const totalLabelPlugin = {
+  id: 'totalLabel',
+  afterDatasetsDraw(chart: ChartJS<'line'>) {
+    const { ctx, data, scales } = chart;
+
+    if (!data.datasets.length) return;
+
+    ctx.save();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#c1c1c1';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    // Calculate totals for each data point
+    const dataLength = data.datasets[0].data.length;
+    for (let i = 0; i < dataLength; i++) {
+      // Sum all dataset values at this index
+      const total = data.datasets.reduce((sum, dataset) => {
+        const value = dataset.data[i] as number;
+        return sum + (value || 0);
+      }, 0);
+
+      // Get the x position from the x-axis scale
+      const x = scales.x.getPixelForValue(i);
+
+      // Get the highest y position (top of the stack)
+      let stackedY = 0;
+      data.datasets.forEach((dataset) => {
+        const value = dataset.data[i] as number;
+        stackedY += value || 0;
+      });
+      const y = scales.y.getPixelForValue(stackedY);
+
+      const label = '¥' + total.toLocaleString();
+      ctx.fillText(label, x, y - 8);
+    }
+
+    ctx.restore();
   },
 };
 
