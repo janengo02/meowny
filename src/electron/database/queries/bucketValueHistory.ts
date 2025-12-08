@@ -17,6 +17,12 @@ export async function createBucketValueHistory(
 
   const recordedAt = params.recorded_at ?? new Date().toISOString();
 
+  // Get the previous record before creating the new one (needed for contributed_amount and market adjustment)
+  const previousRecord = await getLastBucketValueHistoryBefore(
+    params.bucket_id,
+    recordedAt,
+  );
+
   // Determine contributed_amount based on source_type and previous record
   let contributedAmount: number;
 
@@ -28,10 +34,6 @@ export async function createBucketValueHistory(
     contributedAmount = params.contributed_amount;
   } else {
     // Otherwise, get from previous record (or 0 if no previous record)
-    const previousRecord = await getLastBucketValueHistoryBefore(
-      params.bucket_id,
-      recordedAt,
-    );
     contributedAmount = previousRecord ? previousRecord.contributed_amount : 0;
   }
 
@@ -58,6 +60,7 @@ export async function createBucketValueHistory(
       params.bucket_id,
       recordedAt,
       params.market_value ?? 0,
+      previousRecord,
     );
   }
 
@@ -318,24 +321,24 @@ async function adjustBucketValueHistoryForHistoricalMarket(
   bucketId: number,
   recordedAt: string,
   newMarketValue: number,
+  previousRecord: BucketValueHistory | null,
 ): Promise<void> {
   // Get all records after this one
+  console.log('==========================');
   const recordsAfter = await getBucketValueHistoriesAfter(bucketId, recordedAt);
-
   if (recordsAfter.length > 0) {
-    // Get the previous record to calculate the market value change
-    const previousRecord = await getLastBucketValueHistoryBefore(
-      bucketId,
-      recordedAt,
-    );
+    // Use the previously fetched record to calculate the market value change
+    console.log('Recorded At:', recordedAt);
+    console.log('Previous Record:', previousRecord);
 
     // Calculate the market value change
     const marketValueChange = previousRecord
       ? newMarketValue - previousRecord.market_value
       : newMarketValue;
-
+    console.log('Market Value Change:', marketValueChange);
     // Adjust subsequent records until we encounter another 'market' source_type
     for (const record of recordsAfter) {
+      console.log('Adjusting record:', record);
       if (record.source_type === 'market') {
         // Stop adjusting when we encounter the next market update
         break;
@@ -345,6 +348,7 @@ async function adjustBucketValueHistoryForHistoricalMarket(
       const adjustedMarketValue = record.market_value + marketValueChange;
       const normalizedMarketValue =
         adjustedMarketValue < 0 ? 0 : adjustedMarketValue;
+      console.log('New Market Value:', normalizedMarketValue);
 
       await updateBucketValueHistory(record.id, {
         market_value: normalizedMarketValue,
