@@ -69,6 +69,20 @@ export const bucketValueHistoryApi = baseApi.injectEndpoints({
         { type: 'Bucket', id: bucket_id },
       ],
     }),
+    deleteBucketValueHistory: builder.mutation<void, { id: number; bucketId: number }>({
+      queryFn: async ({ id }) => {
+        try {
+          await window.electron.deleteBucketValueHistory(id);
+          return { data: undefined };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: (_result, _error, { bucketId }) => [
+        'Bucket',
+        { type: 'Bucket', id: bucketId },
+      ],
+    }),
   }),
 });
 
@@ -77,4 +91,5 @@ export const {
   useGetBucketValueHistoriesByBucketQuery,
   useGetAssetsValueHistoryQuery,
   useCreateBucketValueHistoryMutation,
+  useDeleteBucketValueHistoryMutation,
 } = bucketValueHistoryApi;

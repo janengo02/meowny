@@ -107,6 +107,9 @@ app.on('ready', () => {
   ipcMainHandle('db:createBucketValueHistory', async (args) => {
     return db.createBucketValueHistory(args as CreateBucketValueHistoryParams);
   });
+  ipcMainHandle('db:deleteBucketValueHistory', async (args) => {
+    return db.deleteBucketValueHistory(args as number);
+  });
   ipcMainHandle('db:getAssetsValueHistory', async (args) => {
     return db.getAssetsValueHistory(args as GetAssetsValueHistoryParams);
   });

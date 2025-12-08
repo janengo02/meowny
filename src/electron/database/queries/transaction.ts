@@ -1,11 +1,9 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
-import { updateBucketFromLatestHistory } from './bucket.js';
 import {
   createBucketValueHistory,
   getLastBucketValueHistoryBefore,
-  getBucketValueHistoriesAfter,
-  updateBucketValueHistory,
+  adjustBucketValueHistoryForHistoricalTransaction,
 } from './bucketValueHistory.js';
 
 export async function createTransaction(
@@ -129,48 +127,6 @@ export async function createTransaction(
   }
 
   return transaction;
-}
-
-async function adjustBucketValueHistoryForHistoricalTransaction(
-  bucketId: number,
-  transactionDate: string,
-  amountChange: number,
-): Promise<void> {
-  // Get all bucket value history records after the transaction date
-  const historiesAfter = await getBucketValueHistoriesAfter(
-    bucketId,
-    transactionDate,
-  );
-
-  // Adjust all subsequent records
-  let stopAdjustingMarketValue = false;
-
-  for (const history of historiesAfter) {
-    // Always adjust contributed_amount
-    const newContributedAmount = history.contributed_amount + amountChange;
-    const normalizedContributedAmount =
-      newContributedAmount < 0 ? 0 : newContributedAmount;
-
-    // Stop adjusting market_value if we encounter a 'market' source_type
-    if (history.source_type === 'market') {
-      stopAdjustingMarketValue = true;
-    }
-    // Adjust market_value unless we've encountered a 'market' source_type
-    let normalizedMarketValue = history.market_value;
-    if (!stopAdjustingMarketValue) {
-      const newMarketValue = history.market_value + amountChange;
-      normalizedMarketValue = newMarketValue < 0 ? 0 : newMarketValue;
-    }
-
-    // Update the history record
-    await updateBucketValueHistory(history.id, {
-      contributed_amount: normalizedContributedAmount,
-      market_value: normalizedMarketValue,
-    });
-  }
-
-  // Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(bucketId);
 }
 
 export async function getTransactions(): Promise<Transaction[]> {

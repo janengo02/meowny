@@ -2,6 +2,7 @@ import {
   Box,
   Chip,
   CircularProgress,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -12,8 +13,9 @@ import {
   Typography,
 } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import DeleteIcon from '@mui/icons-material/Delete';
 import type { Dayjs } from 'dayjs';
-import { useGetValueHistoryWithTransactionsByBucketQuery } from '../api/bucketValueHistoryApi';
+import { useGetValueHistoryWithTransactionsByBucketQuery, useDeleteBucketValueHistoryMutation } from '../api/bucketValueHistoryApi';
 import { formatMoney } from '../../../shared/utils';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import { useMemo } from 'react';
@@ -43,6 +45,18 @@ export function BucketValueHistoryTable({
 
   const { data: valueHistory, isLoading } =
     useGetValueHistoryWithTransactionsByBucketQuery(queryParams);
+
+  const [deleteBucketValueHistory] = useDeleteBucketValueHistoryMutation();
+
+  const handleDelete = async (historyId: number) => {
+    if (window.confirm('Are you sure you want to delete this history entry?')) {
+      try {
+        await deleteBucketValueHistory({ id: historyId, bucketId }).unwrap();
+      } catch (error) {
+        console.error('Failed to delete history:', error);
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -100,6 +114,7 @@ export function BucketValueHistoryTable({
               <TableCell>Market Value</TableCell>
             )}
             <TableCell>Notes</TableCell>
+            <TableCell align="center">Actions</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -203,6 +218,16 @@ export function BucketValueHistoryTable({
                     -
                   </Typography>
                 )}
+              </TableCell>
+              <TableCell align="center">
+                <IconButton
+                  size="small"
+                  onClick={() => handleDelete(history.id)}
+                  aria-label="delete"
+                  color="error"
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
               </TableCell>
             </TableRow>
           ))}

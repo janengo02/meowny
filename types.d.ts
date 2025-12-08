@@ -467,6 +467,7 @@ type EventPayloadMapping = {
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:getBucketValueHistoriesByBucket': BucketValueHistory[];
   'db:createBucketValueHistory': BucketValueHistory;
+  'db:deleteBucketValueHistory': void;
   'db:getAssetsValueHistory': AssetsValueHistoryResponse;
   'db:getBucketGoalsWithStatus': BucketGoalWithStatus[];
   'db:createBucketGoal': BucketGoal;
@@ -556,6 +557,7 @@ interface Window {
     createBucketValueHistory: (
       params: CreateBucketValueHistoryParams,
     ) => Promise<BucketValueHistory>;
+    deleteBucketValueHistory: (id: number) => Promise<void>;
     getAssetsValueHistory: (
       params: GetAssetsValueHistoryParams,
     ) => Promise<AssetsValueHistoryResponse>;
