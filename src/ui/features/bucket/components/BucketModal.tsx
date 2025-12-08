@@ -1,38 +1,33 @@
-import { useState } from 'react';
 import {
   Box,
   CircularProgress,
   Drawer,
   Divider,
-  Grid,
   IconButton,
   Typography,
-  TextField,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
+  Stack,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import {
-  useGetBucketQuery,
-  useUpdateBucketMutation,
-  useDeleteBucketMutation,
-} from '../api/bucketApi';
+
+import dayjs from 'dayjs';
+import { useForm, FormProvider, useWatch } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { BucketLocationSelect } from './BucketLocationSelect';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
-import { TransactionModal } from '../../transaction/components/TransactionModal';
-import { MarketValueModal } from './MarketValueModal';
 import { BucketGoal } from './BucketGoal';
-import { formatMoney, formatPercent } from '../../../shared/utils';
+import { BucketValueHistoryChart } from './BucketValueHistoryChart';
+import { DatePickerField } from '../../../shared/components/form/DatePickerField';
+import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import {
+  bucketChartFilterSchema,
+  type BucketChartFilterFormData,
+} from '../schemas/bucket.schemas';
+import { BucketSummary } from './BucketSummary';
+import { BucketTitle } from './BucketTitle';
+import { BucketModalFooter } from './BucketModalFooter';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -41,59 +36,25 @@ interface BucketModalProps {
 }
 
 export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
-  const [transactionModalOpen, setTransactionModalOpen] = useState(false);
-  const [marketValueModalOpen, setMarketValueModalOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
-  const [updateBucket] = useUpdateBucketMutation();
-  const [deleteBucket, { isLoading: isDeleting }] = useDeleteBucketMutation();
 
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-  };
+  // Period filter form
+  const methods = useForm<BucketChartFilterFormData>({
+    resolver: zodResolver(bucketChartFilterSchema),
+    mode: 'onChange',
+    defaultValues: {
+      mode: 'month',
+      periodFrom: dayjs().startOf('year'),
+      periodTo: dayjs().endOf('year'),
+    },
+  });
 
-  const handleDeleteConfirm = async () => {
-    if (bucket) {
-      try {
-        await deleteBucket(bucket.id).unwrap();
-        setDeleteDialogOpen(false);
-        onClose();
-      } catch (error) {
-        // Error handling - could show a toast/snackbar here
-        console.error('Failed to delete bucket:', error);
-      }
-    }
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-  };
-
-  const handleNameBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
-    if (bucket) {
-      const trimmedName = e.target.value.trim();
-      if (!trimmedName) {
-        // Reset to original name if empty
-        e.target.value = bucket.name;
-      } else if (trimmedName !== bucket.name) {
-        // Update if name changed
-        await updateBucket({
-          id: bucket.id,
-          params: { name: trimmedName },
-        });
-      }
-    }
-  };
-
-  const handleNameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      (e.target as HTMLInputElement).blur();
-    }
-  };
+  const { control, setValue } = methods;
+  const mode = useWatch({ control, name: 'mode' });
+  const periodFrom = useWatch({ control, name: 'periodFrom' });
+  const periodTo = useWatch({ control, name: 'periodTo' });
 
   if (!bucketId) return null;
 
@@ -113,7 +74,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         }}
         sx={{
           '& .MuiDrawer-paper': {
-            width: { xs: '100%', md: '50%' },
+            width: { xs: '100%', md: '60%' },
             bgcolor: 'background.default',
           },
         }}
@@ -132,13 +93,6 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
     );
   }
 
-  const gainLoss = bucket.market_value - bucket.contributed_amount;
-  const gainLossPercent =
-    bucket.contributed_amount > 0
-      ? (gainLoss / bucket.contributed_amount) * 100
-      : 0;
-  const isPositive = gainLoss >= 0;
-
   return (
     <Drawer
       anchor="right"
@@ -151,7 +105,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
       }}
       sx={{
         '& .MuiDrawer-paper': {
-          width: { xs: '100%', md: '50%' },
+          width: { xs: '100%', md: '60%' },
           bgcolor: 'background.default',
           borderLeft: '1px solid',
           borderColor: 'divider',
@@ -167,41 +121,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             mb: 2,
           }}
         >
-          <TextField
-            key={bucket.id}
-            defaultValue={bucket.name}
-            onBlur={handleNameBlur}
-            onKeyDown={handleNameKeyDown}
-            variant="standard"
-            fullWidth
-            slotProps={{
-              input: {
-                disableUnderline: true,
-                sx: {
-                  fontSize: '1.5rem',
-                  fontWeight: 500,
-                  padding: 0,
-                  '&:before': {
-                    display: 'none',
-                  },
-                  '&:after': {
-                    display: 'none',
-                  },
-                },
-              },
-            }}
-            sx={{
-              mr: 2,
-              '& .MuiInputBase-root': {
-                '&:before': {
-                  display: 'none',
-                },
-                '&:after': {
-                  display: 'none',
-                },
-              },
-            }}
-          />
+          <BucketTitle bucket={bucket} />
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
           </IconButton>
@@ -222,278 +142,95 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
 
       <Box sx={{ p: 3, overflowY: 'auto', flex: 1 }}>
         {/* Summary Stats */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          {/* Contributed/Spent - shown for all types */}
-          <Grid size={{ xs: 6, sm: 3 }}>
-            <Box
-              sx={{
-                p: 2,
-                borderRadius: 1,
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                position: 'relative',
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                }}
-              >
-                <Box sx={{ flex: 1 }}>
-                  <Typography variant="caption" color="text.secondary">
-                    {bucket.type === 'expense' ? 'Spent' : 'Contributed'}
-                  </Typography>
-                  <Typography variant="h3" sx={{ mt: 0.5 }}>
-                    {formatMoney(bucket.contributed_amount)}
-                  </Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  onClick={() => setTransactionModalOpen(true)}
-                  sx={{
-                    ml: 1,
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
-                    },
-                  }}
-                >
-                  <SyncAltIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            </Box>
-          </Grid>
-
-          {/* Investment-only fields */}
-          {bucket.type === 'investment' && (
-            <>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 1,
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    position: 'relative',
-                  }}
-                >
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                    }}
-                  >
-                    <Box sx={{ flex: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Market Value
-                      </Typography>
-                      <Typography variant="h3" sx={{ mt: 0.5 }}>
-                        {formatMoney(bucket.market_value)}
-                      </Typography>
-                    </Box>
-                    <IconButton
-                      size="small"
-                      onClick={() => setMarketValueModalOpen(true)}
-                      sx={{
-                        ml: 1,
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        '&:hover': {
-                          bgcolor: 'primary.dark',
-                        },
-                      }}
-                    >
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </Box>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 1,
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    Gain/Loss
-                  </Typography>
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      mt: 0.5,
-                      color: isPositive ? 'success.main' : 'error.main',
-                    }}
-                  >
-                    {formatMoney(gainLoss, { showSign: true })}
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid size={{ xs: 6, sm: 3 }}>
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 1,
-                    bgcolor: 'background.paper',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary">
-                    Return
-                  </Typography>
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      mt: 0.5,
-                      color: isPositive ? 'success.main' : 'error.main',
-                    }}
-                  >
-                    {formatPercent(gainLossPercent, 2, true)}
-                  </Typography>
-                </Box>
-              </Grid>
-            </>
-          )}
-        </Grid>
-
+        <BucketSummary bucket={bucket} />
+        {/* Bucket Goal Section */}
+        <Divider sx={{ my: 2 }} />
+        <BucketGoal bucketId={bucketId} />
         {/* Graph Section */}
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h3" sx={{ mb: 2 }}>
-            Performance
-          </Typography>
+        <Divider sx={{ my: 2 }} />
+        <FormProvider {...methods}>
           <Box
             sx={{
-              height: 240,
-              borderRadius: 1,
-              bgcolor: 'background.paper',
-              border: '1px dashed',
-              borderColor: 'divider',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexDirection: 'column',
-              gap: 1,
+              justifyContent: 'space-between',
+              mb: 3,
             }}
           >
-            <TrendingUpIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
-            <Typography color="text.secondary">
-              Performance graph coming soon
-            </Typography>
+            <Typography variant="h3">Performance & Logs</Typography>
           </Box>
-        </Box>
 
-        {/* Bucket Goal Section */}
-        <Divider sx={{ my: 3 }} />
-        <BucketGoal bucketId={bucketId} />
+          {/* Period Filter Controls */}
+          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+            {/* Mode Select */}
+            <FormSelectField
+              name="mode"
+              label="View Mode"
+              size="small"
+              options={[
+                { value: 'month', label: 'Month' },
+                { value: 'year', label: 'Year' },
+              ]}
+              onChange={(e) => {
+                const newMode = e.target.value as 'month' | 'year';
+                setValue('mode', newMode);
+                // Adjust periodFrom and periodTo to fit the new mode
+                setValue('periodFrom', periodFrom.startOf(newMode));
+                setValue('periodTo', periodTo.endOf(newMode));
+              }}
+            />
 
-        {/* Value History Logs Section */}
-        <Divider sx={{ my: 3 }} />
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h3" sx={{ mb: 2 }}>
-            Value History Logs
-          </Typography>
+            {/* Period Filters */}
+            <DatePickerField
+              name="periodFrom"
+              label="From"
+              views={mode === 'month' ? ['year', 'month'] : ['year']}
+              maxDate={dayjs().endOf(mode === 'month' ? 'month' : 'year')}
+              format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
+              onChange={(newValue) => {
+                if (newValue) {
+                  setValue('periodFrom', newValue.startOf(mode), {
+                    shouldValidate: true,
+                  });
+                }
+              }}
+            />
+            <Typography variant="caption" sx={{ mx: 1, pt: 1 }}>
+              -
+            </Typography>
+            <DatePickerField
+              name="periodTo"
+              label="To"
+              views={mode === 'month' ? ['month', 'year'] : ['year']}
+              maxDate={dayjs().endOf(mode === 'month' ? 'month' : 'year')}
+              format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
+              onChange={(newValue) => {
+                if (newValue) {
+                  setValue('periodTo', newValue.endOf(mode), {
+                    shouldValidate: true,
+                  });
+                }
+              }}
+            />
+          </Stack>
+
+          <BucketValueHistoryChart
+            bucketId={bucketId}
+            mode={mode}
+            periodFrom={periodFrom}
+            periodTo={periodTo}
+          />
+
+          {/* Value History Logs Section */}
           <BucketValueHistoryTable
             bucketId={bucketId}
             bucketType={bucket.type}
+            periodFrom={periodFrom}
+            periodTo={periodTo}
           />
-        </Box>
-
-        {/* Notes Section */}
-        {bucket.notes && (
-          <>
-            <Divider sx={{ mb: 3 }} />
-            <Box>
-              <Typography variant="h3" sx={{ mb: 1 }}>
-                Notes
-              </Typography>
-              <Typography color="text.secondary">{bucket.notes}</Typography>
-            </Box>
-          </>
-        )}
-
-        {/* Metadata */}
-        <Divider sx={{ my: 3 }} />
-        <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', mb: 3 }}>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Created
-            </Typography>
-            <Typography variant="body2">
-              {new Date(bucket.created_at).toLocaleDateString()}
-            </Typography>
-          </Box>
-          <Box>
-            <Typography variant="caption" color="text.secondary">
-              Last Updated
-            </Typography>
-            <Typography variant="body2">
-              {new Date(bucket.updated_at).toLocaleDateString()}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Delete Button */}
-        <Button
-          variant="outlined"
-          color="error"
-          startIcon={<DeleteIcon />}
-          onClick={handleDeleteClick}
-          fullWidth
-        >
-          Delete Bucket
-        </Button>
+        </FormProvider>
+        <BucketModalFooter bucket={bucket} onClose={onClose} />
       </Box>
-      <TransactionModal
-        bucketId={bucketId}
-        open={transactionModalOpen}
-        onClose={() => setTransactionModalOpen(false)}
-      />
-      <MarketValueModal
-        bucketId={bucketId}
-        currentMarketValue={bucket.market_value}
-        open={marketValueModalOpen}
-        onClose={() => setMarketValueModalOpen(false)}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
-        aria-labelledby="delete-dialog-title"
-        aria-describedby="delete-dialog-description"
-      >
-        <DialogTitle id="delete-dialog-title">Delete Bucket?</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="delete-dialog-description">
-            Are you sure you want to delete "{bucket.name}"? This action cannot
-            be undone. All associated transactions and value history will also
-            be deleted.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel} color="primary">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            color="error"
-            variant="contained"
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Drawer>
   );
 }

@@ -95,7 +95,14 @@ app.on('ready', () => {
     });
   });
   ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
-    return db.getValueHistoryWithTransactionsByBucket(args as number);
+    return db.getValueHistoryWithTransactionsByBucket(
+      args as GetValueHistoryWithTransactionsByBucketParams,
+    );
+  });
+  ipcMainHandle('db:getBucketValueHistoriesByBucket', async (args) => {
+    return db.getBucketValueHistoriesByBucket(
+      args as GetBucketValueHistoriesByBucketParams,
+    );
   });
   ipcMainHandle('db:createBucketValueHistory', async (args) => {
     return db.createBucketValueHistory(args as CreateBucketValueHistoryParams);

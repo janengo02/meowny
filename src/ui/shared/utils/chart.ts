@@ -1,5 +1,6 @@
 import type { ChartOptions, Chart as ChartJS } from 'chart.js';
 import dayjs, { type Dayjs } from 'dayjs';
+import { formatMoney } from './formatMoney';
 
 export const CHART_COLORS = [
   'rgba(136, 132, 216, 0.8)',
@@ -45,7 +46,7 @@ export const lineStackedChartDefaultOptions: ChartOptions<'line'> = {
             label += ': ';
           }
           if (context.parsed.y !== null) {
-            label += '¥' + context.parsed.y.toLocaleString();
+            label += formatMoney(context.parsed.y);
           }
           return label;
         },
@@ -68,7 +69,100 @@ export const lineStackedChartDefaultOptions: ChartOptions<'line'> = {
       stacked: true,
       ticks: {
         callback: function (value) {
-          return '¥' + Number(value).toLocaleString();
+          return formatMoney(Number(value));
+        },
+        font: {
+          size: 10,
+        },
+      },
+    },
+  },
+};
+
+// Custom chart options with return percentage in tooltip
+export const barStackedChartForGainLossDefaultOptions: ChartOptions<'bar'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  layout: {
+    padding: {
+      top: 20,
+    },
+  },
+  interaction: {
+    mode: 'index' as const,
+    intersect: false,
+  },
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        boxWidth: 12,
+        padding: 20,
+        font: {
+          size: 11,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          let label = context.dataset.label || '';
+          if (label) {
+            label += ': ';
+          }
+          if (context.parsed.y !== null) {
+            label += formatMoney(context.parsed.y);
+          }
+          return label;
+        },
+        afterBody: function (context) {
+          // Calculate total and return percentage
+          const dataIndex = context[0].dataIndex;
+          const datasets = context[0].chart.data.datasets;
+
+          // Sum all values to get market value
+          let marketValue = 0;
+          datasets.forEach((dataset) => {
+            const value = dataset.data[dataIndex] as number;
+            marketValue += value || 0;
+          });
+
+          // Get contributed amount (first dataset)
+          const contributedAmount =
+            (datasets[0].data[dataIndex] as number) || 0;
+
+          if (contributedAmount > 0) {
+            const returnRate =
+              ((marketValue - contributedAmount) / contributedAmount) * 100;
+            return [
+              '',
+              `Total: ${formatMoney(marketValue)}`,
+              `Return: ${returnRate >= 0 ? '+' : ''}${returnRate.toFixed(2)}%`,
+            ];
+          }
+          return [``, `Total: ${formatMoney(marketValue)}`];
+        },
+      },
+    },
+  },
+  scales: {
+    x: {
+      display: true,
+      stacked: true,
+      ticks: {
+        maxRotation: 45,
+        minRotation: 45,
+        font: {
+          size: 10,
+        },
+      },
+    },
+    y: {
+      display: true,
+      stacked: true,
+      ticks: {
+        callback: function (value) {
+          return formatMoney(Number(value));
         },
         font: {
           size: 10,
@@ -112,8 +206,113 @@ export const totalLabelPlugin = {
       });
       const y = scales.y.getPixelForValue(stackedY);
 
-      const label = '¥' + total.toLocaleString();
+      const label = formatMoney(total);
       ctx.fillText(label, x, y - 8);
+    }
+
+    ctx.restore();
+  },
+};
+
+// Plugin to display total values on top of bar charts
+export const barTotalLabelPlugin = {
+  id: 'barTotalLabel',
+  afterDatasetsDraw(chart: ChartJS<'bar'>) {
+    const { ctx, data, scales } = chart;
+
+    if (!data.datasets.length) return;
+
+    ctx.save();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#c1c1c1';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    // Calculate totals for each data point
+    const dataLength = data.datasets[0].data.length;
+    for (let i = 0; i < dataLength; i++) {
+      // Sum all dataset values at this index
+      const total = data.datasets.reduce((sum, dataset) => {
+        const value = dataset.data[i] as number;
+        return sum + (value || 0);
+      }, 0);
+
+      // Get the x position from the x-axis scale
+      const x = scales.x.getPixelForValue(i);
+
+      // Get the highest y position (top of the stack)
+      let stackedY = 0;
+      data.datasets.forEach((dataset) => {
+        const value = dataset.data[i] as number;
+        stackedY += value || 0;
+      });
+      const y = scales.y.getPixelForValue(stackedY);
+
+      const label = formatMoney(total);
+      ctx.fillText(label, x, y - 8);
+    }
+
+    ctx.restore();
+  },
+};
+
+// Plugin to display total value and return percentage on top of bar charts
+export const barTotalWithReturnPlugin = {
+  id: 'barTotalWithReturn',
+  afterDatasetsDraw(chart: ChartJS<'bar'>) {
+    const { ctx, data, scales } = chart;
+
+    if (!data.datasets.length) return;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    // Calculate totals and return percentages for each data point
+    const dataLength = data.datasets[0].data.length;
+    for (let i = 0; i < dataLength; i++) {
+      // Sum all dataset values at this index to get market value
+      const marketValue = data.datasets.reduce((sum, dataset) => {
+        const value = dataset.data[i] as number;
+        return sum + (value || 0);
+      }, 0);
+
+      // Get contributed amount (first dataset)
+      const contributedAmount = (data.datasets[0].data[i] as number) || 0;
+
+      // Calculate return percentage
+      let returnPercentage = 0;
+      if (contributedAmount > 0) {
+        returnPercentage =
+          ((marketValue - contributedAmount) / contributedAmount) * 100;
+      }
+
+      // Get the x position from the x-axis scale
+      const x = scales.x.getPixelForValue(i);
+
+      // Get the highest y position (top of the stack)
+      let stackedY = 0;
+      data.datasets.forEach((dataset) => {
+        const value = dataset.data[i] as number;
+        stackedY += value > 0 ? value : 0;
+      });
+      const y = scales.y.getPixelForValue(stackedY);
+
+      // Draw total value (top line)
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillStyle = '#9e9e9e';
+      ctx.textBaseline = 'bottom';
+      const totalLabel = formatMoney(marketValue);
+      ctx.fillText(totalLabel, x, y - 20);
+
+      // Draw return percentage with color coding (bottom line)
+      if (contributedAmount > 0) {
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = returnPercentage >= 0 ? '#4CAF50' : '#F44336'; // Green for gain, red for loss
+        ctx.textBaseline = 'bottom';
+        const sign = returnPercentage >= 0 ? '+' : '';
+        const percentLabel = `${sign}${returnPercentage.toFixed(1)}%`;
+        ctx.fillText(percentLabel, x, y - 4);
+      }
     }
 
     ctx.restore();
@@ -157,8 +356,8 @@ export const getCheckpointLabels = (
   });
 };
 
-// Get value at checkpoint (or nearest before) from bucket's history
-export const getValueAtCheckpoint = (
+// Get market value at checkpoint (or nearest before) from bucket's history
+export const getHistoryAtCheckpoint = (
   history: Pick<
     BucketValueHistory,
     | 'id'
@@ -169,12 +368,20 @@ export const getValueAtCheckpoint = (
     | 'created_at'
   >[],
   checkpoint: Date,
-): number => {
+): Pick<
+  BucketValueHistory,
+  | 'id'
+  | 'market_value'
+  | 'contributed_amount'
+  | 'recorded_at'
+  | 'source_type'
+  | 'created_at'
+> | null => {
   const checkpointTime = checkpoint.getTime();
 
   const nearestItem = history.findLast(
     (item) => new Date(item.recorded_at).getTime() <= checkpointTime,
   );
 
-  return nearestItem?.market_value ?? 0;
+  return nearestItem ?? null;
 };

@@ -30,7 +30,7 @@ import {
   CHART_COLORS,
   getCheckpointLabels,
   getCheckpoints,
-  getValueAtCheckpoint,
+  getHistoryAtCheckpoint,
   lineStackedChartDefaultOptions,
   totalLabelPlugin,
 } from '../../../shared/utils/chart';
@@ -148,7 +148,9 @@ export function AssetsOverTimeChart() {
         data: checkpoints.map((checkpoint) =>
           group.buckets.reduce(
             (sum: number, bucket: AssetsBucketData) =>
-              sum + getValueAtCheckpoint(bucket.history, checkpoint),
+              sum +
+              (getHistoryAtCheckpoint(bucket.history, checkpoint)
+                ?.market_value || 0),
             0,
           ),
         ),

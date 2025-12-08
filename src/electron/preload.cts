@@ -41,8 +41,12 @@ electron.contextBridge.exposeInMainWorld('electron', {
     to_bucket_id: number | null;
     notes: string | null;
   }) => ipcInvoke('db:checkDuplicateTransaction', params),
-  getValueHistoryWithTransactionsByBucket: (bucketId: number) =>
-    ipcInvoke('db:getValueHistoryWithTransactionsByBucket', bucketId),
+  getValueHistoryWithTransactionsByBucket: (
+    params: GetValueHistoryWithTransactionsByBucketParams,
+  ) => ipcInvoke('db:getValueHistoryWithTransactionsByBucket', params),
+  getBucketValueHistoriesByBucket: (
+    params: GetBucketValueHistoriesByBucketParams,
+  ) => ipcInvoke('db:getBucketValueHistoriesByBucket', params),
   createBucketValueHistory: (params: CreateBucketValueHistoryParams) =>
     ipcInvoke('db:createBucketValueHistory', params),
   getAssetsValueHistory: (params: GetAssetsValueHistoryParams) =>

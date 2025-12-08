@@ -7,3 +7,23 @@ export const marketValueSchema = z.object({
   notes: z.string().optional(),
 });
 export type MarketValueFormData = z.infer<typeof marketValueSchema>;
+
+export const bucketChartFilterSchema = z
+  .object({
+    mode: z.enum(['month', 'year']),
+    periodFrom: z.custom<Dayjs>((val) => val !== null && val !== undefined),
+    periodTo: z.custom<Dayjs>((val) => val !== null && val !== undefined),
+  })
+  .refine(
+    (data) =>
+      data.periodFrom.isBefore(data.periodTo) ||
+      data.periodFrom.isSame(data.periodTo),
+    {
+      message: 'Start date must be before or equal to end date',
+      path: ['periodTo'],
+    },
+  );
+
+export type BucketChartFilterFormData = z.infer<
+  typeof bucketChartFilterSchema
+>;

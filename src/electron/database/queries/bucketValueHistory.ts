@@ -75,8 +75,8 @@ export async function getBucketValueHistories(): Promise<BucketValueHistory[]> {
     .from('bucket_value_history')
     .select()
     .eq('user_id', userId)
-    .order('recorded_at', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('recorded_at', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
   return data;
@@ -100,18 +100,28 @@ export async function getBucketValueHistory(
 }
 
 export async function getBucketValueHistoriesByBucket(
-  bucketId: number,
+  params: GetBucketValueHistoriesByBucketParams,
 ): Promise<BucketValueHistory[]> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('bucket_value_history')
     .select()
     .eq('user_id', userId)
-    .eq('bucket_id', bucketId)
-    .order('recorded_at', { ascending: false })
-    .order('created_at', { ascending: false });
+    .eq('bucket_id', params.bucketId);
+
+  // Add period filters if provided
+  if (params.startDate) {
+    query = query.gte('recorded_at', params.startDate);
+  }
+  if (params.endDate) {
+    query = query.lte('recorded_at', params.endDate);
+  }
+
+  const { data, error } = await query
+    .order('recorded_at', { ascending: true }) // Must be ascending for history
+    .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
   return data;
@@ -163,7 +173,7 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
 }
 
 export async function getValueHistoryWithTransactionsByBucket(
-  bucketId: number,
+  params: GetValueHistoryWithTransactionsByBucketParams,
 ): Promise<ValueHistoryWithTransaction[]> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
@@ -173,8 +183,10 @@ export async function getValueHistoryWithTransactionsByBucket(
   const { data, error } = await supabase.rpc(
     'get_value_history_with_transactions_by_bucket',
     {
-      p_bucket_id: bucketId,
+      p_bucket_id: params.bucketId,
       p_user_id: userId,
+      p_start_date: params.startDate ?? null,
+      p_end_date: params.endDate ?? null,
     },
   );
 
@@ -226,7 +238,7 @@ export async function getAssetsValueHistory(
     .in('bucket_id', bucketIds)
     .gte('recorded_at', params.startDate)
     .lte('recorded_at', params.endDate)
-    .order('recorded_at', { ascending: true })
+    .order('recorded_at', { ascending: true }) // Must be ascending for history
     .order('created_at', { ascending: true });
 
   if (historyError) throw new Error(historyError.message);

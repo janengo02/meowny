@@ -12,20 +12,37 @@ import {
   Typography,
 } from '@mui/material';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
+import type { Dayjs } from 'dayjs';
 import { useGetValueHistoryWithTransactionsByBucketQuery } from '../api/bucketValueHistoryApi';
 import { formatMoney } from '../../../shared/utils';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
+import { useMemo } from 'react';
 
 interface BucketValueHistoryTableProps {
   bucketId: number;
   bucketType: BucketTypeEnum;
+  periodFrom: Dayjs;
+  periodTo: Dayjs;
 }
 
 export function BucketValueHistoryTable({
   bucketId,
   bucketType,
+  periodFrom,
+  periodTo,
 }: BucketValueHistoryTableProps) {
+  // Query parameters for the API
+  const queryParams = useMemo(
+    () => ({
+      bucketId,
+      startDate: formatDateForDB(periodFrom),
+      endDate: formatDateForDB(periodTo),
+    }),
+    [bucketId, periodFrom, periodTo],
+  );
+
   const { data: valueHistory, isLoading } =
-    useGetValueHistoryWithTransactionsByBucketQuery(bucketId);
+    useGetValueHistoryWithTransactionsByBucketQuery(queryParams);
 
   if (isLoading) {
     return (
@@ -55,7 +72,7 @@ export function BucketValueHistoryTable({
         }}
       >
         <Typography color="text.secondary">
-          No value history available
+          No value history available for the selected period
         </Typography>
       </Box>
     );

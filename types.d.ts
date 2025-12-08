@@ -261,6 +261,18 @@ type GetAssetsValueHistoryParams = {
   endDate: string;
 };
 
+type GetValueHistoryWithTransactionsByBucketParams = {
+  bucketId: number;
+  startDate?: string;
+  endDate?: string;
+};
+
+type GetBucketValueHistoriesByBucketParams = {
+  bucketId: number;
+  startDate?: string;
+  endDate?: string;
+};
+
 // Transaction
 type CreateTransactionParams = {
   from_bucket_id?: number | null;
@@ -453,6 +465,7 @@ type EventPayloadMapping = {
   'db:deleteTransaction': void;
   'db:checkDuplicateTransaction': boolean;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
+  'db:getBucketValueHistoriesByBucket': BucketValueHistory[];
   'db:createBucketValueHistory': BucketValueHistory;
   'db:getAssetsValueHistory': AssetsValueHistoryResponse;
   'db:getBucketGoalsWithStatus': BucketGoalWithStatus[];
@@ -535,8 +548,11 @@ interface Window {
       notes: string | null;
     }) => Promise<boolean>;
     getValueHistoryWithTransactionsByBucket: (
-      bucketId: number,
+      params: GetValueHistoryWithTransactionsByBucketParams,
     ) => Promise<ValueHistoryWithTransaction[]>;
+    getBucketValueHistoriesByBucket: (
+      params: GetBucketValueHistoriesByBucketParams,
+    ) => Promise<BucketValueHistory[]>;
     createBucketValueHistory: (
       params: CreateBucketValueHistoryParams,
     ) => Promise<BucketValueHistory>;
