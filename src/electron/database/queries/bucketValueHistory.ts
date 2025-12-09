@@ -415,28 +415,24 @@ export async function getLastBucketValueHistoryBefore(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('bucket_value_history')
     .select()
     .eq('user_id', userId)
     .eq('bucket_id', bucketId)
     .lte('recorded_at', beforeDate)
     .order('recorded_at', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  // If beforeCreatedAt is provided, add it as a query filter
+  if (beforeCreatedAt) {
+    query = query.lt('created_at', beforeCreatedAt);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
-
-  // If beforeCreatedAt is provided, filter out records with the same recorded_at
-  // but created_at >= beforeCreatedAt
-  if (beforeCreatedAt && data && data.length > 0) {
-    const filtered = data.filter((record) => {
-      if (record.recorded_at === beforeDate) {
-        return record.created_at < beforeCreatedAt;
-      }
-      return true; // Include all records with recorded_at < beforeDate
-    });
-    return filtered.length > 0 ? filtered[0] : null;
-  }
 
   return data && data.length > 0 ? data[0] : null;
 }
@@ -449,8 +445,7 @@ export async function getBucketValueHistoriesAfter(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Fetch all records with recorded_at >= afterDate
-  const { data, error } = await supabase
+  let query = supabase
     .from('bucket_value_history')
     .select()
     .eq('user_id', userId)
@@ -459,18 +454,14 @@ export async function getBucketValueHistoriesAfter(
     .order('recorded_at', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(error.message);
-
   // If afterCreatedAt is provided, filter out records with the same recorded_at
   // but created_at <= afterCreatedAt
-  if (afterCreatedAt && data) {
-    return data.filter((record) => {
-      if (record.recorded_at === afterDate) {
-        return record.created_at > afterCreatedAt;
-      }
-      return true; // Include all records with recorded_at > afterDate
-    });
+  if (afterCreatedAt) {
+    query = query.gt('created_at', afterCreatedAt);
   }
+  const { data, error } = await query;
+
+  if (error) throw new Error(error.message);
 
   return data ?? [];
 }

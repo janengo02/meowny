@@ -64,7 +64,15 @@ export async function createTransaction(
     const normalizedFromMarketAmount =
       newFromMarketAmount < 0 ? 0 : newFromMarketAmount;
 
+    // Adjust all subsequent bucket value history records and update the bucket
+    await adjustBucketValueHistoryForHistoricalTransaction(
+      params.from_bucket_id,
+      transactionDate,
+      -params.amount,
+    );
+
     // Create bucket value history for from_bucket
+    // Must be done after adjustment to get correct contributed amount
     await createBucketValueHistory({
       bucket_id: params.from_bucket_id,
       contributed_amount: normalizedFromContributedAmount,
@@ -74,13 +82,6 @@ export async function createTransaction(
       source_id: transaction.id,
       notes: params.notes ?? null,
     });
-
-    // Adjust all subsequent bucket value history records and update the bucket
-    await adjustBucketValueHistoryForHistoricalTransaction(
-      params.from_bucket_id,
-      transactionDate,
-      -params.amount,
-    );
   }
 
   // Step 3: Update to_bucket if specified
@@ -107,7 +108,15 @@ export async function createTransaction(
     const normalizedToMarketAmount =
       newToMarketAmount < 0 ? 0 : newToMarketAmount;
 
+    // Adjust all subsequent bucket value history records and update the bucket
+    await adjustBucketValueHistoryForHistoricalTransaction(
+      params.to_bucket_id,
+      transactionDate,
+      params.amount,
+    );
+
     // Create bucket value history for to_bucket
+    // Must be done after adjustment to get correct contributed amount
     await createBucketValueHistory({
       bucket_id: params.to_bucket_id,
       contributed_amount: normalizedToContributedAmount,
@@ -117,13 +126,6 @@ export async function createTransaction(
       source_id: transaction.id,
       notes: params.notes ?? null,
     });
-
-    // Adjust all subsequent bucket value history records and update the bucket
-    await adjustBucketValueHistoryForHistoricalTransaction(
-      params.to_bucket_id,
-      transactionDate,
-      params.amount,
-    );
   }
 
   return transaction;
