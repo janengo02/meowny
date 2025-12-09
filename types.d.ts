@@ -290,6 +290,17 @@ type UpdateTransactionParams = {
   notes?: string | null;
 };
 
+type ExpenseTransactionSummary = {
+  bucket_id: number;
+  bucket_name: string;
+  total_amount: number;
+};
+
+type GetExpenseTransactionsByPeriodParams = {
+  startDate: string;
+  endDate: string;
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -464,6 +475,7 @@ type EventPayloadMapping = {
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
   'db:checkDuplicateTransaction': boolean;
+  'db:getExpenseTransactionsByPeriod': ExpenseTransactionSummary[];
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:getBucketValueHistoriesByBucket': BucketValueHistory[];
   'db:createBucketValueHistory': BucketValueHistory;
@@ -548,6 +560,9 @@ interface Window {
       to_bucket_id: number | null;
       notes: string | null;
     }) => Promise<boolean>;
+    getExpenseTransactionsByPeriod: (
+      params: GetExpenseTransactionsByPeriodParams,
+    ) => Promise<ExpenseTransactionSummary[]>;
     getValueHistoryWithTransactionsByBucket: (
       params: GetValueHistoryWithTransactionsByBucketParams,
     ) => Promise<ValueHistoryWithTransaction[]>;

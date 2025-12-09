@@ -81,6 +81,21 @@ export const transactionApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Transaction', 'Bucket'],
     }),
+    getExpenseTransactionsByPeriod: builder.query<
+      ExpenseTransactionSummary[],
+      GetExpenseTransactionsByPeriodParams
+    >({
+      queryFn: async (params) => {
+        try {
+          const data =
+            await window.electron.getExpenseTransactionsByPeriod(params);
+          return { data };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Transaction'],
+    }),
   }),
 });
 
@@ -91,4 +106,5 @@ export const {
   useCreateTransactionMutation,
   useUpdateTransactionMutation,
   useDeleteTransactionMutation,
+  useGetExpenseTransactionsByPeriodQuery,
 } = transactionApi;

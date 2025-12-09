@@ -263,3 +263,61 @@ export async function checkDuplicateTransaction(params: {
 
   return data !== null && data.length > 0;
 }
+
+export async function getExpenseTransactionsByPeriod(params: {
+  startDate: string;
+  endDate: string;
+}): Promise<ExpenseTransactionSummary[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Query all transactions within the target period
+  // Left join with bucket table on to_bucket_id
+  // Filter transactions with to_bucket_id of bucket with type 'expense' only
+  const { data: transactions, error } = await supabase
+    .from('transaction')
+    .select(
+      `
+      *,
+      to_bucket:bucket!transaction_to_bucket_id_fkey(
+        id,
+        name,
+        type
+      )
+    `,
+    )
+    .eq('user_id', userId)
+    .gte('transaction_date', params.startDate)
+    .lte('transaction_date', params.endDate)
+    .not('to_bucket_id', 'is', null)
+    .order('transaction_date', { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  // Group by expense bucket and sum the amounts
+  const expenseBuckets = new Map<number, ExpenseTransactionSummary>();
+
+  transactions?.forEach((transaction) => {
+    const toBucket = transaction.to_bucket as unknown as {
+      id: number;
+      name: string;
+      type: string;
+    } | null;
+
+    // Only include transactions where to_bucket.type === 'expense'
+    if (toBucket && toBucket.type === 'expense') {
+      if (!expenseBuckets.has(toBucket.id)) {
+        expenseBuckets.set(toBucket.id, {
+          bucket_id: toBucket.id,
+          bucket_name: toBucket.name,
+          total_amount: 0,
+        });
+      }
+
+      const summary = expenseBuckets.get(toBucket.id)!;
+      summary.total_amount += transaction.amount;
+    }
+  });
+
+  return Array.from(expenseBuckets.values());
+}

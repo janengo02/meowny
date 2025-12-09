@@ -94,6 +94,11 @@ app.on('ready', () => {
       notes: string | null;
     });
   });
+  ipcMainHandle('db:getExpenseTransactionsByPeriod', async (args) => {
+    return db.getExpenseTransactionsByPeriod(
+      args as GetExpenseTransactionsByPeriodParams,
+    );
+  });
   ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
     return db.getValueHistoryWithTransactionsByBucket(
       args as GetValueHistoryWithTransactionsByBucketParams,

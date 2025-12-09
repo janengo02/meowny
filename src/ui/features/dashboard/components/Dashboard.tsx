@@ -7,7 +7,7 @@ import { useDashboardError } from '../hooks/useDashboardError';
 import { IncomeList } from '../../income/components/IncomeList';
 import { ChartPlaceholder } from './ChartPlaceholder';
 import { AssetsOverTimeChart } from './AssetsOverTimeChart';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { ExpensePieChart } from './ExpensePieChart';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
@@ -76,11 +76,7 @@ function DashboardContent() {
             {/* 3. Left: Expenses chart, Right: Allowance chart */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <ChartPlaceholder
-                  title="Expenses"
-                  height={250}
-                  icon={<AccountBalanceWalletIcon sx={{ fontSize: 48 }} />}
-                />
+                <ExpensePieChart />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <ChartPlaceholder
