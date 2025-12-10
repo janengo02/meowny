@@ -51,6 +51,5 @@ export const columnMappingSchema = z.object({
 export type ColumnMappingFormData = z.infer<typeof columnMappingSchema>;
 
 export type MappedTransaction = TransactionImportFormData & {
-  bucket?: string; // Optional: Bucket name from CSV (used only during initial mapping)
   suggested_bucket_id?: number | null; // Optional: Bucket ID suggested by keyword mapping
 };

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Button } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
@@ -10,11 +10,37 @@ import type {
   ImportStatus,
   MappedTransaction,
 } from '../schemas/transaction.schema';
+import { createSelector } from '@reduxjs/toolkit';
+import { useAppSelector } from '../../../store/hooks';
 interface CsvRow {
   [key: string]: string;
 }
 
+// Memoized selector to only extract bucket name and id
+// This prevents unnecessary re-renders when bucket balances change
+// We use a custom equality check to deeply compare the extracted fields
+const selectBucketNameAndId = createSelector(
+  [(state) => state.bucket.buckets],
+  (buckets: { name: string; id: number }[]) =>
+    buckets.map(({ name, id }) => ({ name, id })),
+  {
+    memoizeOptions: {
+      // Custom equality function that compares the actual bucket names/ids
+      resultEqualityCheck: (
+        prev: { name: string; id: number }[],
+        next: { name: string; id: number }[],
+      ) => {
+        if (prev.length !== next.length) return false;
+        return prev.every(
+          (p, i) => p.id === next[i].id && p.name === next[i].name,
+        );
+      },
+    },
+  },
+);
+
 export function CsvImportFlow() {
+  const buckets = useAppSelector(selectBucketNameAndId);
   const [csvData, setCsvData] = useState<CsvRow[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [showMappingDialog, setShowMappingDialog] = useState(false);
@@ -23,7 +49,14 @@ export function CsvImportFlow() {
     MappedTransaction[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  // Create a map of bucket name (lowercase) to bucket ID for quick lookup
+  const bucketNameToIdMap = useMemo(() => {
+    const map = new Map<string, number>();
+    buckets.forEach((bucket) => {
+      map.set(bucket.name.toLowerCase().trim(), bucket.id);
+    });
+    return map;
+  }, [buckets]);
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -106,28 +139,32 @@ export function CsvImportFlow() {
     const mapped = await Promise.all(
       csvData.map(async (row) => {
         const notes = row[mapping.notes] || '';
-        const bucketName = row[mapping.bucket] || '';
-
-        // Try keyword-based bucket mapping if no bucket name provided
-        let suggestedBucketId: number | null = null;
-        if (!bucketName && notes) {
+        const transactionAmount = sanitizeMoneyInput(
+          row[mapping.transactionAmount] || '',
+        );
+        const bucketName = (row[mapping.bucket] || '').toLowerCase().trim();
+        let bucketId = bucketNameToIdMap.get(bucketName);
+        // If no bucket from name, use suggested bucket from keyword mapping
+        if (!bucketId && notes) {
+          // Try keyword-based bucket mapping if no bucket name provided
           try {
-            suggestedBucketId = await window.electron.getBucketFromKeywords(notes);
+            const result = await window.electron.getBucketFromKeywords(notes);
+            bucketId = result !== null ? result : undefined;
           } catch (error) {
             console.error('Error getting bucket from keywords:', error);
           }
         }
 
+        const bucketIdStr = bucketId ? bucketId.toString() : '';
+
         return {
           transaction_date: formatToDateTimeLocal(
             row[mapping.transactionDate] || '',
           ),
-          amount: sanitizeMoneyInput(row[mapping.transactionAmount] || ''),
+          amount: Math.abs(transactionAmount),
           notes: notes,
-          bucket: bucketName,
-          from_bucket_id: '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
-          to_bucket_id: '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
-          suggested_bucket_id: suggestedBucketId, // Pass keyword suggestion to preview
+          from_bucket_id: transactionAmount < 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+          to_bucket_id: transactionAmount > 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
           import_status: 'validating' as ImportStatus,
           should_import: true,
         };
@@ -172,7 +209,8 @@ export function CsvImportFlow() {
 
       <TransactionPreviewDialog
         open={showPreviewDialog}
-        transactions={mappedTransactions}
+        initialMappedTransactions={mappedTransactions}
+        buckets={buckets}
         onClose={handlePreviewClose}
       />
     </>

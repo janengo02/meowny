@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { createSelector } from '@reduxjs/toolkit';
 import {
   Dialog,
   DialogTitle,
@@ -20,49 +19,23 @@ import {
   Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useAppSelector } from '../../../store/hooks';
-import { type RootState } from '../../../store/store';
 import { useCreateTransactionMutation } from '../api/transactionApi';
 import { TransactionRow } from './TransactionRow';
-import {
-  type MappedTransaction,
-  type TransactionImportFormData,
-} from '../schemas/transaction.schema';
+import { type MappedTransaction } from '../schemas/transaction.schema';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 interface TransactionPreviewDialogProps {
   open: boolean;
-  transactions: MappedTransaction[];
+  initialMappedTransactions: MappedTransaction[];
+  buckets: { name: string; id: number }[];
   onClose: () => void;
 }
 
-// Memoized selector to only extract bucket name and id
-// This prevents unnecessary re-renders when bucket balances change
-// We use a custom equality check to deeply compare the extracted fields
-const selectBucketNameAndId = createSelector(
-  [(state: RootState) => state.bucket.buckets],
-  (buckets) => buckets.map(({ name, id }) => ({ name, id })),
-  {
-    memoizeOptions: {
-      // Custom equality function that compares the actual bucket names/ids
-      resultEqualityCheck: (
-        prev: { name: string; id: number }[],
-        next: { name: string; id: number }[],
-      ) => {
-        if (prev.length !== next.length) return false;
-        return prev.every(
-          (p, i) => p.id === next[i].id && p.name === next[i].name,
-        );
-      },
-    },
-  },
-);
-
 export function TransactionPreviewDialog({
   open,
-  transactions,
+  initialMappedTransactions,
+  buckets,
   onClose,
 }: TransactionPreviewDialogProps) {
-  const buckets = useAppSelector(selectBucketNameAndId);
   const [createTransaction] = useCreateTransactionMutation();
   const [editedTransactions, setEditedTransactions] = useState<
     MappedTransaction[]
@@ -78,58 +51,6 @@ export function TransactionPreviewDialog({
     message: string;
     severity: 'success' | 'error' | 'info';
   } | null>(null);
-
-  // Create a map of bucket name (lowercase) to bucket ID for quick lookup
-  const bucketNameToIdMap = useMemo(() => {
-    const map = new Map<string, number>();
-    buckets.forEach((bucket) => {
-      map.set(bucket.name.toLowerCase().trim(), bucket.id);
-    });
-    return map;
-  }, [buckets]);
-
-  // Auto-map bucket names from CSV to bucket IDs and sort by date
-  const initialMappedTransactions = useMemo(() => {
-    const mapped = transactions.map(
-      (transaction): TransactionImportFormData => {
-        const bucketName = (transaction.bucket || '').toLowerCase().trim();
-        let bucketId = bucketNameToIdMap.get(bucketName);
-
-        // If no bucket from name, use suggested bucket from keyword mapping
-        if (!bucketId && transaction.suggested_bucket_id) {
-          bucketId = transaction.suggested_bucket_id;
-        }
-
-        const bucketIdStr = bucketId ? bucketId.toString() : '';
-
-        // MappedTransaction already uses TransactionImportFormData field names
-        return {
-          transaction_date: transaction.transaction_date,
-          amount: Math.abs(transaction.amount),
-          notes: transaction.notes || '',
-          // If positive amount, set to_bucket_id; if negative, set from_bucket_id
-          from_bucket_id:
-            transaction.amount < 0
-              ? bucketIdStr
-              : transaction.from_bucket_id || '',
-          to_bucket_id:
-            transaction.amount >= 0
-              ? bucketIdStr
-              : transaction.to_bucket_id || '',
-          import_status: transaction.import_status,
-          should_import: transaction.should_import,
-        };
-      },
-    );
-
-    // Sort by transaction_date in ascending order (oldest first)
-    return mapped.sort((a, b) => {
-      return (
-        new Date(a.transaction_date).getTime() -
-        new Date(b.transaction_date).getTime()
-      );
-    });
-  }, [transactions, bucketNameToIdMap]);
 
   useEffect(() => {
     setEditedTransactions(initialMappedTransactions);

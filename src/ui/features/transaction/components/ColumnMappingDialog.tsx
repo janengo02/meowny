@@ -27,7 +27,7 @@ interface ColumnMappingDialogProps {
     transactionAmount: string;
     notes: string;
     bucket: string;
-  }) => void;
+  }) => void | Promise<void>;
 }
 
 export function ColumnMappingDialog({
@@ -58,8 +58,8 @@ export function ColumnMappingDialog({
     setIsProcessing(true);
     try {
       // Use setTimeout to allow UI to update before heavy processing
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      onComplete({
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await onComplete({
         transactionDate: data.transactionDate,
         transactionAmount: data.transactionAmount,
         notes: data.notes || '',
