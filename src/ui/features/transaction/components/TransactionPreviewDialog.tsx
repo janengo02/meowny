@@ -93,7 +93,13 @@ export function TransactionPreviewDialog({
     const mapped = transactions.map(
       (transaction): TransactionImportFormData => {
         const bucketName = (transaction.bucket || '').toLowerCase().trim();
-        const bucketId = bucketNameToIdMap.get(bucketName);
+        let bucketId = bucketNameToIdMap.get(bucketName);
+
+        // If no bucket from name, use suggested bucket from keyword mapping
+        if (!bucketId && transaction.suggested_bucket_id) {
+          bucketId = transaction.suggested_bucket_id;
+        }
+
         const bucketIdStr = bucketId ? bucketId.toString() : '';
 
         // MappedTransaction already uses TransactionImportFormData field names
@@ -324,9 +330,9 @@ export function TransactionPreviewDialog({
               </TableRow>
             </TableHead>
             <TableBody>
-              {initialMappedTransactions.map(
-                (initialTransaction: MappedTransaction, index: number) => {
-                  const editedTransaction = editedTransactions[index];
+              {editedTransactions.map(
+                (editedTransaction: MappedTransaction, index: number) => {
+                  const initialTransaction = initialMappedTransactions[index];
                   return (
                     <TransactionRow
                       key={index}

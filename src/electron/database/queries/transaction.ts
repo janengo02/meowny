@@ -5,6 +5,7 @@ import {
   getLastBucketValueHistoryBefore,
   adjustBucketValueHistoryForHistoricalTransaction,
 } from './bucketValueHistory.js';
+import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
 
 export async function createTransaction(
   params: CreateTransactionParams,
@@ -39,6 +40,16 @@ export async function createTransaction(
     .single();
 
   if (transactionError) throw new Error(transactionError.message);
+
+  // Step 1.5: Update keyword-bucket mappings for intelligent bucket assignment
+  // Track keywords from notes for to_bucket
+  if (params.notes) {
+    if (params.to_bucket_id) {
+      updateKeywordBucketMapping(params.notes, params.to_bucket_id).catch(
+        (err) => console.error('Failed to update keyword mapping:', err),
+      );
+    }
+  }
 
   // Step 2: Update from_bucket if specified
   if (params.from_bucket_id) {

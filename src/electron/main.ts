@@ -99,6 +99,9 @@ app.on('ready', () => {
       args as GetExpenseTransactionsByPeriodParams,
     );
   });
+  ipcMainHandle('db:getBucketFromKeywords', async (args) => {
+    return db.getBucketFromKeywords(args as string | null);
+  });
   ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
     return db.getValueHistoryWithTransactionsByBucket(
       args as GetValueHistoryWithTransactionsByBucketParams,

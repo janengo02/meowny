@@ -7,6 +7,7 @@ export * from './queries/bucketValueHistory.js';
 
 // Transaction queries
 export * from './queries/transaction.js';
+export * from './queries/keywordBucketMapping.js';
 
 // Income queries
 export * from './queries/incomeSource.js';

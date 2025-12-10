@@ -96,27 +96,43 @@ export function CsvImportFlow() {
     fileInputRef.current?.click();
   };
 
-  const handleMappingComplete = (mapping: {
+  const handleMappingComplete = async (mapping: {
     transactionDate: string;
     transactionAmount: string;
     notes: string;
     bucket: string;
   }) => {
     // Map CSV data to transactions based on column mapping
-    const mapped = csvData.map((row) => {
-      return {
-        transaction_date: formatToDateTimeLocal(
-          row[mapping.transactionDate] || '',
-        ),
-        amount: sanitizeMoneyInput(row[mapping.transactionAmount] || ''),
-        notes: row[mapping.notes] || '',
-        bucket: row[mapping.bucket] || '', // Map bucket name from CSV column
-        from_bucket_id: '', // Will be auto-mapped in preview dialog
-        to_bucket_id: '', // Will be auto-mapped in preview dialog
-        import_status: 'validating' as ImportStatus,
-        should_import: true,
-      };
-    });
+    const mapped = await Promise.all(
+      csvData.map(async (row) => {
+        const notes = row[mapping.notes] || '';
+        const bucketName = row[mapping.bucket] || '';
+
+        // Try keyword-based bucket mapping if no bucket name provided
+        let suggestedBucketId: number | null = null;
+        if (!bucketName && notes) {
+          try {
+            suggestedBucketId = await window.electron.getBucketFromKeywords(notes);
+          } catch (error) {
+            console.error('Error getting bucket from keywords:', error);
+          }
+        }
+
+        return {
+          transaction_date: formatToDateTimeLocal(
+            row[mapping.transactionDate] || '',
+          ),
+          amount: sanitizeMoneyInput(row[mapping.transactionAmount] || ''),
+          notes: notes,
+          bucket: bucketName,
+          from_bucket_id: '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+          to_bucket_id: '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+          suggested_bucket_id: suggestedBucketId, // Pass keyword suggestion to preview
+          import_status: 'validating' as ImportStatus,
+          should_import: true,
+        };
+      }),
+    );
 
     setMappedTransactions(mapped);
     setShowMappingDialog(false);

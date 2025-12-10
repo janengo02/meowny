@@ -476,6 +476,7 @@ type EventPayloadMapping = {
   'db:deleteTransaction': void;
   'db:checkDuplicateTransaction': boolean;
   'db:getExpenseTransactionsByPeriod': ExpenseTransactionSummary[];
+  'db:getBucketFromKeywords': number | null;
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:getBucketValueHistoriesByBucket': BucketValueHistory[];
   'db:createBucketValueHistory': BucketValueHistory;
@@ -563,6 +564,7 @@ interface Window {
     getExpenseTransactionsByPeriod: (
       params: GetExpenseTransactionsByPeriodParams,
     ) => Promise<ExpenseTransactionSummary[]>;
+    getBucketFromKeywords: (notes: string | null) => Promise<number | null>;
     getValueHistoryWithTransactionsByBucket: (
       params: GetValueHistoryWithTransactionsByBucketParams,
     ) => Promise<ValueHistoryWithTransaction[]>;
