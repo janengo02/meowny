@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
@@ -49,6 +49,36 @@ export function CsvImportFlow() {
     MappedTransaction[]
   >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Preload keyword-bucket mappings in the background
+  const [keywordMappingsCache, setKeywordMappingsCache] = useState<
+    Map<string, number>
+  >(new Map());
+
+  // Load all keyword mappings in the background when component mounts
+  useEffect(() => {
+    const loadKeywordMappings = async () => {
+      try {
+        const mappings = await window.electron.getKeywordBucketMappings();
+        const cache = new Map<string, number>();
+
+        // Build a cache of keyword -> best bucket ID
+        mappings.forEach((mapping) => {
+          // Find the bucket with the highest count for each keyword
+          const bestAssignment = mapping.bucket_assign_count.reduce(
+            (best, current) => (current.count > best.count ? current : best),
+          );
+          cache.set(mapping.keyword, bestAssignment.bucket_id);
+        });
+
+        setKeywordMappingsCache(cache);
+      } catch (error) {
+        console.error('Error preloading keyword mappings:', error);
+      }
+    };
+
+    loadKeywordMappings();
+  }, []);
+
   // Create a map of bucket name (lowercase) to bucket ID for quick lookup
   const bucketNameToIdMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -136,40 +166,41 @@ export function CsvImportFlow() {
     bucket: string;
   }) => {
     // Map CSV data to transactions based on column mapping
-    const mapped = await Promise.all(
-      csvData.map(async (row) => {
-        const notes = row[mapping.notes] || '';
-        const transactionAmount = sanitizeMoneyInput(
-          row[mapping.transactionAmount] || '',
-        );
-        const bucketName = (row[mapping.bucket] || '').toLowerCase().trim();
-        let bucketId = bucketNameToIdMap.get(bucketName);
-        // If no bucket from name, use suggested bucket from keyword mapping
-        if (!bucketId && notes) {
-          // Try keyword-based bucket mapping if no bucket name provided
-          try {
-            const result = await window.electron.getBucketFromKeywords(notes);
-            bucketId = result !== null ? result : undefined;
-          } catch (error) {
-            console.error('Error getting bucket from keywords:', error);
+    const mapped = csvData.map((row) => {
+      const notes = row[mapping.notes] || '';
+      const transactionAmount = sanitizeMoneyInput(
+        row[mapping.transactionAmount] || '',
+      );
+      const bucketName = (row[mapping.bucket] || '').toLowerCase().trim();
+      let bucketId = bucketNameToIdMap.get(bucketName);
+
+      // If no bucket from name, use preloaded keyword mapping cache
+      if (!bucketId && notes) {
+        // Process notes as a single keyword, removing all numbers (same logic as backend)
+        const keyword = notes.replace(/\d/g, '').trim();
+        if (keyword) {
+          // Check preloaded cache
+          const cachedBucketId = keywordMappingsCache.get(keyword);
+          if (cachedBucketId) {
+            bucketId = cachedBucketId;
           }
         }
+      }
 
-        const bucketIdStr = bucketId ? bucketId.toString() : '';
+      const bucketIdStr = bucketId ? bucketId.toString() : '';
 
-        return {
-          transaction_date: formatToDateTimeLocal(
-            row[mapping.transactionDate] || '',
-          ),
-          amount: Math.abs(transactionAmount),
-          notes: notes,
-          from_bucket_id: transactionAmount < 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
-          to_bucket_id: transactionAmount > 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
-          import_status: 'validating' as ImportStatus,
-          should_import: true,
-        };
-      }),
-    );
+      return {
+        transaction_date: formatToDateTimeLocal(
+          row[mapping.transactionDate] || '',
+        ),
+        amount: Math.abs(transactionAmount),
+        notes: notes,
+        from_bucket_id: transactionAmount < 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+        to_bucket_id: transactionAmount > 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+        import_status: 'validating' as ImportStatus,
+        should_import: true,
+      };
+    });
 
     setMappedTransactions(mapped);
     setShowMappingDialog(false);

@@ -102,6 +102,7 @@ app.on('ready', () => {
   ipcMainHandle('db:getBucketFromKeywords', async (args) => {
     return db.getBucketFromKeywords(args as string | null);
   });
+  ipcMainHandle('db:getKeywordBucketMappings', db.getKeywordBucketMappings);
   ipcMainHandle('db:getValueHistoryWithTransactionsByBucket', async (args) => {
     return db.getValueHistoryWithTransactionsByBucket(
       args as GetValueHistoryWithTransactionsByBucketParams,
