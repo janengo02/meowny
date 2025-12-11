@@ -13,6 +13,23 @@ export const incomeHistoryApi = baseApi.injectEndpoints({
       },
       providesTags: ['Income'],
     }),
+    getIncomeHistoriesByPeriod: builder.query<
+      IncomeHistory[],
+      { startDate?: string; endDate?: string }
+    >({
+      queryFn: async ({ startDate, endDate }) => {
+        try {
+          const incomeHistories = await window.electron.getIncomeHistoriesByPeriod({
+            startDate,
+            endDate,
+          });
+          return { data: incomeHistories };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Income'],
+    }),
     getIncomeHistory: builder.query<IncomeHistory, number>({
       queryFn: async (id) => {
         try {
@@ -93,6 +110,7 @@ export const incomeHistoryApi = baseApi.injectEndpoints({
 
 export const {
   useGetIncomeHistoriesQuery,
+  useGetIncomeHistoriesByPeriodQuery,
   useGetIncomeHistoryQuery,
   useGetIncomeHistoriesBySourceQuery,
   useCreateIncomeHistoryMutation,

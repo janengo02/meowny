@@ -9,7 +9,7 @@ import { ChartPlaceholder } from './ChartPlaceholder';
 import { AssetsOverTimeChart } from './AssetsOverTimeChart';
 import { ExpensePieChart } from './ExpensePieChart';
 import { BucketGoalsChart } from './BucketGoalsChart';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import { IncomeOverTimeChart } from './IncomeOverTimeChart';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
 function DashboardContent() {
@@ -94,11 +94,7 @@ function DashboardContent() {
             {/* 5. Left: Income chart, Right: Income Vs Saving chart */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <ChartPlaceholder
-                  title="Income Over Time"
-                  height={250}
-                  icon={<TrendingUpIcon sx={{ fontSize: 48 }} />}
-                />
+                <IncomeOverTimeChart />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
                 <ChartPlaceholder

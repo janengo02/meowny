@@ -350,6 +350,11 @@ type UpdateIncomeHistoryParams = {
   notes?: string | null;
 };
 
+type GetIncomeHistoriesByPeriodParams = {
+  startDate?: string;
+  endDate?: string;
+};
+
 // Tax Category
 type CreateTaxCategoryParams = {
   name: string;
@@ -503,6 +508,7 @@ type EventPayloadMapping = {
   'db:deleteIncomeCategory': void;
   'db:getIncomeHistories': IncomeHistory[];
   'db:getIncomeHistory': IncomeHistory;
+  'db:getIncomeHistoriesByPeriod': IncomeHistory[];
   'db:getIncomeHistoriesBySource': IncomeHistory[];
   'db:createIncomeHistory': IncomeHistory;
   'db:updateIncomeHistory': IncomeHistory;
@@ -621,6 +627,9 @@ interface Window {
     // Income History methods
     getIncomeHistories: () => Promise<IncomeHistory[]>;
     getIncomeHistory: (id: number) => Promise<IncomeHistory>;
+    getIncomeHistoriesByPeriod: (
+      params: GetIncomeHistoriesByPeriodParams,
+    ) => Promise<IncomeHistory[]>;
     getIncomeHistoriesBySource: (incomeId: number) => Promise<IncomeHistory[]>;
     createIncomeHistory: (
       params: CreateIncomeHistoryParams,

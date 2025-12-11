@@ -89,6 +89,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
   // Income History methods
   getIncomeHistories: () => ipcInvoke('db:getIncomeHistories'),
   getIncomeHistory: (id: number) => ipcInvoke('db:getIncomeHistory', id),
+  getIncomeHistoriesByPeriod: (params: GetIncomeHistoriesByPeriodParams) =>
+    ipcInvoke('db:getIncomeHistoriesByPeriod', params),
   getIncomeHistoriesBySource: (incomeId: number) =>
     ipcInvoke('db:getIncomeHistoriesBySource', incomeId),
   createIncomeHistory: (params: CreateIncomeHistoryParams) =>

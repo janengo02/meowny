@@ -184,6 +184,11 @@ app.on('ready', () => {
   ipcMainHandle('db:getIncomeHistory', async (args) => {
     return db.getIncomeHistory(args as number);
   });
+  ipcMainHandle('db:getIncomeHistoriesByPeriod', async (args) => {
+    return db.getIncomeHistoriesByPeriod(
+      args as GetIncomeHistoriesByPeriodParams,
+    );
+  });
   ipcMainHandle('db:getIncomeHistoriesBySource', async (args) => {
     return db.getIncomeHistoriesBySource(args as number);
   });

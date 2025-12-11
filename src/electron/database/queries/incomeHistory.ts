@@ -60,6 +60,33 @@ export async function getIncomeHistory(id: number): Promise<IncomeHistory> {
   return data;
 }
 
+export async function getIncomeHistoriesByPeriod(
+  params: GetIncomeHistoriesByPeriodParams,
+): Promise<IncomeHistory[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  let query = supabase
+    .from('income_history')
+    .select()
+    .eq('user_id', userId);
+
+  // Add period filters if provided
+  if (params.startDate) {
+    query = query.gte('received_date', params.startDate);
+  }
+  if (params.endDate) {
+    query = query.lte('received_date', params.endDate);
+  }
+
+  const { data, error } = await query.order('received_date', {
+    ascending: false,
+  });
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function getIncomeHistoriesBySource(
   incomeId: number,
 ): Promise<IncomeHistory[]> {
