@@ -2,6 +2,17 @@ import { baseApi } from '../../../store/baseApi';
 
 export const bucketGoalApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getAllBucketGoalsWithStatus: builder.query<AllBucketGoalsWithStatus[], void>({
+      queryFn: async () => {
+        try {
+          const data = await window.electron.getAllBucketGoalsWithStatus();
+          return { data };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Bucket'],
+    }),
     getBucketGoalsByBucket: builder.query<BucketGoalWithStatus[], number>({
       queryFn: async (bucketId) => {
         try {
@@ -64,6 +75,7 @@ export const bucketGoalApi = baseApi.injectEndpoints({
 });
 
 export const {
+  useGetAllBucketGoalsWithStatusQuery,
   useGetBucketGoalsByBucketQuery,
   useCreateBucketGoalMutation,
   useUpdateBucketGoalMutation,

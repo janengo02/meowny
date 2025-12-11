@@ -83,6 +83,10 @@ type BucketGoalWithStatus = BucketGoal & {
   current_status: number;
 };
 
+type AllBucketGoalsWithStatus = BucketGoalWithStatus & {
+  bucket_name: string;
+};
+
 type Transaction = {
   id: number;
   user_id: string;
@@ -483,6 +487,7 @@ type EventPayloadMapping = {
   'db:deleteBucketValueHistory': void;
   'db:getAssetsValueHistory': AssetsValueHistoryResponse;
   'db:getBucketGoalsWithStatus': BucketGoalWithStatus[];
+  'db:getAllBucketGoalsWithStatus': AllBucketGoalsWithStatus[];
   'db:createBucketGoal': BucketGoal;
   'db:updateBucketGoal': BucketGoal;
   'db:deleteBucketGoal': void;
@@ -581,6 +586,7 @@ interface Window {
     getBucketGoalsWithStatus: (
       bucketId: number,
     ) => Promise<BucketGoalWithStatus[]>;
+    getAllBucketGoalsWithStatus: () => Promise<AllBucketGoalsWithStatus[]>;
     createBucketGoal: (params: CreateBucketGoalParams) => Promise<BucketGoal>;
     updateBucketGoal: (
       id: number,

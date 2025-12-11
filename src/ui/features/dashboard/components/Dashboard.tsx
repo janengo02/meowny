@@ -8,6 +8,7 @@ import { IncomeList } from '../../income/components/IncomeList';
 import { ChartPlaceholder } from './ChartPlaceholder';
 import { AssetsOverTimeChart } from './AssetsOverTimeChart';
 import { ExpensePieChart } from './ExpensePieChart';
+import { BucketGoalsChart } from './BucketGoalsChart';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 
@@ -79,11 +80,7 @@ function DashboardContent() {
                 <ExpensePieChart />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <ChartPlaceholder
-                  title="Allowance"
-                  height={250}
-                  icon={<TrendingUpIcon sx={{ fontSize: 48 }} />}
-                />
+                <BucketGoalsChart />
               </Grid>
             </Grid>
 

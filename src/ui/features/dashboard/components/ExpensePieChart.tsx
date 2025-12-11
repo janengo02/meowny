@@ -146,7 +146,7 @@ export function ExpensePieChart() {
 
   if (isLoading) {
     return (
-      <Card sx={{ height: 250 }}>
+      <Card sx={{ height: 500 }}>
         <CardContent
           sx={{
             height: '100%',
@@ -163,7 +163,7 @@ export function ExpensePieChart() {
 
   return (
     <FormProvider {...methods}>
-      <Card sx={{ height: 250 }}>
+      <Card sx={{ height: 500 }}>
         <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           <Box
             sx={{
@@ -205,7 +205,7 @@ export function ExpensePieChart() {
           </Stack>
 
           {/* Chart */}
-          <Box sx={{ flex: 1, minHeight: 0 }}>
+          <Box sx={{ flex: 1, minHeight: 0, maxHeight: 250, margin: 'auto' }}>
             {error ? (
               <ErrorState
                 title="Failed to load expense data"

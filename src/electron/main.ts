@@ -124,6 +124,9 @@ app.on('ready', () => {
   ipcMainHandle('db:getBucketGoalsWithStatus', async (args) => {
     return db.getBucketGoalsWithStatus(args as number);
   });
+  ipcMainHandle('db:getAllBucketGoalsWithStatus', async () => {
+    return db.getAllBucketGoalsWithStatus();
+  });
   ipcMainHandle('db:createBucketGoal', async (args) => {
     return db.createBucketGoal(args as CreateBucketGoalParams);
   });

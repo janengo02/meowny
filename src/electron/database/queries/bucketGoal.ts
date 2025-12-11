@@ -132,3 +132,20 @@ export async function getBucketGoalsWithStatus(
   if (error) throw new Error(error.message);
   return data;
 }
+
+export async function getAllBucketGoalsWithStatus(): Promise<
+  AllBucketGoalsWithStatus[]
+> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase.rpc(
+    'get_all_bucket_goals_with_status',
+    {
+      p_user_id: userId,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  return data;
+}
