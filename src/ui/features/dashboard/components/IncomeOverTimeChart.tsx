@@ -43,8 +43,8 @@ import { useGetIncomeHistoriesByPeriodQuery } from '../../income/api/incomeHisto
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 
-// Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend, barTotalLabelPlugin);
+// Register Chart.js components (without plugin - it will be added per-instance)
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 // Form schema
 const incomeChartFilterSchema = z
@@ -403,7 +403,7 @@ export function IncomeOverTimeChart() {
                 description="Please try refreshing the page"
               />
             ) : chartData ? (
-              <Bar data={chartData} options={barChartOptions} />
+              <Bar data={chartData} options={barChartOptions} plugins={[barTotalLabelPlugin]} />
             ) : (
               <EmptyState
                 icon={

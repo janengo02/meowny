@@ -19,3 +19,9 @@ export const chartFilterSchema = z
   );
 
 export type ChartFilterFormData = z.infer<typeof chartFilterSchema>;
+
+export const expensePieChartFormSchema = z.object({
+  targetMonth: z.custom<Dayjs>((val) => val !== null && val !== undefined),
+});
+
+export type ExpensePieChartFormData = z.infer<typeof expensePieChartFormSchema>;

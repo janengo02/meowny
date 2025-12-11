@@ -12,82 +12,40 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import dayjs, { type Dayjs } from 'dayjs';
 import { Pie } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  ArcElement,
-  Tooltip,
-  Legend,
-  type ChartOptions,
-} from 'chart.js';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { useGetExpenseTransactionsByPeriodQuery } from '../../transaction/api/transactionApi';
 import { useMemo, useState } from 'react';
-import { CHART_COLORS } from '../../../shared/utils/chart';
+import { CHART_COLORS, pieChartOptions } from '../../../shared/utils/chart';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
-import { formatMoney } from '../../../shared/utils/formatMoney';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
 import { FormProvider, useForm } from 'react-hook-form';
+import type { ExpensePieChartFormData } from '../schemas/dashboard.schemas';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const pieChartOptions: ChartOptions<'pie'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: 'right' as const,
-      labels: {
-        boxWidth: 12,
-        padding: 10,
-        font: {
-          size: 11,
-        },
-      },
-    },
-    tooltip: {
-      callbacks: {
-        label: function (context) {
-          const label = context.label || '';
-          const value = context.parsed || 0;
-          const total = context.dataset.data.reduce(
-            (acc: number, val) => acc + (val as number),
-            0,
-          );
-          const percentage = ((value / total) * 100).toFixed(1);
-          return `${label}: ${formatMoney(value)} (${percentage}%)`;
-        },
-      },
-    },
-  },
-};
-
-type FormData = {
-  targetMonth: Dayjs;
-};
-
 export function ExpensePieChart() {
   const [targetMonth, setTargetMonth] = useState<Dayjs>(dayjs());
 
-  const methods = useForm<FormData>({
+  const methods = useForm<ExpensePieChartFormData>({
     defaultValues: {
       targetMonth: dayjs(),
     },
   });
 
   // Calculate start and end dates for the query
-  const queryParams = useMemo(():
-    | GetExpenseTransactionsByPeriodParams
-    | null => {
-    const startDate = formatDateForDB(targetMonth.startOf('month'));
-    const endDate = formatDateForDB(targetMonth.endOf('month'));
+  const queryParams =
+    useMemo((): GetExpenseTransactionsByPeriodParams | null => {
+      const startDate = formatDateForDB(targetMonth.startOf('month'));
+      const endDate = formatDateForDB(targetMonth.endOf('month'));
 
-    return {
-      startDate,
-      endDate,
-    };
-  }, [targetMonth]);
+      return {
+        startDate,
+        endDate,
+      };
+    }, [targetMonth]);
 
   const { data, isLoading, error } = useGetExpenseTransactionsByPeriodQuery(
     queryParams!,
@@ -164,7 +122,9 @@ export function ExpensePieChart() {
   return (
     <FormProvider {...methods}>
       <Card sx={{ height: 500 }}>
-        <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <CardContent
+          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+        >
           <Box
             sx={{
               display: 'flex',
@@ -205,14 +165,30 @@ export function ExpensePieChart() {
           </Stack>
 
           {/* Chart */}
-          <Box sx={{ flex: 1, minHeight: 0, maxHeight: 250, margin: 'auto' }}>
+          <Box
+            sx={{
+              flex: 1,
+              width: '100%',
+              height: '100%',
+              maxHeight: 250,
+              margin: 'auto 0',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             {error ? (
               <ErrorState
                 title="Failed to load expense data"
                 description="Please try refreshing the page"
               />
             ) : chartData ? (
-              <Pie data={chartData} options={pieChartOptions} />
+              <Pie
+                key={`pie-chart-${targetMonth.format('YYYY-MM')}`}
+                data={chartData}
+                options={pieChartOptions}
+              />
             ) : (
               <EmptyState
                 icon={

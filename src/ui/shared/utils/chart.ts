@@ -319,6 +319,37 @@ export const barTotalWithReturnPlugin = {
   },
 };
 
+export const pieChartOptions: ChartOptions<'pie'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'right' as const,
+      labels: {
+        boxWidth: 12,
+        padding: 10,
+        font: {
+          size: 11,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          const label = context.label || '';
+          const value = context.parsed || 0;
+          const total = context.dataset.data.reduce(
+            (acc: number, val) => acc + (val as number),
+            0,
+          );
+          const percentage = ((value / total) * 100).toFixed(1);
+          return `${label}: ${formatMoney(value)} (${percentage}%)`;
+        },
+      },
+    },
+  },
+};
+
 // Helper to get checkpoint dates (end of month or year)
 export const getCheckpoints = (
   periodFrom: Dayjs | Date | string,
