@@ -1,6 +1,7 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 import { getLatestBucketValueHistory } from './bucketValueHistory.js';
+import { clearKeywordMappingsForBucket } from './keywordBucketMapping.js';
 
 export async function createBucket(
   params: CreateBucketParams,
@@ -104,6 +105,9 @@ export async function updateBucket(
 export async function deleteBucket(id: number): Promise<void> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
+
+  // Clear keyword mappings for this bucket
+  await clearKeywordMappingsForBucket(id);
 
   const { error } = await supabase
     .from('bucket')
