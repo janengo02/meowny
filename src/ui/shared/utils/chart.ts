@@ -350,6 +350,84 @@ export const pieChartOptions: ChartOptions<'pie'> = {
   },
 };
 
+// Custom dataset type with metadata for horizontal bar charts
+export interface DatasetWithMetadata {
+  label: string;
+  data: number[];
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+  metadata: number[] | { amount: number; target?: number }[];
+}
+
+export const horizontalBarChartOptions: ChartOptions<'bar'> = {
+  indexAxis: 'y' as const,
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      beginAtZero: true,
+      stacked: true,
+      ticks: {
+        callback: function (value) {
+          return value + '%';
+        },
+      },
+    },
+    y: {
+      stacked: true,
+      ticks: {
+        font: {
+          size: 11,
+        },
+      },
+    },
+  },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'bottom' as const,
+      labels: {
+        boxWidth: 12,
+        padding: 8,
+        font: {
+          size: 10,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          const datasetLabel = context.dataset.label || '';
+          const value = context.parsed.x || 0;
+          const dataIndex = context.dataIndex;
+
+          // Get the actual amounts from the dataset metadata
+          const dataset = context.dataset as unknown as DatasetWithMetadata;
+          if (!dataset.metadata || !dataset.metadata[dataIndex]) {
+            return `${datasetLabel}: ${value.toFixed(1)}%`;
+          }
+
+          const metadataItem = dataset.metadata[dataIndex];
+
+          // Handle both simple number and object with target
+          if (typeof metadataItem === 'number') {
+            return `${datasetLabel}: ${formatMoney(metadataItem)} (${value.toFixed(1)}%)`;
+          } else {
+            const lines = [
+              `${datasetLabel}: ${formatMoney(metadataItem.amount)} (${value.toFixed(1)}%)`,
+            ];
+            if (metadataItem.target !== undefined) {
+              lines.push(`🎯 Target: ${formatMoney(metadataItem.target)}`);
+            }
+            return lines;
+          }
+        },
+      },
+    },
+  },
+};
+
 // Helper to get checkpoint dates (end of month or year)
 export const getCheckpoints = (
   periodFrom: Dayjs | Date | string,

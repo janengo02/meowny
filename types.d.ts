@@ -85,6 +85,7 @@ type BucketGoalWithStatus = BucketGoal & {
 
 type AllBucketGoalsWithStatus = BucketGoalWithStatus & {
   bucket_name: string;
+  bucket_type: BucketTypeEnum;
 };
 
 type Transaction = {
