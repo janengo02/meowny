@@ -14,14 +14,14 @@ import { formatMoney } from '../../../shared/utils';
 interface BucketCardProps {
   bucket: Bucket;
   category?: BucketCategory | null;
-  location?: BucketLocation | null;
+  account?: Account | null;
   onClick?: () => void;
 }
 
 export function BucketCard({
   bucket,
   category,
-  location,
+  account,
   onClick,
 }: BucketCardProps) {
   return (
@@ -41,13 +41,13 @@ export function BucketCard({
                 sx={{ borderColor: category.color, color: category.color }}
               />
             )}
-            {location && (
+            {account && (
               <Chip
                 icon={<LocationOnIcon sx={{ fontSize: 14 }} />}
-                label={location.name}
+                label={account.name}
                 size="small"
                 variant="outlined"
-                sx={{ borderColor: location.color, color: location.color }}
+                sx={{ borderColor: account.color, color: account.color }}
               />
             )}
           </Box>

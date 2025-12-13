@@ -15,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetBucketQuery } from '../api/bucketApi';
 import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
-import { BucketLocationSelect } from './BucketLocationSelect';
+import { AccountSelect } from './AccountSelect';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
 import { BucketGoal } from './BucketGoal';
 import { BucketValueHistoryChart } from './BucketValueHistoryChart';
@@ -133,9 +133,10 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             bucketId={bucket.id}
             value={bucket.bucket_category_id}
           />
-          <BucketLocationSelect
+          <AccountSelect
             bucketId={bucket.id}
-            value={bucket.bucket_location_id}
+            bucketType={bucket.type}
+            value={bucket.account_id}
           />
         </Box>
       </Box>

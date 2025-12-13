@@ -350,9 +350,9 @@ export async function getAssetsValueHistory(
       name,
       type,
       bucket_category_id,
-      bucket_location_id,
+      account_id,
       category:bucket_category_id(id, name, color),
-      location:bucket_location_id(id, name, color)
+      account:account_id(id, name, color)
     `,
     )
     .eq('user_id', userId)
@@ -398,9 +398,9 @@ export async function getAssetsValueHistory(
     category: Array.isArray(bucket.category)
       ? bucket.category[0] || null
       : bucket.category || null,
-    location: Array.isArray(bucket.location)
-      ? bucket.location[0] || null
-      : bucket.location || null,
+    account: Array.isArray(bucket.account)
+      ? bucket.account[0] || null
+      : bucket.account || null,
     history: historyByBucket.get(bucket.id) || [],
   }));
 

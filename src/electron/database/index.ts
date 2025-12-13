@@ -1,7 +1,7 @@
 // Bucket queries
 export * from './queries/bucket.js';
 export * from './queries/bucketCategory.js';
-export * from './queries/bucketLocation.js';
+export * from './queries/account.js';
 export * from './queries/bucketGoal.js';
 export * from './queries/bucketValueHistory.js';
 

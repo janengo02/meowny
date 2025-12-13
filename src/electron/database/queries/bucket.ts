@@ -2,6 +2,7 @@ import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 import { getLatestBucketValueHistory } from './bucketValueHistory.js';
 import { clearKeywordMappingsForBucket } from './keywordBucketMapping.js';
+import { getAccount } from './account.js';
 
 export async function createBucket(
   params: CreateBucketParams,
@@ -16,6 +17,14 @@ export async function createBucket(
     throw new Error('Bucket type is required');
   }
 
+  // If an account is specified, validate that types match
+  if (params.account_id !== undefined && params.account_id !== null) {
+    const account = await getAccount(params.account_id);
+    if (account.type !== params.type) {
+      throw new Error(`Cannot create ${params.type} bucket in ${account.type} account. Types must match.`);
+    }
+  }
+
   const { data, error } = await supabase
     .from('bucket')
     .insert({
@@ -23,7 +32,7 @@ export async function createBucket(
       name: params.name.trim(),
       type: params.type,
       bucket_category_id: params.bucket_category_id ?? null,
-      bucket_location_id: params.bucket_location_id ?? null,
+      account_id: params.account_id ?? null,
       contributed_amount: params.contributed_amount ?? 0,
       market_value: params.market_value ?? 0,
       is_hidden: params.is_hidden ?? false,
@@ -76,13 +85,29 @@ export async function updateBucket(
     throw new Error('Bucket name cannot be empty');
   }
 
+  // Get current bucket data for validation
+  const bucket = await getBucket(id);
+
+  // If trying to change type, check if bucket has an account
+  if (params.type !== undefined && bucket.account_id !== null) {
+    throw new Error('Cannot change bucket type when it has an account assigned');
+  }
+
+  // If assigning an account, validate that types match
+  if (params.account_id !== undefined && params.account_id !== null) {
+    const account = await getAccount(params.account_id);
+    if (account.type !== bucket.type) {
+      throw new Error(`Cannot assign ${account.type} account to ${bucket.type} bucket. Types must match.`);
+    }
+  }
+
   const updateData: Record<string, unknown> = {};
   if (params.name !== undefined) updateData.name = params.name.trim();
   if (params.type !== undefined) updateData.type = params.type;
   if (params.bucket_category_id !== undefined)
     updateData.bucket_category_id = params.bucket_category_id;
-  if (params.bucket_location_id !== undefined)
-    updateData.bucket_location_id = params.bucket_location_id;
+  if (params.account_id !== undefined)
+    updateData.account_id = params.account_id;
   if (params.contributed_amount !== undefined)
     updateData.contributed_amount = params.contributed_amount;
   if (params.market_value !== undefined)

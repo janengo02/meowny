@@ -40,10 +40,11 @@ type BucketCategory = {
   updated_at: string;
 };
 
-type BucketLocation = {
+type Account = {
   id: number;
   user_id: string;
   name: string;
+  type: BucketTypeEnum;
   color: ColorEnum;
   notes: string | null;
   created_at: string;
@@ -56,7 +57,7 @@ type Bucket = {
   name: string;
   type: BucketTypeEnum;
   bucket_category_id: number | null;
-  bucket_location_id: number | null;
+  account_id: number | null;
   contributed_amount: number;
   market_value: number;
   is_hidden: boolean;
@@ -191,7 +192,7 @@ type CreateBucketParams = {
   name: string;
   type: BucketTypeEnum;
   bucket_category_id?: number | null;
-  bucket_location_id?: number | null;
+  account_id?: number | null;
   contributed_amount?: number;
   market_value?: number;
   is_hidden?: boolean;
@@ -202,7 +203,7 @@ type UpdateBucketParams = {
   name?: string;
   type?: BucketTypeEnum;
   bucket_category_id?: number | null;
-  bucket_location_id?: number | null;
+  account_id?: number | null;
   contributed_amount?: number;
   market_value?: number;
   is_hidden?: boolean;
@@ -222,15 +223,17 @@ type UpdateBucketCategoryParams = {
   notes?: string | null;
 };
 
-// Bucket Location
-type CreateBucketLocationParams = {
+// Account
+type CreateAccountParams = {
   name: string;
+  type: BucketTypeEnum;
   color?: ColorEnum;
   notes?: string | null;
 };
 
-type UpdateBucketLocationParams = {
+type UpdateAccountParams = {
   name?: string;
+  type?: BucketTypeEnum;
   color?: ColorEnum;
   notes?: string | null;
 };
@@ -447,7 +450,7 @@ type AssetsBucketData = {
     name: string;
     color: ColorEnum;
   } | null;
-  location: {
+  account: {
     id: number;
     name: string;
     color: ColorEnum;
@@ -490,8 +493,8 @@ type EventPayloadMapping = {
   'db:deleteBucket': void;
   'db:getBucketCategories': BucketCategory[];
   'db:createBucketCategory': BucketCategory;
-  'db:getBucketLocations': BucketLocation[];
-  'db:createBucketLocation': BucketLocation;
+  'db:getAccounts': Account[];
+  'db:createAccount': Account;
   'db:getTransactions': Transaction[];
   'db:getTransaction': Transaction;
   'db:getTransactionsByBucket': Transaction[];
@@ -566,10 +569,10 @@ interface Window {
     createBucketCategory: (
       params: CreateBucketCategoryParams,
     ) => Promise<BucketCategory>;
-    getBucketLocations: () => Promise<BucketLocation[]>;
-    createBucketLocation: (
-      params: CreateBucketLocationParams,
-    ) => Promise<BucketLocation>;
+    getAccounts: () => Promise<Account[]>;
+    createAccount: (
+      params: CreateAccountParams,
+    ) => Promise<Account>;
     getTransactions: () => Promise<Transaction[]>;
     getTransaction: (id: number) => Promise<Transaction>;
     getTransactionsByBucket: (bucketId: number) => Promise<Transaction[]>;

@@ -121,9 +121,9 @@ export function AssetsOverTimeChart() {
           groupKey = bucket.category ? bucket.category.id : 'no_group';
           groupName = bucket.category ? bucket.category.name : 'No Category';
           break;
-        case 'location':
-          groupKey = bucket.location ? bucket.location.id : 'no_group';
-          groupName = bucket.location ? bucket.location.name : 'No Location';
+        case 'account':
+          groupKey = bucket.account ? bucket.account.id : 'no_group';
+          groupName = bucket.account ? bucket.account.name : 'No Account';
           break;
         case 'bucket':
         default:
@@ -261,7 +261,7 @@ export function AssetsOverTimeChart() {
                 options={[
                   { value: 'bucket', label: 'Bucket' },
                   { value: 'category', label: 'Category' },
-                  { value: 'location', label: 'Location' },
+                  { value: 'account', label: 'Account' },
                 ]}
               />
             </Stack>

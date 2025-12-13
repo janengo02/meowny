@@ -61,9 +61,9 @@ app.on('ready', () => {
   ipcMainHandle('db:createBucketCategory', async (args) => {
     return db.createBucketCategory(args as CreateBucketCategoryParams);
   });
-  ipcMainHandle('db:getBucketLocations', db.getBucketLocations);
-  ipcMainHandle('db:createBucketLocation', async (args) => {
-    return db.createBucketLocation(args as CreateBucketLocationParams);
+  ipcMainHandle('db:getAccounts', db.getAccounts);
+  ipcMainHandle('db:createAccount', async (args) => {
+    return db.createAccount(args as CreateAccountParams);
   });
   ipcMainHandle('db:getTransactions', db.getTransactions);
   ipcMainHandle('db:getTransaction', async (args) => {

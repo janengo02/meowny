@@ -4,7 +4,7 @@ import type { Dayjs } from 'dayjs';
 export const chartFilterSchema = z
   .object({
     mode: z.enum(['month', 'year']),
-    groupBy: z.enum(['bucket', 'category', 'location']),
+    groupBy: z.enum(['bucket', 'category', 'account']),
     periodFrom: z.custom<Dayjs>((val) => val !== null && val !== undefined),
     periodTo: z.custom<Dayjs>((val) => val !== null && val !== undefined),
   })
