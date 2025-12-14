@@ -6,6 +6,7 @@ import {
   IconButton,
   Typography,
   Stack,
+  Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -13,9 +14,8 @@ import dayjs from 'dayjs';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useGetBucketQuery } from '../api/bucketApi';
-import { BucketTypeSelect } from './BucketTypeSelect';
 import { BucketCategorySelect } from './BucketCategorySelect';
-import { AccountSelect } from './AccountSelect';
+import { useAppSelector } from '../../../store/hooks';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
 import { BucketGoal } from './BucketGoal';
 import { BucketValueHistoryChart } from './BucketValueHistoryChart';
@@ -28,6 +28,7 @@ import {
 import { BucketSummary } from './BucketSummary';
 import { BucketTitle } from './BucketTitle';
 import { BucketModalFooter } from './BucketModalFooter';
+import { selectAccountById } from '../../account/selectors/accountSelectors';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -39,6 +40,11 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   const { data: bucket, isLoading } = useGetBucketQuery(bucketId!, {
     skip: !bucketId,
   });
+
+  // Get the account for this bucket
+  const account = useAppSelector((state) =>
+    bucket?.account_id ? selectAccountById(state, bucket.account_id) : null,
+  );
 
   // Period filter form
   const methods = useForm<BucketChartFilterFormData>({
@@ -128,15 +134,28 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-          <BucketTypeSelect bucketId={bucket.id} value={bucket.type} />
+          <Chip
+            label={bucket.type}
+            size="medium"
+            sx={{
+              textTransform: 'capitalize',
+            }}
+            variant="outlined"
+          />
+          {account && (
+            <Chip
+              label={account.name}
+              size="medium"
+              sx={{
+                borderColor: account.color,
+                color: account.color,
+              }}
+              variant="outlined"
+            />
+          )}
           <BucketCategorySelect
             bucketId={bucket.id}
             value={bucket.bucket_category_id}
-          />
-          <AccountSelect
-            bucketId={bucket.id}
-            bucketType={bucket.type}
-            value={bucket.account_id}
           />
         </Box>
       </Box>

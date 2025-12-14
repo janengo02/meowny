@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
 import { Box, Container, Alert, Grid } from '@mui/material';
 import { Navbar } from './Navbar';
-import { BucketList } from '../../bucket/components/BucketList';
+import { AccountList } from '../../account/components/AccountList';
 import { DashboardErrorProvider } from '../context/DashboardErrorProvider';
 import { useDashboardError } from '../hooks/useDashboardError';
 import { IncomeList } from '../../income/components/IncomeList';
@@ -11,16 +10,13 @@ import { ExpensePieChart } from './ExpensePieChart';
 import { BucketGoalsChart } from './BucketGoalsChart';
 import { IncomeOverTimeChart } from './IncomeOverTimeChart';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import { useGetAccountsWithBucketsQuery } from '../../account/api/accountApi';
 
 function DashboardContent() {
   const { error } = useDashboardError();
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (!isModalOpen) {
-      window.scrollTo({ left: 0, behavior: 'smooth' });
-    }
-  }, [isModalOpen]);
+  // Fetch all accounts with their buckets to populate the store
+  useGetAccountsWithBucketsQuery();
 
   return (
     <Box
@@ -56,21 +52,13 @@ function DashboardContent() {
               <AssetsOverTimeChart />
             </Box>
 
-            {/* 2. Left: Saving buckets, Right: Investment buckets */}
+            {/* 2. Left: Saving accounts, Right: Investment accounts */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, md: 6 }}>
-                <BucketList
-                  type="saving"
-                  title="Saving Buckets"
-                  onModalOpenChange={setIsModalOpen}
-                />
+                <AccountList type="saving" />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <BucketList
-                  type="investment"
-                  title="Investment Buckets"
-                  onModalOpenChange={setIsModalOpen}
-                />
+                <AccountList type="investment" />
               </Grid>
             </Grid>
 
@@ -84,13 +72,12 @@ function DashboardContent() {
               </Grid>
             </Grid>
 
-            {/* 4. Expense buckets */}
-            <BucketList
-              type="expense"
-              title="Expense Buckets"
-              onModalOpenChange={setIsModalOpen}
-            />
-
+            {/* 4. Expense accounts */}
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid size={{ xs: 12, md: 12 }}>
+                <AccountList type="expense" />
+              </Grid>
+            </Grid>
             {/* 5. Left: Income chart, Right: Income Vs Saving chart */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid size={{ xs: 12, md: 6 }}>
@@ -108,17 +95,6 @@ function DashboardContent() {
             {/* 6. Income sources */}
             <IncomeList />
           </Container>
-
-          {/* Blank space equal to drawer width */}
-          {isModalOpen && (
-            <Box
-              sx={{
-                width: { xs: 0, md: '50vw' },
-                flexShrink: 0,
-                transition: 'width 0.3s ease',
-              }}
-            />
-          )}
         </Box>
       </Box>
     </Box>

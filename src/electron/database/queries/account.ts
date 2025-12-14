@@ -97,3 +97,73 @@ export async function deleteAccount(id: number): Promise<void> {
 
   if (error) throw new Error(error.message);
 }
+
+export async function getAccountsWithBuckets(): Promise<NormalizedAccountsResponse> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Get all accounts
+  const { data: accounts, error: accountsError } = await supabase
+    .from('account')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true });
+
+  if (accountsError) throw new Error(accountsError.message);
+  if (!accounts || accounts.length === 0) {
+    return {
+      accounts: { byId: {}, byType: { saving: [], investment: [], expense: [] } },
+      buckets: { byId: {}, byAccountId: {} },
+    };
+  }
+
+  // Get all buckets for these accounts
+  const accountIds = accounts.map((a) => a.id);
+  const { data: buckets, error: bucketsError } = await supabase
+    .from('bucket')
+    .select('*')
+    .eq('user_id', userId)
+    .in('account_id', accountIds)
+    .order('created_at', { ascending: true });
+
+  if (bucketsError) throw new Error(bucketsError.message);
+
+  // Normalize accounts
+  const normalizedAccounts = {
+    byId: {} as Record<number, Account>,
+    byType: {
+      saving: [] as number[],
+      investment: [] as number[],
+      expense: [] as number[],
+    },
+  };
+
+  accounts.forEach((account) => {
+    normalizedAccounts.byId[account.id] = account;
+    normalizedAccounts.byType[account.type as BucketTypeEnum].push(account.id);
+  });
+
+  // Normalize buckets
+  const normalizedBuckets = {
+    byId: {} as Record<number, Bucket>,
+    byAccountId: {} as Record<number, number[]>,
+  };
+
+  if (buckets) {
+    buckets.forEach((bucket) => {
+      normalizedBuckets.byId[bucket.id] = bucket;
+
+      if (bucket.account_id !== null) {
+        if (!normalizedBuckets.byAccountId[bucket.account_id]) {
+          normalizedBuckets.byAccountId[bucket.account_id] = [];
+        }
+        normalizedBuckets.byAccountId[bucket.account_id].push(bucket.id);
+      }
+    });
+  }
+
+  return {
+    accounts: normalizedAccounts,
+    buckets: normalizedBuckets,
+  };
+}

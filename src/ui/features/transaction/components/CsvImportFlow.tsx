@@ -12,17 +12,20 @@ import type {
 } from '../schemas/transaction.schema';
 import { createSelector } from '@reduxjs/toolkit';
 import { useAppSelector } from '../../../store/hooks';
+import type { RootState } from '../../../store/store';
+
 interface CsvRow {
   [key: string]: string;
 }
 
-// Memoized selector to only extract bucket name and id
+// Memoized selector to only extract bucket name and id from the normalized account state
 // This prevents unnecessary re-renders when bucket balances change
 // We use a custom equality check to deeply compare the extracted fields
 const selectBucketNameAndId = createSelector(
-  [(state) => state.bucket.buckets],
-  (buckets: { name: string; id: number }[]) =>
-    buckets.map(({ name, id }) => ({ name, id })),
+  [(state: RootState) => state.account.buckets.byId],
+  (bucketsById) => {
+    return Object.values(bucketsById).map(({ name, id }) => ({ name, id }));
+  },
   {
     memoizeOptions: {
       // Custom equality function that compares the actual bucket names/ids

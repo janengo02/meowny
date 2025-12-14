@@ -51,6 +51,32 @@ type Account = {
   updated_at: string;
 };
 
+type AccountWithBuckets = Account & {
+  buckets: Bucket[];
+};
+
+type AccountsByType = {
+  saving: AccountWithBuckets[];
+  investment: AccountWithBuckets[];
+  expense: AccountWithBuckets[];
+};
+
+// Normalized response structure for Redux state
+type NormalizedAccountsResponse = {
+  accounts: {
+    byId: Record<number, Account>;
+    byType: {
+      saving: number[];
+      investment: number[];
+      expense: number[];
+    };
+  };
+  buckets: {
+    byId: Record<number, Bucket>;
+    byAccountId: Record<number, number[]>;
+  };
+};
+
 type Bucket = {
   id: number;
   user_id: string;
@@ -495,6 +521,7 @@ type EventPayloadMapping = {
   'db:createBucketCategory': BucketCategory;
   'db:getAccounts': Account[];
   'db:createAccount': Account;
+  'db:getAccountsWithBuckets': NormalizedAccountsResponse;
   'db:getTransactions': Transaction[];
   'db:getTransaction': Transaction;
   'db:getTransactionsByBucket': Transaction[];
@@ -573,6 +600,7 @@ interface Window {
     createAccount: (
       params: CreateAccountParams,
     ) => Promise<Account>;
+    getAccountsWithBuckets: () => Promise<NormalizedAccountsResponse>;
     getTransactions: () => Promise<Transaction[]>;
     getTransaction: (id: number) => Promise<Transaction>;
     getTransactionsByBucket: (bucketId: number) => Promise<Transaction[]>;

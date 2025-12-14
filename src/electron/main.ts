@@ -65,6 +65,7 @@ app.on('ready', () => {
   ipcMainHandle('db:createAccount', async (args) => {
     return db.createAccount(args as CreateAccountParams);
   });
+  ipcMainHandle('db:getAccountsWithBuckets', db.getAccountsWithBuckets);
   ipcMainHandle('db:getTransactions', db.getTransactions);
   ipcMainHandle('db:getTransaction', async (args) => {
     return db.getTransaction(args as number);

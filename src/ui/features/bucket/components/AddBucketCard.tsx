@@ -1,11 +1,27 @@
 import { Card, CardActionArea, CardContent, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { useCreateBucketMutation } from '../api/bucketApi';
+import { useDashboardError } from '../../dashboard/hooks/useDashboardError';
 
 interface AddBucketCardProps {
-  onClick?: () => void;
+  account: Account;
 }
 
-export function AddBucketCard({ onClick }: AddBucketCardProps) {
+export function AddBucketCard({ account }: AddBucketCardProps) {
+  const [createBucket] = useCreateBucketMutation();
+  const { setError } = useDashboardError();
+  const handleCreateBucket = async () => {
+    try {
+      await createBucket({
+        name: `New ${account.type.charAt(0).toUpperCase() + account.type.slice(1)} Bucket`,
+        type: account.type,
+        notes: '',
+        account_id: account.id,
+      }).unwrap();
+    } catch {
+      setError('Failed to create bucket. Please try again.');
+    }
+  };
   return (
     <Card
       sx={{
@@ -18,7 +34,7 @@ export function AddBucketCard({ onClick }: AddBucketCardProps) {
         flexDirection: 'column',
       }}
     >
-      <CardActionArea onClick={onClick} sx={{ flex: 1 }}>
+      <CardActionArea onClick={handleCreateBucket} sx={{ flex: 1 }}>
         <CardContent
           sx={{
             display: 'flex',

@@ -25,10 +25,24 @@ export const accountApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Account'],
+      invalidatesTags: ['Account', 'Bucket'],
+    }),
+    getAccountsWithBuckets: builder.query<NormalizedAccountsResponse, void>({
+      queryFn: async () => {
+        try {
+          const accountsWithBuckets = await window.electron.getAccountsWithBuckets();
+          return { data: accountsWithBuckets };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Account', 'Bucket'],
     }),
   }),
 });
 
-export const { useGetAccountsQuery, useCreateAccountMutation } =
-  accountApi;
+export const {
+  useGetAccountsQuery,
+  useCreateAccountMutation,
+  useGetAccountsWithBucketsQuery,
+} = accountApi;
