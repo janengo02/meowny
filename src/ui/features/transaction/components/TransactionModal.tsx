@@ -13,13 +13,12 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
-import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import { FormBucketSelectField } from '../../../shared/components/form/FormBucketSelectField';
 import {
   baseTransactionSchema,
   type BaseTransactionFormData,
 } from '../schemas/transaction.schema';
 import { useCreateTransactionMutation } from '../api/transactionApi';
-import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
@@ -36,7 +35,6 @@ export function TransactionModal({
   onClose,
 }: TransactionModalProps) {
   const [createTransaction, { isLoading }] = useCreateTransactionMutation();
-  const { data: buckets = [] } = useGetBucketsQuery();
 
   const form = useForm<BaseTransactionFormData>({
     resolver: zodResolver(baseTransactionSchema),
@@ -87,14 +85,6 @@ export function TransactionModal({
     onClose();
   };
 
-  const bucketOptions = [
-    { value: '', label: 'Income' },
-    ...buckets.map((bucket) => ({
-      value: String(bucket.id),
-      label: bucket.name,
-    })),
-  ];
-
   return (
     <Dialog
       open={open}
@@ -132,17 +122,15 @@ export function TransactionModal({
               {/* From Bucket and To Bucket - Same Row */}
               <Grid container spacing={2}>
                 <Grid size={6}>
-                  <FormSelectField
+                  <FormBucketSelectField
                     name="from_bucket_id"
                     label="From Bucket"
-                    options={bucketOptions}
                   />
                 </Grid>
                 <Grid size={6}>
-                  <FormSelectField
+                  <FormBucketSelectField
                     name="to_bucket_id"
                     label="To Bucket"
-                    options={bucketOptions}
                   />
                 </Grid>
               </Grid>

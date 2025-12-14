@@ -26,14 +26,12 @@ import { formatDateForDB } from '../../../shared/utils/dateTime';
 interface TransactionPreviewDialogProps {
   open: boolean;
   initialMappedTransactions: MappedTransaction[];
-  buckets: { name: string; id: number }[];
   onClose: () => void;
 }
 
 export function TransactionPreviewDialog({
   open,
   initialMappedTransactions,
-  buckets,
   onClose,
 }: TransactionPreviewDialogProps) {
   const [createTransaction] = useCreateTransactionMutation();
@@ -259,7 +257,6 @@ export function TransactionPreviewDialog({
                       key={index}
                       initialTransaction={initialTransaction}
                       index={index}
-                      buckets={buckets}
                       isBatchImporting={batchImportStatus === 'importing'}
                       importResult={
                         editedTransaction?.import_status === 'importing' ||

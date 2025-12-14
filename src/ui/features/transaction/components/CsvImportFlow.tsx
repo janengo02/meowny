@@ -244,7 +244,6 @@ export function CsvImportFlow() {
       <TransactionPreviewDialog
         open={showPreviewDialog}
         initialMappedTransactions={mappedTransactions}
-        buckets={buckets}
         onClose={handlePreviewClose}
       />
     </>

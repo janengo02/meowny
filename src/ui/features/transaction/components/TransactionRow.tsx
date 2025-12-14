@@ -7,7 +7,7 @@ import {
   useFormContext,
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import { FormBucketSelectField } from '../../../shared/components/form/FormBucketSelectField';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormCheckbox } from '../../../shared/components/form/FormCheckbox';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
@@ -20,15 +20,9 @@ import {
 import { checkDuplicate } from '../utils/checkDuplicate';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 
-interface Bucket {
-  id: number;
-  name: string;
-}
-
 interface TransactionRowProps {
   initialTransaction: MappedTransaction;
   index: number;
-  buckets: Bucket[];
   isBatchImporting: boolean;
   importResult?: 'importing' | 'success' | 'error'; // Status during/after import process
   onUpdateTransaction: (
@@ -41,7 +35,6 @@ interface TransactionRowProps {
 const TransactionRowContent = React.memo(
   ({
     index,
-    buckets,
     isBatchImporting,
     importResult,
     onUpdateTransaction,
@@ -158,15 +151,6 @@ const TransactionRowContent = React.memo(
       onUpdateTransaction(index, updatedFields);
     };
 
-    // Convert buckets to options format for FormSelectField
-    const bucketOptions = [
-      { value: '', label: 'None' },
-      ...buckets.map((bucket) => ({
-        value: bucket.id.toString(),
-        label: bucket.name,
-      })),
-    ];
-
     return (
       <TableRow
         sx={{
@@ -220,10 +204,9 @@ const TransactionRowContent = React.memo(
           />
         </TableCell>
         <TableCell>
-          <FormSelectField
+          <FormBucketSelectField
             name="from_bucket_id"
             label=""
-            options={bucketOptions}
             size="small"
             displayEmpty
             disabled={isBatchImporting || !!importResult}
@@ -233,10 +216,9 @@ const TransactionRowContent = React.memo(
           />
         </TableCell>
         <TableCell>
-          <FormSelectField
+          <FormBucketSelectField
             name="to_bucket_id"
             label=""
-            options={bucketOptions}
             size="small"
             displayEmpty
             disabled={isBatchImporting || !!importResult}
