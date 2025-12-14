@@ -6,14 +6,40 @@ import { createMenu } from './menu.js';
 import * as auth from './database/auth.js';
 import * as db from './database/index.js';
 
-app.on('ready', () => {
+app.on('ready', async () => {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: getPreloadPath(),
     },
   });
+
+  // Install DevTools extensions in development mode after window is created
+  if (isDev()) {
+    try {
+      // Dynamic import for ES modules compatibility
+      const { installExtension, REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS } =
+        await import('electron-devtools-installer');
+
+      await installExtension(
+        [REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS],
+        {
+          loadExtensionOptions: {
+            allowFileAccess: true,
+          },
+        },
+      );
+      console.log('DevTools extensions installed successfully');
+    } catch (err) {
+      // Silently handle extension installation errors as they're non-critical
+      if (err instanceof Error && !err.message.includes('already loaded')) {
+        console.warn('DevTools extensions installation warning:', err.message);
+      }
+    }
+  }
   if (isDev()) {
     mainWindow.loadURL('http://localhost:3000');
+    // Automatically open DevTools in development
+    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(getUIPath());
   }

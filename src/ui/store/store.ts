@@ -19,6 +19,13 @@ export const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(baseApi.middleware),
+  // Enhanced Redux DevTools configuration
+  devTools:
+    process.env.NODE_ENV !== 'production' && {
+      name: 'Meowny App',
+      trace: true, // Enable action stack traces
+      traceLimit: 25, // Limit stack trace to 25 frames
+    },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
