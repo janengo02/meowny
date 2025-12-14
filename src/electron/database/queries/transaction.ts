@@ -6,6 +6,7 @@ import {
   adjustBucketValueHistoryForHistoricalTransaction,
 } from './bucketValueHistory.js';
 import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
+import { updateBucketFromLatestHistory } from './bucket.js';
 
 export async function createTransaction(
   params: CreateTransactionParams,
@@ -93,6 +94,8 @@ export async function createTransaction(
       source_id: transaction.id,
       notes: params.notes ?? null,
     });
+    // Update the bucket table with the latest values from bucket_value_history
+    await updateBucketFromLatestHistory(params.from_bucket_id);
   }
 
   // Step 3: Update to_bucket if specified
@@ -137,6 +140,8 @@ export async function createTransaction(
       source_id: transaction.id,
       notes: params.notes ?? null,
     });
+    // Update the bucket table with the latest values from bucket_value_history
+    await updateBucketFromLatestHistory(params.to_bucket_id);
   }
 
   return transaction;

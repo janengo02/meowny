@@ -63,6 +63,8 @@ export async function createBucketValueHistory(
       params.market_value ?? 0,
       previousRecord,
     );
+    // Update the bucket table with the latest values
+    await updateBucketFromLatestHistory(params.bucket_id);
   }
 
   return data;
@@ -200,6 +202,8 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
           transaction.amount, // Reverse the deduction by adding back
           historyRecord.created_at, // Need when there are multiple records on the same date
         );
+        // Update the bucket table with the latest values
+        await updateBucketFromLatestHistory(transaction.from_bucket_id);
       }
 
       // Adjust history for to_bucket (if it exists)
@@ -210,6 +214,8 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
           -transaction.amount, // Reverse the addition by subtracting
           historyRecord.created_at, // Need when there are multiple records on the same date
         );
+        // Update the bucket table with the latest values
+        await updateBucketFromLatestHistory(transaction.to_bucket_id);
       }
     }
   }
@@ -251,6 +257,8 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
         market_value: normalizedMarketValue,
       });
     }
+    // Update the bucket table with the latest values
+    await updateBucketFromLatestHistory(bucket_id);
   }
 
   // Finally, delete the history record
@@ -261,9 +269,6 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
     .eq('user_id', userId);
 
   if (error) throw new Error(error.message);
-
-  // Update the bucket table with the latest values
-  await updateBucketFromLatestHistory(bucket_id);
 }
 
 export async function adjustBucketValueHistoryForHistoricalTransaction(
@@ -305,9 +310,6 @@ export async function adjustBucketValueHistoryForHistoricalTransaction(
       market_value: normalizedMarketValue,
     });
   }
-
-  // Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(bucketId);
 }
 
 export async function getValueHistoryWithTransactionsByBucket(
@@ -493,7 +495,6 @@ async function adjustBucketValueHistoryForHistoricalMarket(
   createdAt?: string,
 ): Promise<void> {
   // Get all records after this one
-  console.log('==========================');
   const recordsAfter = await getBucketValueHistoriesAfter(
     bucketId,
     recordedAt,
@@ -501,17 +502,13 @@ async function adjustBucketValueHistoryForHistoricalMarket(
   );
   if (recordsAfter.length > 0) {
     // Use the previously fetched record to calculate the market value change
-    console.log('Recorded At:', recordedAt);
-    console.log('Previous Record:', previousRecord);
 
     // Calculate the market value change
     const marketValueChange = previousRecord
       ? newMarketValue - previousRecord.market_value
       : newMarketValue;
-    console.log('Market Value Change:', marketValueChange);
     // Adjust subsequent records until we encounter another 'market' source_type
     for (const record of recordsAfter) {
-      console.log('Adjusting record:', record);
       if (record.source_type === 'market') {
         // Stop adjusting when we encounter the next market update
         break;
@@ -521,14 +518,10 @@ async function adjustBucketValueHistoryForHistoricalMarket(
       const adjustedMarketValue = record.market_value + marketValueChange;
       const normalizedMarketValue =
         adjustedMarketValue < 0 ? 0 : adjustedMarketValue;
-      console.log('New Market Value:', normalizedMarketValue);
 
       await updateBucketValueHistory(record.id, {
         market_value: normalizedMarketValue,
       });
     }
   }
-
-  // Update the bucket table with the latest values
-  await updateBucketFromLatestHistory(bucketId);
 }
