@@ -208,7 +208,6 @@ const TransactionRowContent = React.memo(
             name="from_bucket_id"
             label=""
             size="small"
-            displayEmpty
             disabled={isBatchImporting || !!importResult}
             sx={{
               opacity: fromBucketIdWatch ? 1 : 0.5,
@@ -220,7 +219,6 @@ const TransactionRowContent = React.memo(
             name="to_bucket_id"
             label=""
             size="small"
-            displayEmpty
             disabled={isBatchImporting || !!importResult}
             sx={{
               opacity: toBucketIdWatch ? 1 : 0.5,

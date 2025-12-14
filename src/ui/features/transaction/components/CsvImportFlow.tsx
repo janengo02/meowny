@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { Button } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
+import dayjs from 'dayjs';
 import { ColumnMappingDialog } from './ColumnMappingDialog';
 import { TransactionPreviewDialog } from './TransactionPreviewDialog';
 import { sanitizeMoneyInput } from '../../../shared/utils/formatMoney';
@@ -205,7 +206,12 @@ export function CsvImportFlow() {
       };
     });
 
-    setMappedTransactions(mapped);
+    // Sort by transaction_date in ascending order
+    const sortedMapped = [...mapped].sort((a, b) => {
+      return dayjs(a.transaction_date).diff(dayjs(b.transaction_date));
+    });
+
+    setMappedTransactions(sortedMapped);
     setShowMappingDialog(false);
     setShowPreviewDialog(true);
   };
