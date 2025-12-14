@@ -14,6 +14,10 @@ interface AccountState {
   buckets: {
     byId: Record<number, Bucket>;
     byAccountId: Record<number, number[]>;
+    byCategoryId: Record<number, number[]>;
+  };
+  categories: {
+    byId: Record<number, BucketCategory>;
   };
 }
 
@@ -29,6 +33,10 @@ const initialState: AccountState = {
   buckets: {
     byId: {},
     byAccountId: {},
+    byCategoryId: {},
+  },
+  categories: {
+    byId: {},
   },
 };
 
@@ -45,6 +53,7 @@ const accountSlice = createSlice({
           // Direct assignment - payload is already normalized
           state.accounts = action.payload.accounts;
           state.buckets = action.payload.buckets;
+          state.categories = action.payload.categories;
         },
       )
       // When a new account is created
@@ -80,6 +89,14 @@ const accountSlice = createSlice({
             }
             state.buckets.byAccountId[bucket.account_id].push(bucket.id);
           }
+
+          // Add to category's bucket array if category exists
+          if (bucket.bucket_category_id !== null) {
+            if (!state.buckets.byCategoryId[bucket.bucket_category_id]) {
+              state.buckets.byCategoryId[bucket.bucket_category_id] = [];
+            }
+            state.buckets.byCategoryId[bucket.bucket_category_id].push(bucket.id);
+          }
         },
       )
       // When a bucket is updated
@@ -87,6 +104,29 @@ const accountSlice = createSlice({
         bucketApi.endpoints.updateBucket.matchFulfilled,
         (state, action) => {
           const updatedBucket = action.payload;
+          const oldBucket = state.buckets.byId[updatedBucket.id];
+
+          // Handle category change
+          if (oldBucket && oldBucket.bucket_category_id !== updatedBucket.bucket_category_id) {
+            // Remove from old category
+            if (oldBucket.bucket_category_id !== null) {
+              const categoryBuckets = state.buckets.byCategoryId[oldBucket.bucket_category_id];
+              if (categoryBuckets) {
+                const index = categoryBuckets.indexOf(updatedBucket.id);
+                if (index !== -1) {
+                  categoryBuckets.splice(index, 1);
+                }
+              }
+            }
+
+            // Add to new category
+            if (updatedBucket.bucket_category_id !== null) {
+              if (!state.buckets.byCategoryId[updatedBucket.bucket_category_id]) {
+                state.buckets.byCategoryId[updatedBucket.bucket_category_id] = [];
+              }
+              state.buckets.byCategoryId[updatedBucket.bucket_category_id].push(updatedBucket.id);
+            }
+          }
 
           // Update bucket in byId
           state.buckets.byId[updatedBucket.id] = updatedBucket;
@@ -108,6 +148,18 @@ const accountSlice = createSlice({
                 const index = accountBuckets.indexOf(bucketId);
                 if (index !== -1) {
                   accountBuckets.splice(index, 1);
+                }
+              }
+            }
+
+            // Remove from category's bucket array
+            if (bucket.bucket_category_id !== null) {
+              const categoryBuckets =
+                state.buckets.byCategoryId[bucket.bucket_category_id];
+              if (categoryBuckets) {
+                const index = categoryBuckets.indexOf(bucketId);
+                if (index !== -1) {
+                  categoryBuckets.splice(index, 1);
                 }
               }
             }

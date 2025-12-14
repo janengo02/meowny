@@ -112,21 +112,32 @@ export async function getAccountsWithBuckets(): Promise<NormalizedAccountsRespon
   if (accountsError) throw new Error(accountsError.message);
   if (!accounts || accounts.length === 0) {
     return {
-      accounts: { byId: {}, byType: { saving: [], investment: [], expense: [] } },
-      buckets: { byId: {}, byAccountId: {} },
+      accounts: {
+        byId: {},
+        byType: { saving: [], investment: [], expense: [] },
+      },
+      buckets: { byId: {}, byAccountId: {}, byCategoryId: {} },
+      categories: { byId: {} },
     };
   }
 
-  // Get all buckets for these accounts
-  const accountIds = accounts.map((a) => a.id);
+  // Get all buckets
   const { data: buckets, error: bucketsError } = await supabase
     .from('bucket')
     .select('*')
     .eq('user_id', userId)
-    .in('account_id', accountIds)
     .order('created_at', { ascending: true });
 
   if (bucketsError) throw new Error(bucketsError.message);
+
+  // Get all bucket categories
+  const { data: categories, error: categoriesError } = await supabase
+    .from('bucket_category')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true });
+
+  if (categoriesError) throw new Error(categoriesError.message);
 
   // Normalize accounts
   const normalizedAccounts = {
@@ -147,6 +158,7 @@ export async function getAccountsWithBuckets(): Promise<NormalizedAccountsRespon
   const normalizedBuckets = {
     byId: {} as Record<number, Bucket>,
     byAccountId: {} as Record<number, number[]>,
+    byCategoryId: {} as Record<number, number[]>,
   };
 
   if (buckets) {
@@ -159,11 +171,32 @@ export async function getAccountsWithBuckets(): Promise<NormalizedAccountsRespon
         }
         normalizedBuckets.byAccountId[bucket.account_id].push(bucket.id);
       }
+
+      if (bucket.bucket_category_id !== null) {
+        if (!normalizedBuckets.byCategoryId[bucket.bucket_category_id]) {
+          normalizedBuckets.byCategoryId[bucket.bucket_category_id] = [];
+        }
+        normalizedBuckets.byCategoryId[bucket.bucket_category_id].push(
+          bucket.id,
+        );
+      }
+    });
+  }
+
+  // Normalize categories
+  const normalizedCategories = {
+    byId: {} as Record<number, BucketCategory>,
+  };
+
+  if (categories) {
+    categories.forEach((category) => {
+      normalizedCategories.byId[category.id] = category;
     });
   }
 
   return {
     accounts: normalizedAccounts,
     buckets: normalizedBuckets,
+    categories: normalizedCategories,
   };
 }

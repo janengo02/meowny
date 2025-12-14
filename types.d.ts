@@ -74,6 +74,10 @@ type NormalizedAccountsResponse = {
   buckets: {
     byId: Record<number, Bucket>;
     byAccountId: Record<number, number[]>;
+    byCategoryId: Record<number, number[]>;
+  };
+  categories: {
+    byId: Record<number, BucketCategory>;
   };
 };
 

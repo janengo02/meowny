@@ -12,6 +12,10 @@ const selectAccountsByType = (state: RootState) => state.account.accounts.byType
 // Bucket selectors
 const selectBucketsById = (state: RootState) => state.account.buckets.byId;
 const selectBucketsByAccountId = (state: RootState) => state.account.buckets.byAccountId;
+const selectBucketsByCategoryId = (state: RootState) => state.account.buckets.byCategoryId;
+
+// Category selectors
+const selectCategoriesById = (state: RootState) => state.account.categories.byId;
 
 // ============================================
 // DIRECT LOOKUP SELECTORS (O(1))
@@ -34,6 +38,14 @@ export const selectBucketById = createSelector(
 );
 
 /**
+ * Select a single category by ID - O(1) lookup
+ */
+export const selectCategoryById = createSelector(
+  [selectCategoriesById, (_state: RootState, categoryId: number) => categoryId],
+  (categoriesById, categoryId) => categoriesById[categoryId] || null
+);
+
+/**
  * Select all bucket IDs for a specific account - Direct array access
  */
 export const selectBucketIdsByAccountId = createSelector(
@@ -42,10 +54,26 @@ export const selectBucketIdsByAccountId = createSelector(
 );
 
 /**
+ * Select all bucket IDs for a specific category - Direct array access
+ */
+export const selectBucketIdsByCategoryId = createSelector(
+  [selectBucketsByCategoryId, (_state: RootState, categoryId: number) => categoryId],
+  (bucketsByCategoryId, categoryId) => bucketsByCategoryId[categoryId] || []
+);
+
+/**
  * Select all buckets for a specific account - denormalized
  */
 export const selectBucketsByAccount = createSelector(
   [selectBucketsById, selectBucketIdsByAccountId],
+  (bucketsById, bucketIds) => bucketIds.map((id) => bucketsById[id]).filter(Boolean)
+);
+
+/**
+ * Select all buckets for a specific category - denormalized
+ */
+export const selectBucketsByCategory = createSelector(
+  [selectBucketsById, selectBucketIdsByCategoryId],
   (bucketsById, bucketIds) => bucketIds.map((id) => bucketsById[id]).filter(Boolean)
 );
 
@@ -199,6 +227,14 @@ export const selectAllBuckets = createSelector(
 export const selectAllAccounts = createSelector(
   [selectAccountsById],
   (accountsById) => Object.values(accountsById)
+);
+
+/**
+ * Get all bucket categories (flat array)
+ */
+export const selectAllBucketCategories = createSelector(
+  [selectCategoriesById],
+  (categoriesById) => Object.values(categoriesById)
 );
 
 /**

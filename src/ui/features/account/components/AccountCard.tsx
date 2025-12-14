@@ -48,14 +48,27 @@ export function AccountCard({ accountId }: AccountCardProps) {
 
         <Grid container spacing={2} sx={{ mt: 1 }}>
           {buckets.map((bucket) => (
-            <Grid key={bucket.id} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid
+              key={bucket.id}
+              size={
+                account.type === 'expense'
+                  ? { xs: 6, sm: 3, md: 2 }
+                  : { xs: 12, sm: 6, md: 4 }
+              }
+            >
               <BucketCard
                 bucket={bucket}
                 onClick={() => setSelectedBucketId(bucket.id)}
               />
             </Grid>
           ))}
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+          <Grid
+            size={
+              account.type === 'expense'
+                ? { xs: 6, sm: 3, md: 2 }
+                : { xs: 12, sm: 6, md: 4 }
+            }
+          >
             <AddBucketCard account={account} />
           </Grid>
         </Grid>
