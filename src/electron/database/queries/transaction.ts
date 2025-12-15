@@ -48,13 +48,15 @@ export async function createTransaction(
   if (transactionError) throw new Error(transactionError.message);
 
   // Step 1.5: Update keyword-bucket mappings for intelligent bucket assignment
-  // Track keywords from notes for to_bucket
+  // Track keywords from notes for the bucket pair (from_bucket -> to_bucket)
   if (params.notes) {
-    if (params.to_bucket_id) {
-      updateKeywordBucketMapping(params.notes, params.to_bucket_id).catch(
-        (err) => console.error('Failed to update keyword mapping:', err),
-      );
-    }
+    updateKeywordBucketMapping(
+      params.notes,
+      params.from_bucket_id ?? null,
+      params.to_bucket_id ?? null,
+    ).catch(
+      (err) => console.error('Failed to update keyword mapping:', err),
+    );
   }
 
   // Step 2: Update from_bucket if specified

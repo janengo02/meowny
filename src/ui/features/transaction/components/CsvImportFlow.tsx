@@ -55,7 +55,7 @@ export function CsvImportFlow() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Preload keyword-bucket mappings in the background
   const [keywordMappingsCache, setKeywordMappingsCache] = useState<
-    Map<string, number>
+    Map<string, { from_bucket_id: number | null; to_bucket_id: number | null }>
   >(new Map());
 
   // Load all keyword mappings in the background when component mounts
@@ -63,25 +63,33 @@ export function CsvImportFlow() {
     const loadKeywordMappings = async () => {
       try {
         const mappings = await window.electron.getKeywordBucketMappings();
-        const cache = new Map<string, number>();
+        const cache = new Map<
+          string,
+          { from_bucket_id: number | null; to_bucket_id: number | null }
+        >();
 
-        // Build a cache of keyword -> best bucket ID
+        // Build a cache of keyword -> best bucket pair
         mappings.forEach((mapping) => {
-          // Find the bucket with the highest count for each keyword
+          // Find the bucket pair with the highest count for each keyword
           const bestAssignment = mapping.bucket_assign_count.reduce(
             (best, current) => (current.count > best.count ? current : best),
           );
-          cache.set(mapping.keyword, bestAssignment.bucket_id);
+          cache.set(mapping.keyword, {
+            from_bucket_id: bestAssignment.from_bucket_id,
+            to_bucket_id: bestAssignment.to_bucket_id,
+          });
         });
+        console.log('Preloaded keyword mappings:', cache);
 
         setKeywordMappingsCache(cache);
       } catch (error) {
         console.error('Error preloading keyword mappings:', error);
       }
     };
-
-    loadKeywordMappings();
-  }, []);
+    if (showMappingDialog) {
+      loadKeywordMappings();
+    }
+  }, [showMappingDialog]);
 
   // Create a map of bucket name (lowercase) to bucket ID for quick lookup
   const bucketNameToIdMap = useMemo(() => {
@@ -176,22 +184,35 @@ export function CsvImportFlow() {
         row[mapping.transactionAmount] || '',
       );
       const bucketName = (row[mapping.bucket] || '').toLowerCase().trim();
-      let bucketId = bucketNameToIdMap.get(bucketName);
+      const bucketId = bucketNameToIdMap.get(bucketName);
+      let fromBucketId: number | null = null;
+      let toBucketId: number | null = null;
+
+      // If bucket found from name, assign it based on transaction direction
+      if (bucketId) {
+        if (transactionAmount < 0) {
+          fromBucketId = bucketId;
+        } else if (transactionAmount > 0) {
+          toBucketId = bucketId;
+        }
+      }
 
       // If no bucket from name, use preloaded keyword mapping cache
       if (!bucketId && notes) {
         // Process notes as a single keyword, removing all numbers (same logic as backend)
         const keyword = notes.replace(/\d/g, '').trim();
         if (keyword) {
-          // Check preloaded cache
-          const cachedBucketId = keywordMappingsCache.get(keyword);
-          if (cachedBucketId) {
-            bucketId = cachedBucketId;
+          // Check preloaded cache for bucket pair
+          const cachedBucketPair = keywordMappingsCache.get(keyword);
+          if (cachedBucketPair) {
+            fromBucketId = cachedBucketPair.from_bucket_id;
+            toBucketId = cachedBucketPair.to_bucket_id;
           }
         }
       }
 
-      const bucketIdStr = bucketId ? bucketId.toString() : '';
+      const fromBucketIdStr = fromBucketId ? fromBucketId.toString() : '';
+      const toBucketIdStr = toBucketId ? toBucketId.toString() : '';
 
       return {
         transaction_date: formatToDateTimeLocal(
@@ -199,8 +220,8 @@ export function CsvImportFlow() {
         ),
         amount: Math.abs(transactionAmount),
         notes: notes,
-        from_bucket_id: transactionAmount < 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
-        to_bucket_id: transactionAmount > 0 ? bucketIdStr : '', // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+        from_bucket_id: fromBucketIdStr, // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+        to_bucket_id: toBucketIdStr, // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
         import_status: 'validating' as ImportStatus,
         should_import: true,
       };

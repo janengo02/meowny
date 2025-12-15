@@ -2,7 +2,8 @@ import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 
 export interface BucketAssignCount {
-  bucket_id: number;
+  from_bucket_id: number | null;
+  to_bucket_id: number | null;
   count: number;
 }
 
@@ -21,9 +22,15 @@ export interface KeywordBucketMapping {
  */
 export async function updateKeywordBucketMapping(
   notes: string | null,
-  bucketId: number | null,
+  fromBucketId: number | null,
+  toBucketId: number | null,
 ): Promise<void> {
-  if (!notes || !bucketId || notes.trim() === '') {
+  if (!notes || notes.trim() === '') {
+    return;
+  }
+
+  // At least one bucket ID should be provided
+  if (!fromBucketId && !toBucketId) {
     return;
   }
 
@@ -59,20 +66,26 @@ export async function updateKeywordBucketMapping(
       // Update existing keyword mapping
       const bucketAssignCount = existingMapping.bucket_assign_count as BucketAssignCount[];
       const existingBucketIndex = bucketAssignCount.findIndex(
-        (item) => item.bucket_id === bucketId,
+        (item) =>
+          item.from_bucket_id === fromBucketId &&
+          item.to_bucket_id === toBucketId,
       );
 
       let updatedCount: BucketAssignCount[];
       if (existingBucketIndex >= 0) {
-        // Increment count for existing bucket
+        // Increment count for existing bucket pair
         updatedCount = bucketAssignCount.map((item, index) =>
           index === existingBucketIndex
             ? { ...item, count: item.count + 1 }
             : item,
         );
       } else {
-        // Add new bucket to the list
-        updatedCount = [...bucketAssignCount, { bucket_id: bucketId, count: 1 }];
+        // Add new bucket pair to the list
+        updatedCount = [...bucketAssignCount, {
+          from_bucket_id: fromBucketId,
+          to_bucket_id: toBucketId,
+          count: 1
+        }];
       }
 
       const { error: updateError } = await supabase
@@ -92,7 +105,11 @@ export async function updateKeywordBucketMapping(
         .insert({
           user_id: userId,
           keyword: keyword,
-          bucket_assign_count: [{ bucket_id: bucketId, count: 1 }],
+          bucket_assign_count: [{
+            from_bucket_id: fromBucketId,
+            to_bucket_id: toBucketId,
+            count: 1
+          }],
         });
 
       if (insertError) {
@@ -104,13 +121,18 @@ export async function updateKeywordBucketMapping(
   }
 }
 
+export interface BucketPair {
+  from_bucket_id: number | null;
+  to_bucket_id: number | null;
+}
+
 /**
- * Get the best matching bucket ID based on keywords in notes
+ * Get the best matching bucket pair based on keywords in notes
  * Returns null if no match is found
  */
 export async function getBucketFromKeywords(
   notes: string | null,
-): Promise<number | null> {
+): Promise<BucketPair | null> {
   if (!notes || notes.trim() === '') {
     return null;
   }
@@ -149,17 +171,17 @@ export async function getBucketFromKeywords(
       return null;
     }
 
-    // Find the bucket with the highest count
+    // Find the bucket pair with the highest count
     const bucketAssignCount = mapping.bucket_assign_count as BucketAssignCount[];
-    let bestBucketId: number | null = null;
 
     const bestAssignment = bucketAssignCount.reduce((best, current) =>
       current.count > best.count ? current : best
     );
 
-    bestBucketId = bestAssignment.bucket_id;
-
-    return bestBucketId;
+    return {
+      from_bucket_id: bestAssignment.from_bucket_id,
+      to_bucket_id: bestAssignment.to_bucket_id,
+    };
   } catch (error) {
     console.error('Error getting bucket from keywords:', error);
     return null;
@@ -205,6 +227,7 @@ export async function deleteKeywordBucketMapping(id: number): Promise<void> {
 /**
  * Clear all keyword mappings for a specific bucket
  * Useful when a bucket is deleted
+ * Removes any mapping that has this bucket as either from_bucket_id or to_bucket_id
  */
 export async function clearKeywordMappingsForBucket(
   bucketId: number,
@@ -221,13 +244,15 @@ export async function clearKeywordMappingsForBucket(
   if (fetchError) throw new Error(fetchError.message);
   if (!mappings) return;
 
-  // Update each mapping to remove the bucket
+  // Update each mapping to remove any bucket pair that references this bucket
   for (const mapping of mappings) {
     const updatedCounts = (mapping.bucket_assign_count as BucketAssignCount[])
-      .filter((item) => item.bucket_id !== bucketId);
+      .filter((item) =>
+        item.from_bucket_id !== bucketId && item.to_bucket_id !== bucketId
+      );
 
     if (updatedCounts.length === 0) {
-      // No more buckets for this keyword, delete the mapping
+      // No more bucket pairs for this keyword, delete the mapping
       await deleteKeywordBucketMapping(mapping.id);
     } else {
       // Update the mapping with filtered counts

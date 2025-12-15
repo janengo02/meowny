@@ -167,8 +167,14 @@ type IncomeCategory = {
 };
 
 type BucketAssignCount = {
-  bucket_id: number;
+  from_bucket_id: number | null;
+  to_bucket_id: number | null;
   count: number;
+};
+
+type BucketPair = {
+  from_bucket_id: number | null;
+  to_bucket_id: number | null;
 };
 
 type KeywordBucketMapping = {
@@ -534,7 +540,7 @@ type EventPayloadMapping = {
   'db:deleteTransaction': void;
   'db:checkDuplicateTransaction': boolean;
   'db:getExpenseTransactionsByPeriod': ExpenseTransactionSummary[];
-  'db:getBucketFromKeywords': number | null;
+  'db:getBucketFromKeywords': BucketPair | null;
   'db:getKeywordBucketMappings': KeywordBucketMapping[];
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
   'db:getBucketValueHistoriesByBucket': BucketValueHistory[];
@@ -626,7 +632,7 @@ interface Window {
     getExpenseTransactionsByPeriod: (
       params: GetExpenseTransactionsByPeriodParams,
     ) => Promise<ExpenseTransactionSummary[]>;
-    getBucketFromKeywords: (notes: string | null) => Promise<number | null>;
+    getBucketFromKeywords: (notes: string | null) => Promise<BucketPair | null>;
     getKeywordBucketMappings: () => Promise<KeywordBucketMapping[]>;
     getValueHistoryWithTransactionsByBucket: (
       params: GetValueHistoryWithTransactionsByBucketParams,
