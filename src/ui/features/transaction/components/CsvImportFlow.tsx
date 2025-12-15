@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
@@ -11,40 +11,11 @@ import type {
   ImportStatus,
   MappedTransaction,
 } from '../schemas/transaction.schema';
-import { createSelector } from '@reduxjs/toolkit';
-import { useAppSelector } from '../../../store/hooks';
-import type { RootState } from '../../../store/store';
-
 interface CsvRow {
   [key: string]: string;
 }
 
-// Memoized selector to only extract bucket name and id from the normalized account state
-// This prevents unnecessary re-renders when bucket balances change
-// We use a custom equality check to deeply compare the extracted fields
-const selectBucketNameAndId = createSelector(
-  [(state: RootState) => state.account.buckets.byId],
-  (bucketsById) => {
-    return Object.values(bucketsById).map(({ name, id }) => ({ name, id }));
-  },
-  {
-    memoizeOptions: {
-      // Custom equality function that compares the actual bucket names/ids
-      resultEqualityCheck: (
-        prev: { name: string; id: number }[],
-        next: { name: string; id: number }[],
-      ) => {
-        if (prev.length !== next.length) return false;
-        return prev.every(
-          (p, i) => p.id === next[i].id && p.name === next[i].name,
-        );
-      },
-    },
-  },
-);
-
 export function CsvImportFlow() {
-  const buckets = useAppSelector(selectBucketNameAndId);
   const [csvData, setCsvData] = useState<CsvRow[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [showMappingDialog, setShowMappingDialog] = useState(false);
@@ -90,15 +61,6 @@ export function CsvImportFlow() {
       loadKeywordMappings();
     }
   }, [showMappingDialog]);
-
-  // Create a map of bucket name (lowercase) to bucket ID for quick lookup
-  const bucketNameToIdMap = useMemo(() => {
-    const map = new Map<string, number>();
-    buckets.forEach((bucket) => {
-      map.set(bucket.name.toLowerCase().trim(), bucket.id);
-    });
-    return map;
-  }, [buckets]);
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -173,32 +135,41 @@ export function CsvImportFlow() {
 
   const handleMappingComplete = async (mapping: {
     transactionDate: string;
-    transactionAmount: string;
+    depositAmount?: string;
+    withdrawalAmount?: string;
     notes: string;
-    bucket: string;
   }) => {
     // Map CSV data to transactions based on column mapping
     const mapped = csvData.map((row) => {
       const notes = row[mapping.notes] || '';
-      const transactionAmount = sanitizeMoneyInput(
-        row[mapping.transactionAmount] || '',
-      );
-      const bucketName = (row[mapping.bucket] || '').toLowerCase().trim();
-      const bucketId = bucketNameToIdMap.get(bucketName);
+
+      // Calculate transaction amount from deposit/withdrawal columns
+      let transactionAmount: number;
+      let isDeposit = false;
+
+      const depositValue = mapping.depositAmount
+        ? sanitizeMoneyInput(row[mapping.depositAmount] || '')
+        : 0;
+      const withdrawalValue = mapping.withdrawalAmount
+        ? sanitizeMoneyInput(row[mapping.withdrawalAmount] || '')
+        : 0;
+
+      // Use whichever has a value (they should be mutually exclusive)
+      if (depositValue > 0) {
+        transactionAmount = depositValue;
+        isDeposit = true;
+      } else if (withdrawalValue > 0) {
+        transactionAmount = withdrawalValue;
+        isDeposit = false;
+      } else {
+        transactionAmount = 0;
+      }
+
       let fromBucketId: number | null = null;
       let toBucketId: number | null = null;
 
-      // If bucket found from name, assign it based on transaction direction
-      if (bucketId) {
-        if (transactionAmount < 0) {
-          fromBucketId = bucketId;
-        } else if (transactionAmount > 0) {
-          toBucketId = bucketId;
-        }
-      }
-
-      // If no bucket from name, use preloaded keyword mapping cache
-      if (!bucketId && notes) {
+      // Use keyword mapping cache to assign buckets based on notes
+      if (notes) {
         // Process notes as a single keyword, removing all numbers (same logic as backend)
         const keyword = notes.replace(/\d/g, '').trim();
         if (keyword) {
@@ -220,10 +191,11 @@ export function CsvImportFlow() {
         ),
         amount: Math.abs(transactionAmount),
         notes: notes,
-        from_bucket_id: fromBucketIdStr, // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
-        to_bucket_id: toBucketIdStr, // Will be auto-mapped in preview dialog from bucket name or keyword suggestion
+        from_bucket_id: fromBucketIdStr, // Will be auto-suggested from keyword mapping
+        to_bucket_id: toBucketIdStr, // Will be auto-suggested from keyword mapping
         import_status: 'validating' as ImportStatus,
         should_import: true,
+        is_deposit: isDeposit,
       };
     });
 

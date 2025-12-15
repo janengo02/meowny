@@ -34,6 +34,7 @@ interface TransactionRowProps {
 // Inner component that uses FormContext
 const TransactionRowContent = React.memo(
   ({
+    initialTransaction,
     index,
     isBatchImporting,
     importResult,
@@ -183,11 +184,26 @@ const TransactionRowContent = React.memo(
           />
         </TableCell>
         <TableCell align="right">
-          <FormMoneyInput
-            name="amount"
-            disabled={isBatchImporting || !!importResult}
-            allowNegative={false}
-          />
+          {initialTransaction.is_deposit ? (
+            <FormMoneyInput
+              name="amount"
+              disabled={isBatchImporting || !!importResult}
+              allowNegative={false}
+            />
+          ) : (
+            <span style={{ opacity: 0.3 }}>—</span>
+          )}
+        </TableCell>
+        <TableCell align="right">
+          {!initialTransaction.is_deposit ? (
+            <FormMoneyInput
+              name="amount"
+              disabled={isBatchImporting || !!importResult}
+              allowNegative={false}
+            />
+          ) : (
+            <span style={{ opacity: 0.3 }}>—</span>
+          )}
         </TableCell>
         <TableCell>
           <FormTextField

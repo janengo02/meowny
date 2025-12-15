@@ -41,15 +41,24 @@ export const transactionImportSchema = baseTransactionSchema.safeExtend({
 // Manually define type to ensure UI state fields are required
 export type TransactionImportFormData = z.infer<typeof transactionImportSchema>;
 
-// Validation schema - only transactionDate and transactionAmount are required
-export const columnMappingSchema = z.object({
-  transactionDate: z.string().min(1, 'Transaction date column is required'),
-  transactionAmount: z.string().min(1, 'Transaction amount column is required'),
-  notes: z.string().optional(),
-  bucket: z.string().optional(),
-});
+// Validation schema - transactionDate and either depositAmount or withdrawalAmount are required
+export const columnMappingSchema = z
+  .object({
+    transactionDate: z.string().min(1, 'Transaction date column is required'),
+    depositAmount: z.string().optional(),
+    withdrawalAmount: z.string().optional(),
+    notes: z.string().optional(),
+  })
+  .refine(
+    (data) => data.depositAmount || data.withdrawalAmount,
+    {
+      message: 'At least one of Deposit Amount or Withdrawal Amount column is required',
+      path: ['depositAmount'],
+    },
+  );
 export type ColumnMappingFormData = z.infer<typeof columnMappingSchema>;
 
 export type MappedTransaction = TransactionImportFormData & {
   suggested_bucket_id?: number | null; // Optional: Bucket ID suggested by keyword mapping
+  is_deposit?: boolean; // Track if this transaction is a deposit (for display purposes)
 };

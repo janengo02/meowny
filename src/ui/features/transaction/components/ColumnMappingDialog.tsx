@@ -24,9 +24,9 @@ interface ColumnMappingDialogProps {
   onClose: () => void;
   onComplete: (mapping: {
     transactionDate: string;
-    transactionAmount: string;
+    depositAmount?: string;
+    withdrawalAmount?: string;
     notes: string;
-    bucket: string;
   }) => void | Promise<void>;
 }
 
@@ -43,9 +43,9 @@ export function ColumnMappingDialog({
     mode: 'onChange',
     defaultValues: {
       transactionDate: '',
-      transactionAmount: '',
+      depositAmount: '',
+      withdrawalAmount: '',
       notes: '',
-      bucket: '',
     },
   });
 
@@ -61,9 +61,9 @@ export function ColumnMappingDialog({
       await new Promise((resolve) => setTimeout(resolve, 100));
       await onComplete({
         transactionDate: data.transactionDate,
-        transactionAmount: data.transactionAmount,
+        depositAmount: data.depositAmount,
+        withdrawalAmount: data.withdrawalAmount,
         notes: data.notes || '',
-        bucket: data.bucket || '',
       });
     } finally {
       setIsProcessing(false);
@@ -114,7 +114,8 @@ export function ColumnMappingDialog({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent sx={{ pt: 2 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Map your CSV columns to the following fields:
+              Map your CSV columns to the following fields. Buckets will be
+              automatically assigned based on your transaction notes.
             </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -126,8 +127,15 @@ export function ColumnMappingDialog({
               />
 
               <FormSelectField
-                name="transactionAmount"
-                label="Transaction Amount"
+                name="depositAmount"
+                label="Deposit Amount (Optional)"
+                options={headerOptions}
+                disabled={isProcessing}
+              />
+
+              <FormSelectField
+                name="withdrawalAmount"
+                label="Withdrawal Amount (Optional)"
                 options={headerOptions}
                 disabled={isProcessing}
               />
@@ -135,13 +143,6 @@ export function ColumnMappingDialog({
               <FormSelectField
                 name="notes"
                 label="Notes (Optional)"
-                options={headerOptions}
-                disabled={isProcessing}
-              />
-
-              <FormSelectField
-                name="bucket"
-                label="Bucket (Optional)"
                 options={headerOptions}
                 disabled={isProcessing}
               />

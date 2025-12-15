@@ -240,7 +240,10 @@ export function TransactionPreviewDialog({
                   Transaction Date
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }} align="right">
-                  Transaction Amount
+                  Deposit Amount
+                </TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }} align="right">
+                  Withdrawal Amount
                 </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>From Bucket</TableCell>
