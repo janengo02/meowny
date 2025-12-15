@@ -29,6 +29,7 @@
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.19",
     "dotenv": "^17.2.3",
+    "electron-log": "^5.4.3",
     "os-utils": "^0.0.14",
     "papaparse": "^5.5.3",
     "react": "^19.2.0",

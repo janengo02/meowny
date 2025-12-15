@@ -5,6 +5,7 @@ import { getPreloadPath, getUIPath } from './pathResolver.js';
 import { createMenu } from './menu.js';
 import * as auth from './database/auth.js';
 import * as db from './database/index.js';
+import './logger/index.js'; // Initialize logger
 
 app.on('ready', async () => {
   const mainWindow = new BrowserWindow({

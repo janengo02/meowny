@@ -7,22 +7,27 @@ import {
 } from './bucketValueHistory.js';
 import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
 import { updateBucketFromLatestHistory } from './bucket.js';
+import { withDatabaseLogging, logValidationError } from '../../logger/dbLogger.js';
 
 export async function createTransaction(
   params: CreateTransactionParams,
 ): Promise<Transaction> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
+  return withDatabaseLogging('createTransaction', async () => {
+    const supabase = getSupabase();
+    const userId = await getCurrentUserId();
 
-  if (params.amount === undefined || params.amount === null) {
-    throw new Error('Transaction amount is required');
-  }
-  if (params.amount <= 0) {
-    throw new Error('Transaction amount must be greater than 0');
-  }
-  if (!params.from_bucket_id && !params.to_bucket_id) {
-    throw new Error('At least one bucket (from or to) is required');
-  }
+    if (params.amount === undefined || params.amount === null) {
+      logValidationError('createTransaction', 'amount', 'Transaction amount is required');
+      throw new Error('Transaction amount is required');
+    }
+    if (params.amount <= 0) {
+      logValidationError('createTransaction', 'amount', 'Transaction amount must be greater than 0');
+      throw new Error('Transaction amount must be greater than 0');
+    }
+    if (!params.from_bucket_id && !params.to_bucket_id) {
+      logValidationError('createTransaction', 'buckets', 'At least one bucket (from or to) is required');
+      throw new Error('At least one bucket (from or to) is required');
+    }
 
   const transactionDate = params.transaction_date ?? new Date().toISOString();
 
@@ -144,7 +149,8 @@ export async function createTransaction(
     await updateBucketFromLatestHistory(params.to_bucket_id);
   }
 
-  return transaction;
+    return transaction;
+  }, { amount: params.amount, from_bucket_id: params.from_bucket_id, to_bucket_id: params.to_bucket_id });
 }
 
 export async function getTransactions(): Promise<Transaction[]> {

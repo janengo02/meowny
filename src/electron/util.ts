@@ -1,6 +1,7 @@
 import { ipcMain, type WebContents, type WebFrameMain } from 'electron';
 import { pathToFileURL } from 'url';
 import { getUIPath } from './pathResolver.js';
+import { logger } from './logger/index.js';
 
 export function isDev() {
   return process.env.NODE_ENV === 'development';
@@ -11,20 +12,42 @@ export function ipcMainHandle<Key extends keyof EventPayloadMapping>(
   handler: (args: unknown) => Promise<EventPayloadMapping[Key]>,
 ) {
   ipcMain.handle(key, async (event, args) => {
+    const endTimer = logger.startTimer('ipc', key as string);
+
     // Validate event
     if (event.senderFrame) {
-      validateEventFrame(event.senderFrame);
       try {
-        return await handler(args);
+        validateEventFrame(event.senderFrame);
+      } catch (error) {
+        logger.error('ipc', key as string, error as Error, {
+          reason: 'Event validation failed',
+        });
+        endTimer();
+        throw error;
+      }
+
+      try {
+        logger.debug('ipc', key as string, 'Request received', { args });
+        const result = await handler(args);
+        logger.info('ipc', key as string, 'Request completed successfully');
+        endTimer();
+        return result;
       } catch (error) {
         // Ensure error is serializable across IPC
         const message =
           error instanceof Error ? error.message : 'An unknown error occurred';
-        console.error(`IPC Error [${key}]:`, message);
+        logger.error('ipc', key as string, error as Error, { args });
+        endTimer();
         throw new Error(message);
       }
     }
-    throw new Error('Malicious event');
+
+    const maliciousError = new Error('Malicious event');
+    logger.error('ipc', key as string, maliciousError, {
+      reason: 'No sender frame',
+    });
+    endTimer();
+    throw maliciousError;
   });
 }
 
