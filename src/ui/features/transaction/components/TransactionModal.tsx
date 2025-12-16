@@ -15,6 +15,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormBucketSelectField } from '../../../shared/components/form/FormBucketSelectField';
+import { FormNumberInput } from '../../../shared/components/form/FormNumberInput';
 import {
   baseTransactionSchema,
   type BaseTransactionFormData,
@@ -188,31 +189,21 @@ export function TransactionModal({
                 <Grid container spacing={2}>
                   {showFromUnits && (
                     <Grid size={showToUnits ? 6 : 12}>
-                      <FormTextField
+                      <FormNumberInput
                         name="from_units"
                         label={fromUnitsLabel}
-                        type="number"
-                        slotProps={{
-                          htmlInput: {
-                            step: '0.0001',
-                            min: '0',
-                          },
-                        }}
+                        decimalScale={4}
+                        allowNegative={false}
                       />
                     </Grid>
                   )}
                   {showToUnits && (
                     <Grid size={showFromUnits ? 6 : 12}>
-                      <FormTextField
+                      <FormNumberInput
                         name="to_units"
                         label={toUnitsLabel}
-                        type="number"
-                        slotProps={{
-                          htmlInput: {
-                            step: '0.0001',
-                            min: '0',
-                          },
-                        }}
+                        decimalScale={4}
+                        allowNegative={false}
                       />
                     </Grid>
                   )}
