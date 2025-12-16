@@ -129,6 +129,8 @@ export async function updateBucket(
     updateData.contributed_amount = params.contributed_amount;
   if (params.market_value !== undefined)
     updateData.market_value = params.market_value;
+  if (params.total_units !== undefined)
+    updateData.total_units = params.total_units;
   if (params.is_hidden !== undefined) updateData.is_hidden = params.is_hidden;
   if (params.notes !== undefined) updateData.notes = params.notes;
 
@@ -170,6 +172,7 @@ export async function updateBucketFromLatestHistory(
     await updateBucket(bucketId, {
       contributed_amount: 0,
       market_value: 0,
+      total_units: null,
     });
     return;
   }
@@ -177,5 +180,6 @@ export async function updateBucketFromLatestHistory(
   await updateBucket(bucketId, {
     contributed_amount: latestHistory.contributed_amount,
     market_value: latestHistory.market_value,
+    total_units: latestHistory.total_units,
   });
 }

@@ -94,6 +94,8 @@ type Bucket = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // Unit tracking fields for investment buckets
+  total_units: number | null;
 };
 
 type BucketGoal = {
@@ -129,6 +131,9 @@ type Transaction = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // Unit tracking fields for investment buckets
+  from_units: number | null;
+  to_units: number | null;
 };
 
 type BucketValueHistory = {
@@ -143,6 +148,9 @@ type BucketValueHistory = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  // Unit tracking fields for investment buckets
+  total_units: number | null;
+  // Note: avg_cost_per_unit can be calculated as contributed_amount / total_units
 };
 
 type IncomeSource = {
@@ -242,6 +250,7 @@ type UpdateBucketParams = {
   account_id?: number | null;
   contributed_amount?: number;
   market_value?: number;
+  total_units?: number | null;
   is_hidden?: boolean;
   notes?: string | null;
 };
@@ -298,6 +307,7 @@ type CreateBucketValueHistoryParams = {
   bucket_id: number;
   contributed_amount?: number;
   market_value?: number;
+  total_units?: number | null;
   recorded_at?: string;
   source_type: SourceTypeEnum;
   source_id?: number | null;
@@ -308,6 +318,7 @@ type UpdateBucketValueHistoryParams = {
   bucket_id?: number;
   contributed_amount?: number;
   market_value?: number;
+  total_units?: number | null;
   recorded_at?: string;
   source_type?: SourceTypeEnum;
   source_id?: number | null;
@@ -338,6 +349,9 @@ type CreateTransactionParams = {
   amount: number;
   transaction_date?: string;
   notes?: string | null;
+  // Unit tracking fields for investment buckets
+  from_units?: number | null;
+  to_units?: number | null;
 };
 
 type UpdateTransactionParams = {
@@ -346,6 +360,9 @@ type UpdateTransactionParams = {
   amount?: number;
   transaction_date?: string;
   notes?: string | null;
+  // Unit tracking fields for investment buckets
+  from_units?: number | null;
+  to_units?: number | null;
 };
 
 type ExpenseTransactionSummary = {

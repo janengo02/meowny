@@ -39,6 +39,8 @@ export async function createTransaction(
       from_bucket_id: params.from_bucket_id ?? null,
       to_bucket_id: params.to_bucket_id ?? null,
       amount: params.amount,
+      from_units: params.from_units ?? null,
+      to_units: params.to_units ?? null,
       transaction_date: transactionDate,
       notes: params.notes ?? null,
     })
@@ -74,28 +76,34 @@ export async function createTransaction(
     const baseMarketValue = lastHistoryBefore
       ? lastHistoryBefore.market_value
       : 0;
+    const baseTotalUnits = lastHistoryBefore?.total_units ?? 0;
 
     const newFromContributedAmount = baseContributedAmount - params.amount;
     const newFromMarketAmount = baseMarketValue - params.amount;
 
-    const normalizedFromContributedAmount =
-      newFromContributedAmount < 0 ? 0 : newFromContributedAmount;
-    const normalizedFromMarketAmount =
-      newFromMarketAmount < 0 ? 0 : newFromMarketAmount;
+    // Calculate unit values for investment buckets
+    let newFromTotalUnits: number | null = null;
+
+    if (params.from_units) {
+      // Selling units: subtract from total
+      newFromTotalUnits = baseTotalUnits - params.from_units;
+    }
 
     // Adjust all subsequent bucket value history records and update the bucket
     await adjustBucketValueHistoryForHistoricalTransaction(
       params.from_bucket_id,
       transactionDate,
       -params.amount,
+      params.from_units ? -params.from_units : null,
     );
 
     // Create bucket value history for from_bucket
     // Must be done after adjustment to get correct contributed amount
     await createBucketValueHistory({
       bucket_id: params.from_bucket_id,
-      contributed_amount: normalizedFromContributedAmount,
-      market_value: normalizedFromMarketAmount,
+      contributed_amount: newFromContributedAmount,
+      market_value: newFromMarketAmount,
+      total_units: newFromTotalUnits,
       recorded_at: transactionDate,
       source_type: 'transaction',
       source_id: transaction.id,
@@ -120,28 +128,34 @@ export async function createTransaction(
     const baseMarketValue = lastHistoryBefore
       ? lastHistoryBefore.market_value
       : 0;
+    const baseTotalUnits = lastHistoryBefore?.total_units ?? 0;
 
     const newToContributedAmount = baseContributedAmount + params.amount;
     const newToMarketAmount = baseMarketValue + params.amount;
 
-    const normalizedToContributedAmount =
-      newToContributedAmount < 0 ? 0 : newToContributedAmount;
-    const normalizedToMarketAmount =
-      newToMarketAmount < 0 ? 0 : newToMarketAmount;
+    // Calculate unit values for investment buckets
+    let newToTotalUnits: number | null = null;
+
+    if (params.to_units) {
+      // Buying units: add to total
+      newToTotalUnits = baseTotalUnits + params.to_units;
+    }
 
     // Adjust all subsequent bucket value history records and update the bucket
     await adjustBucketValueHistoryForHistoricalTransaction(
       params.to_bucket_id,
       transactionDate,
       params.amount,
+      params.to_units ? params.to_units : null,
     );
 
     // Create bucket value history for to_bucket
     // Must be done after adjustment to get correct contributed amount
     await createBucketValueHistory({
       bucket_id: params.to_bucket_id,
-      contributed_amount: normalizedToContributedAmount,
-      market_value: normalizedToMarketAmount,
+      contributed_amount: newToContributedAmount,
+      market_value: newToMarketAmount,
+      total_units: newToTotalUnits,
       recorded_at: transactionDate,
       source_type: 'transaction',
       source_id: transaction.id,
@@ -214,6 +228,10 @@ export async function updateTransaction(
   if (params.to_bucket_id !== undefined)
     updateData.to_bucket_id = params.to_bucket_id;
   if (params.amount !== undefined) updateData.amount = params.amount;
+  if (params.from_units !== undefined)
+    updateData.from_units = params.from_units;
+  if (params.to_units !== undefined)
+    updateData.to_units = params.to_units;
   if (params.transaction_date !== undefined)
     updateData.transaction_date = params.transaction_date;
   if (params.notes !== undefined) updateData.notes = params.notes;

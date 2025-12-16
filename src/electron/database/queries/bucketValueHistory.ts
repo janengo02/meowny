@@ -45,6 +45,7 @@ export async function createBucketValueHistory(
       bucket_id: params.bucket_id,
       contributed_amount: contributedAmount,
       market_value: params.market_value ?? 0,
+      total_units: params.total_units ?? null,
       recorded_at: recordedAt,
       source_type: params.source_type,
       source_id: params.source_id ?? null,
@@ -143,6 +144,8 @@ export async function updateBucketValueHistory(
     updateData.contributed_amount = params.contributed_amount;
   if (params.market_value !== undefined)
     updateData.market_value = params.market_value;
+  if (params.total_units !== undefined)
+    updateData.total_units = params.total_units;
   if (params.recorded_at !== undefined)
     updateData.recorded_at = params.recorded_at;
   if (params.source_type !== undefined)
@@ -200,6 +203,7 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
           transaction.from_bucket_id,
           transaction.transaction_date,
           transaction.amount, // Reverse the deduction by adding back
+          transaction.from_units ? transaction.from_units : null, // Reverse units change
           historyRecord.created_at, // Need when there are multiple records on the same date
         );
         // Update the bucket table with the latest values
@@ -212,6 +216,7 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
           transaction.to_bucket_id,
           transaction.transaction_date,
           -transaction.amount, // Reverse the addition by subtracting
+          transaction.to_units ? -transaction.to_units : null, // Reverse units change
           historyRecord.created_at, // Need when there are multiple records on the same date
         );
         // Update the bucket table with the latest values
@@ -275,6 +280,7 @@ export async function adjustBucketValueHistoryForHistoricalTransaction(
   bucketId: number,
   transactionDate: string,
   amountChange: number,
+  unitsChange?: number | null,
   createdAt?: string,
 ): Promise<void> {
   // Get all bucket value history records after the transaction date
@@ -290,24 +296,28 @@ export async function adjustBucketValueHistoryForHistoricalTransaction(
   for (const history of historiesAfter) {
     // Always adjust contributed_amount
     const newContributedAmount = history.contributed_amount + amountChange;
-    const normalizedContributedAmount =
-      newContributedAmount < 0 ? 0 : newContributedAmount;
 
     // Stop adjusting market_value if we encounter a 'market' source_type
     if (history.source_type === 'market') {
       stopAdjustingMarketValue = true;
     }
     // Adjust market_value unless we've encountered a 'market' source_type
-    let normalizedMarketValue = history.market_value;
+    let newMarketValue = history.market_value;
     if (!stopAdjustingMarketValue) {
-      const newMarketValue = history.market_value + amountChange;
-      normalizedMarketValue = newMarketValue < 0 ? 0 : newMarketValue;
+      newMarketValue = history.market_value + amountChange;
+    }
+
+    // Adjust units if unitsChange is provided and total_units exists
+    let newTotalUnits: number | null = history.total_units;
+    if (unitsChange !== null && unitsChange !== undefined && history.total_units !== null) {
+      newTotalUnits = history.total_units + unitsChange;
     }
 
     // Update the history record
     await updateBucketValueHistory(history.id, {
-      contributed_amount: normalizedContributedAmount,
-      market_value: normalizedMarketValue,
+      contributed_amount: newContributedAmount,
+      market_value: newMarketValue,
+      total_units: newTotalUnits,
     });
   }
 }
@@ -516,11 +526,9 @@ async function adjustBucketValueHistoryForHistoricalMarket(
 
       // Adjust the market_value
       const adjustedMarketValue = record.market_value + marketValueChange;
-      const normalizedMarketValue =
-        adjustedMarketValue < 0 ? 0 : adjustedMarketValue;
 
       await updateBucketValueHistory(record.id, {
-        market_value: normalizedMarketValue,
+        market_value: adjustedMarketValue,
       });
     }
   }
