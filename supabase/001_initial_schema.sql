@@ -38,13 +38,14 @@ CREATE TABLE bucket_category (
 );
 
 -- ============================================
--- BUCKET LOCATION
+-- ACCOUNT (formerly BUCKET LOCATION)
 -- ============================================
 
-CREATE TABLE bucket_location (
+CREATE TABLE account (
   id SERIAL PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name VARCHAR(225) NOT NULL,
+  type bucket_type_enum NOT NULL,
   color color_enum NOT NULL DEFAULT 'default',
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
@@ -61,7 +62,7 @@ CREATE TABLE bucket (
   name VARCHAR(225) NOT NULL,
   type bucket_type_enum NOT NULL,
   bucket_category_id INT REFERENCES bucket_category(id) ON DELETE SET NULL,
-  bucket_location_id INT REFERENCES bucket_location(id) ON DELETE SET NULL,
+  account_id INT REFERENCES account(id) ON DELETE SET NULL,
   contributed_amount DECIMAL(19, 2) NOT NULL DEFAULT 0,
   market_value DECIMAL(19, 2) NOT NULL DEFAULT 0,
   is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
@@ -196,13 +197,28 @@ CREATE TABLE income_tax (
 );
 
 -- ============================================
+-- KEYWORD BUCKET MAPPING
+-- ============================================
+
+-- This table tracks which keywords in transaction notes are commonly associated with which buckets
+CREATE TABLE keyword_bucket_mapping (
+  id SERIAL PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  keyword TEXT NOT NULL,
+  bucket_assign_count JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id, keyword)
+);
+
+-- ============================================
 -- INDEXES
 -- ============================================
 
 -- Bucket indexes
 CREATE INDEX idx_bucket_user_id ON bucket(user_id);
 CREATE INDEX idx_bucket_category_id ON bucket(bucket_category_id);
-CREATE INDEX idx_bucket_location_id ON bucket(bucket_location_id);
+CREATE INDEX idx_bucket_account_id ON bucket(account_id);
 CREATE INDEX idx_bucket_type ON bucket(type);
 
 -- Transaction indexes
@@ -233,10 +249,14 @@ CREATE INDEX idx_income_tax_tax_category_id ON income_tax(tax_category_id);
 
 -- Category/Location indexes
 CREATE INDEX idx_bucket_category_user_id ON bucket_category(user_id);
-CREATE INDEX idx_bucket_location_user_id ON bucket_location(user_id);
+CREATE INDEX idx_account_user_id ON account(user_id);
+CREATE INDEX idx_account_type ON account(type);
 CREATE INDEX idx_income_source_user_id ON income_source(user_id);
 CREATE INDEX idx_income_category_user_id ON income_category(user_id);
 CREATE INDEX idx_tax_category_user_id ON tax_category(user_id);
+
+-- Keyword bucket mapping indexes
+CREATE INDEX idx_keyword_bucket_mapping_user_keyword ON keyword_bucket_mapping(user_id, keyword);
 
 
 -- ============================================
@@ -245,7 +265,7 @@ CREATE INDEX idx_tax_category_user_id ON tax_category(user_id);
 
 -- Enable RLS on all tables
 ALTER TABLE bucket_category ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bucket_location ENABLE ROW LEVEL SECURITY;
+ALTER TABLE account ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bucket ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bucket_goal ENABLE ROW LEVEL SECURITY;
 ALTER TABLE transaction ENABLE ROW LEVEL SECURITY;
@@ -255,6 +275,7 @@ ALTER TABLE income_category ENABLE ROW LEVEL SECURITY;
 ALTER TABLE income_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tax_category ENABLE ROW LEVEL SECURITY;
 ALTER TABLE income_tax ENABLE ROW LEVEL SECURITY;
+ALTER TABLE keyword_bucket_mapping ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- RLS POLICIES - BUCKET_CATEGORY
@@ -277,23 +298,23 @@ CREATE POLICY "Users can delete own bucket_category"
   USING (auth.uid() = user_id);
 
 -- ============================================
--- RLS POLICIES - BUCKET_LOCATION
+-- RLS POLICIES - ACCOUNT
 -- ============================================
 
-CREATE POLICY "Users can view own bucket_location"
-  ON bucket_location FOR SELECT
+CREATE POLICY "Users can view own account"
+  ON account FOR SELECT
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert own bucket_location"
-  ON bucket_location FOR INSERT
+CREATE POLICY "Users can insert own account"
+  ON account FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update own bucket_location"
-  ON bucket_location FOR UPDATE
+CREATE POLICY "Users can update own account"
+  ON account FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete own bucket_location"
-  ON bucket_location FOR DELETE
+CREATE POLICY "Users can delete own account"
+  ON account FOR DELETE
   USING (auth.uid() = user_id);
 
 -- ============================================
@@ -477,6 +498,26 @@ CREATE POLICY "Users can delete own income_tax"
   USING (auth.uid() = user_id);
 
 -- ============================================
+-- RLS POLICIES - KEYWORD_BUCKET_MAPPING
+-- ============================================
+
+CREATE POLICY "Users can view their own keyword mappings"
+  ON keyword_bucket_mapping FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own keyword mappings"
+  ON keyword_bucket_mapping FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own keyword mappings"
+  ON keyword_bucket_mapping FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own keyword mappings"
+  ON keyword_bucket_mapping FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================
 -- TRIGGERS FOR updated_at
 -- ============================================
 
@@ -492,8 +533,8 @@ CREATE TRIGGER update_bucket_category_updated_at
   BEFORE UPDATE ON bucket_category
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_bucket_location_updated_at
-  BEFORE UPDATE ON bucket_location
+CREATE TRIGGER update_account_updated_at
+  BEFORE UPDATE ON account
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_bucket_updated_at
@@ -530,4 +571,8 @@ CREATE TRIGGER update_tax_category_updated_at
 
 CREATE TRIGGER update_income_tax_updated_at
   BEFORE UPDATE ON income_tax
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_keyword_bucket_mapping_updated_at
+  BEFORE UPDATE ON keyword_bucket_mapping
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
