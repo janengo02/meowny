@@ -114,7 +114,7 @@ export async function getAccountsWithBuckets(): Promise<NormalizedAccountsRespon
     return {
       accounts: {
         byId: {},
-        byType: { saving: [], investment: [], expense: [] },
+        byType: { asset: [], expense: [] },
       },
       buckets: { byId: {}, byAccountId: {}, byCategoryId: {} },
       categories: { byId: {} },
@@ -143,15 +143,14 @@ export async function getAccountsWithBuckets(): Promise<NormalizedAccountsRespon
   const normalizedAccounts = {
     byId: {} as Record<number, Account>,
     byType: {
-      saving: [] as number[],
-      investment: [] as number[],
+      asset: [] as number[],
       expense: [] as number[],
     },
   };
 
   accounts.forEach((account) => {
     normalizedAccounts.byId[account.id] = account;
-    normalizedAccounts.byType[account.type as BucketTypeEnum].push(account.id);
+    normalizedAccounts.byType[account.type as AccountTypeEnum].push(account.id);
   });
 
   // Normalize buckets

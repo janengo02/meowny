@@ -85,7 +85,7 @@ export const selectBucketsByCategory = createSelector(
  * Select account IDs by type - Direct array access
  */
 export const selectAccountIdsByType = createSelector(
-  [selectAccountsByType, (_state: RootState, type: BucketTypeEnum) => type],
+  [selectAccountsByType, (_state: RootState, type: AccountTypeEnum) => type],
   (accountsByType, type) => accountsByType[type]
 );
 
@@ -126,8 +126,7 @@ export const selectAllAccountsWithBuckets = createSelector(
   ],
   (accountsById, bucketsById, bucketsByAccountId, accountsByType) => {
     const allAccountIds = [
-      ...accountsByType.saving,
-      ...accountsByType.investment,
+      ...accountsByType.asset,
       ...accountsByType.expense,
     ];
 
@@ -157,12 +156,11 @@ export const selectAccountsByTypeStructure = createSelector(
   ],
   (accountsById, bucketsById, bucketsByAccountId, accountsByType) => {
     const result: AccountsByType = {
-      saving: [],
-      investment: [],
+      asset: [],
       expense: [],
     };
 
-    (['saving', 'investment', 'expense'] as BucketTypeEnum[]).forEach((type) => {
+    (['asset', 'expense'] as AccountTypeEnum[]).forEach((type) => {
       result[type] = accountsByType[type].map((accountId) => {
         const account = accountsById[accountId];
         const bucketIds = bucketsByAccountId[accountId] || [];
@@ -187,11 +185,8 @@ export const selectAccountsByTypeStructure = createSelector(
  * Direct selectors for specific account types
  * @deprecated Use selectAccountsWithBucketsByType instead
  */
-export const selectSavingAccounts = (state: RootState) =>
-  selectAccountsWithBucketsByType(state, 'saving');
-
-export const selectInvestmentAccounts = (state: RootState) =>
-  selectAccountsWithBucketsByType(state, 'investment');
+export const selectAssetAccounts = (state: RootState) =>
+  selectAccountsWithBucketsByType(state, 'asset');
 
 export const selectExpenseAccounts = (state: RootState) =>
   selectAccountsWithBucketsByType(state, 'expense');
@@ -204,7 +199,7 @@ export const makeSelectAccountsByType = () =>
   createSelector(
     [
       (state: RootState) => state,
-      (_state: RootState, type: BucketTypeEnum) => type,
+      (_state: RootState, type: AccountTypeEnum) => type,
     ],
     (state, type) => selectAccountsWithBucketsByType(state, type)
   );
@@ -259,8 +254,7 @@ export const selectBucketCountByType = createSelector(
 export const selectAccountCountByType = createSelector(
   [selectAccountsByType],
   (accountsByType) => ({
-    saving: accountsByType.saving.length,
-    investment: accountsByType.investment.length,
+    asset: accountsByType.asset.length,
     expense: accountsByType.expense.length,
   })
 );

@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { useCreateAccountMutation } from '../api/accountApi';
 
 interface AddAccountDialogProps {
-  type: BucketTypeEnum;
+  type: AccountTypeEnum;
   open: boolean;
   onClose: () => void;
 }

@@ -4,6 +4,8 @@ import {
   CardContent,
   Grid,
   Typography,
+  Chip,
+  Box,
 } from '@mui/material';
 import { formatMoney } from '../../../shared/utils';
 interface BucketCardProps {
@@ -33,9 +35,20 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
         }}
       >
         <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h3" gutterBottom>
-            {bucket.name}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
+            <Typography variant="h3" sx={{ flex: 1 }}>
+              {bucket.name}
+            </Typography>
+            {(bucket.type === 'saving' || bucket.type === 'investment') && (
+              <Chip
+                label={bucket.type.charAt(0).toUpperCase() + bucket.type.slice(1)}
+                size="small"
+                variant="outlined"
+                color={bucket.type === 'saving' ? 'info' : 'warning'}
+                sx={{ textTransform: 'capitalize' }}
+              />
+            )}
+          </Box>
           {bucket.type !== 'expense' && (
             <Grid container spacing={2} sx={{ mt: 1 }}>
               <Grid size={6}>

@@ -6,8 +6,7 @@ interface AccountState {
   accounts: {
     byId: Record<number, Account>;
     byType: {
-      saving: number[];
-      investment: number[];
+      asset: number[];
       expense: number[];
     };
   };
@@ -25,8 +24,7 @@ const initialState: AccountState = {
   accounts: {
     byId: {},
     byType: {
-      saving: [],
-      investment: [],
+      asset: [],
       expense: [],
     },
   },
@@ -61,7 +59,7 @@ const accountSlice = createSlice({
         accountApi.endpoints.createAccount.matchFulfilled,
         (state, action) => {
           const account = action.payload;
-          const accountType = account.type as BucketTypeEnum;
+          const accountType = account.type as AccountTypeEnum;
 
           // Add to byId
           state.accounts.byId[account.id] = account;

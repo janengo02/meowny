@@ -52,13 +52,10 @@ function DashboardContent() {
               <AssetsOverTimeChart />
             </Box>
 
-            {/* 2. Left: Saving accounts, Right: Investment accounts */}
+            {/* 2. Asset accounts */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <AccountList type="saving" />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <AccountList type="investment" />
+              <Grid size={{ xs: 12 }}>
+                <AccountList type="asset" />
               </Grid>
             </Grid>
 

@@ -50,11 +50,7 @@ export function AccountCard({ accountId }: AccountCardProps) {
           {buckets.map((bucket) => (
             <Grid
               key={bucket.id}
-              size={
-                account.type === 'expense'
-                  ? { xs: 6, sm: 3, md: 2 }
-                  : { xs: 12, sm: 6, md: 4 }
-              }
+              size={{ xs: 6, sm: 3, md: 2 }}
             >
               <BucketCard
                 bucket={bucket}
@@ -63,11 +59,7 @@ export function AccountCard({ accountId }: AccountCardProps) {
             </Grid>
           ))}
           <Grid
-            size={
-              account.type === 'expense'
-                ? { xs: 6, sm: 3, md: 2 }
-                : { xs: 12, sm: 6, md: 4 }
-            }
+            size={{ xs: 6, sm: 3, md: 2 }}
           >
             <AddBucketCard account={account} />
           </Grid>

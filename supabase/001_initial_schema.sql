@@ -15,6 +15,10 @@ CREATE TYPE color_enum AS ENUM (
   'cyan', 'magenta', 'teal', 'lime', 'indigo', 'default'
 );
 
+CREATE TYPE account_type_enum AS ENUM (
+  'expense', 'asset'
+);
+
 CREATE TYPE bucket_type_enum AS ENUM (
   'expense', 'saving', 'investment'
 );
@@ -45,7 +49,7 @@ CREATE TABLE account (
   id SERIAL PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name VARCHAR(225) NOT NULL,
-  type bucket_type_enum NOT NULL,
+  type account_type_enum NOT NULL,
   color color_enum NOT NULL DEFAULT 'default',
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

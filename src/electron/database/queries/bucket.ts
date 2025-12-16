@@ -17,11 +17,18 @@ export async function createBucket(
     throw new Error('Bucket type is required');
   }
 
-  // If an account is specified, validate that types match
+  // If an account is specified, validate bucket type compatibility with account type
   if (params.account_id !== undefined && params.account_id !== null) {
     const account = await getAccount(params.account_id);
-    if (account.type !== params.type) {
-      throw new Error(`Cannot create ${params.type} bucket in ${account.type} account. Types must match.`);
+
+    // Expense account can only have expense buckets
+    if (account.type === 'expense' && params.type !== 'expense') {
+      throw new Error('Expense accounts can only contain expense buckets');
+    }
+
+    // Asset account can only have saving or investment buckets
+    if (account.type === 'asset' && params.type === 'expense') {
+      throw new Error('Asset accounts cannot contain expense buckets. Only saving or investment buckets are allowed');
     }
   }
 
@@ -93,11 +100,21 @@ export async function updateBucket(
     throw new Error('Cannot change bucket type when it has an account assigned');
   }
 
-  // If assigning an account, validate that types match
+  // If assigning an account, validate bucket type compatibility with account type
   if (params.account_id !== undefined && params.account_id !== null) {
     const account = await getAccount(params.account_id);
-    if (account.type !== bucket.type) {
-      throw new Error(`Cannot assign ${account.type} account to ${bucket.type} bucket. Types must match.`);
+
+    // Use the new type if being updated, otherwise use current bucket type
+    const bucketType = params.type !== undefined ? params.type : bucket.type;
+
+    // Expense account can only have expense buckets
+    if (account.type === 'expense' && bucketType !== 'expense') {
+      throw new Error('Expense accounts can only contain expense buckets');
+    }
+
+    // Asset account can only have saving or investment buckets
+    if (account.type === 'asset' && bucketType === 'expense') {
+      throw new Error('Asset accounts cannot contain expense buckets. Only saving or investment buckets are allowed');
     }
   }
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { AddAccountDialog } from './AddAccountDialog';
 
 interface AddAccountCardProps {
-  type: BucketTypeEnum;
+  type: AccountTypeEnum;
 }
 
 export function AddAccountCard({ type }: AddAccountCardProps) {

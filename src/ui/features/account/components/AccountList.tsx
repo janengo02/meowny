@@ -5,7 +5,7 @@ import { AddAccountCard } from './AddAccountCard';
 import { selectAccountIdsByType } from '../selectors/accountSelectors';
 
 interface AccountListProps {
-  type: BucketTypeEnum;
+  type: AccountTypeEnum;
 }
 
 export function AccountList({ type }: AccountListProps) {

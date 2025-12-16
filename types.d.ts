@@ -22,6 +22,8 @@ type ColorEnum =
   | 'indigo'
   | 'default';
 
+type AccountTypeEnum = 'expense' | 'asset';
+
 type BucketTypeEnum = 'expense' | 'saving' | 'investment';
 
 type SourceTypeEnum = 'transaction' | 'market';
@@ -44,7 +46,7 @@ type Account = {
   id: number;
   user_id: string;
   name: string;
-  type: BucketTypeEnum;
+  type: AccountTypeEnum;
   color: ColorEnum;
   notes: string | null;
   created_at: string;
@@ -56,8 +58,7 @@ type AccountWithBuckets = Account & {
 };
 
 type AccountsByType = {
-  saving: AccountWithBuckets[];
-  investment: AccountWithBuckets[];
+  asset: AccountWithBuckets[];
   expense: AccountWithBuckets[];
 };
 
@@ -66,8 +67,7 @@ type NormalizedAccountsResponse = {
   accounts: {
     byId: Record<number, Account>;
     byType: {
-      saving: number[];
-      investment: number[];
+      asset: number[];
       expense: number[];
     };
   };
@@ -262,14 +262,14 @@ type UpdateBucketCategoryParams = {
 // Account
 type CreateAccountParams = {
   name: string;
-  type: BucketTypeEnum;
+  type: AccountTypeEnum;
   color?: ColorEnum;
   notes?: string | null;
 };
 
 type UpdateAccountParams = {
   name?: string;
-  type?: BucketTypeEnum;
+  type?: AccountTypeEnum;
   color?: ColorEnum;
   notes?: string | null;
 };
