@@ -10,6 +10,8 @@ export const baseTransactionSchema = z
     notes: z.string().optional(),
     from_bucket_id: z.string().optional(),
     to_bucket_id: z.string().optional(),
+    from_units: z.number().positive().optional(),
+    to_units: z.number().positive().optional(),
   })
   .refine((data) => data.from_bucket_id || data.to_bucket_id, {
     message: 'At least one bucket (From or To) must be selected',
