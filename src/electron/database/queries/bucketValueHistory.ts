@@ -25,18 +25,10 @@ export async function createBucketValueHistory(
   );
 
   // Determine contributed_amount based on source_type and previous record
-  let contributedAmount: number;
+  const contributedAmount =
+    params.contributed_amount ?? previousRecord?.contributed_amount ?? 0;
 
-  if (
-    params.contributed_amount !== undefined &&
-    params.contributed_amount !== null
-  ) {
-    // If explicitly provided, use it
-    contributedAmount = params.contributed_amount;
-  } else {
-    // Otherwise, get from previous record (or 0 if no previous record)
-    contributedAmount = previousRecord ? previousRecord.contributed_amount : 0;
-  }
+  const totalUnits = params.total_units ?? previousRecord?.total_units ?? null;
 
   const { data, error } = await supabase
     .from('bucket_value_history')
@@ -45,7 +37,7 @@ export async function createBucketValueHistory(
       bucket_id: params.bucket_id,
       contributed_amount: contributedAmount,
       market_value: params.market_value ?? 0,
-      total_units: params.total_units ?? null,
+      total_units: totalUnits,
       recorded_at: recordedAt,
       source_type: params.source_type,
       source_id: params.source_id ?? null,
@@ -309,7 +301,11 @@ export async function adjustBucketValueHistoryForHistoricalTransaction(
 
     // Adjust units if unitsChange is provided and total_units exists
     let newTotalUnits: number | null = history.total_units;
-    if (unitsChange !== null && unitsChange !== undefined && history.total_units !== null) {
+    if (
+      unitsChange !== null &&
+      unitsChange !== undefined &&
+      history.total_units !== null
+    ) {
       newTotalUnits = history.total_units + unitsChange;
     }
 
