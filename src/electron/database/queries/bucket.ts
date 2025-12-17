@@ -28,7 +28,9 @@ export async function createBucket(
 
     // Asset account can only have saving or investment buckets
     if (account.type === 'asset' && params.type === 'expense') {
-      throw new Error('Asset accounts cannot contain expense buckets. Only saving or investment buckets are allowed');
+      throw new Error(
+        'Asset accounts cannot contain expense buckets. Only saving or investment buckets are allowed',
+      );
     }
   }
 
@@ -97,7 +99,9 @@ export async function updateBucket(
 
   // If trying to change type, check if bucket has an account
   if (params.type !== undefined && bucket.account_id !== null) {
-    throw new Error('Cannot change bucket type when it has an account assigned');
+    throw new Error(
+      'Cannot change bucket type when it has an account assigned',
+    );
   }
 
   // If assigning an account, validate bucket type compatibility with account type
@@ -114,7 +118,9 @@ export async function updateBucket(
 
     // Asset account can only have saving or investment buckets
     if (account.type === 'asset' && bucketType === 'expense') {
-      throw new Error('Asset accounts cannot contain expense buckets. Only saving or investment buckets are allowed');
+      throw new Error(
+        'Asset accounts cannot contain expense buckets. Only saving or investment buckets are allowed',
+      );
     }
   }
 
@@ -167,19 +173,11 @@ export async function updateBucketFromLatestHistory(
 ): Promise<void> {
   const latestHistory = await getLatestBucketValueHistory(bucketId);
 
-  if (!latestHistory) {
-    // No history records exist, reset bucket to 0
+  if (latestHistory) {
     await updateBucket(bucketId, {
-      contributed_amount: 0,
-      market_value: 0,
-      total_units: null,
+      contributed_amount: latestHistory.contributed_amount,
+      market_value: latestHistory.market_value,
+      total_units: latestHistory.total_units,
     });
-    return;
   }
-
-  await updateBucket(bucketId, {
-    contributed_amount: latestHistory.contributed_amount,
-    market_value: latestHistory.market_value,
-    total_units: latestHistory.total_units,
-  });
 }

@@ -2,6 +2,10 @@ import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 import { updateBucketFromLatestHistory } from './bucket.js';
 import { deleteTransaction } from './transaction.js';
+import {
+  calculateBucketUpdate,
+  insertBucketValueHistoryToDatabase,
+} from './bucketValueHistoryUtils.js';
 
 export async function createBucketValueHistory(
   params: CreateBucketValueHistoryParams,
@@ -60,21 +64,6 @@ export async function createBucketValueHistory(
     await updateBucketFromLatestHistory(params.bucket_id);
   }
 
-  return data;
-}
-
-export async function getBucketValueHistories(): Promise<BucketValueHistory[]> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  const { data, error } = await supabase
-    .from('bucket_value_history')
-    .select()
-    .eq('user_id', userId)
-    .order('recorded_at', { ascending: true })
-    .order('created_at', { ascending: true });
-
-  if (error) throw new Error(error.message);
   return data;
 }
 
@@ -273,7 +262,7 @@ export async function adjustBucketValueHistoryForHistoricalTransaction(
   transactionDate: string,
   amountChange: number,
   unitsChange?: number | null,
-  createdAt?: string,
+  createdAt?: string, // For when deleteing a specific history record
 ): Promise<void> {
   // Get all bucket value history records after the transaction date
   const historiesAfter = await getBucketValueHistoriesAfter(
@@ -316,103 +305,6 @@ export async function adjustBucketValueHistoryForHistoricalTransaction(
       total_units: newTotalUnits,
     });
   }
-}
-
-export async function getValueHistoryWithTransactionsByBucket(
-  params: GetValueHistoryWithTransactionsByBucketParams,
-): Promise<ValueHistoryWithTransaction[]> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  // Using PostgreSQL view or direct SQL via PostgREST is limited
-  // The cleanest approach is using a stored function (RPC)
-  const { data, error } = await supabase.rpc(
-    'get_value_history_with_transactions_by_bucket',
-    {
-      p_bucket_id: params.bucketId,
-      p_user_id: userId,
-      p_start_date: params.startDate ?? null,
-      p_end_date: params.endDate ?? null,
-    },
-  );
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
-export async function getAssetsValueHistory(
-  params: GetAssetsValueHistoryParams,
-): Promise<AssetsValueHistoryResponse> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  // Use specified bucket types
-  const bucketTypes = ['saving', 'investment'];
-
-  // First get all buckets of the specified types with category and location
-  const { data: buckets, error: bucketsError } = await supabase
-    .from('bucket')
-    .select(
-      `
-      id,
-      name,
-      type,
-      bucket_category_id,
-      account_id,
-      category:bucket_category_id(id, name, color),
-      account:account_id(id, name, color)
-    `,
-    )
-    .eq('user_id', userId)
-    .in('type', bucketTypes)
-    .order('type', { ascending: true });
-
-  if (bucketsError) throw new Error(bucketsError.message);
-  if (!buckets || buckets.length === 0) {
-    return { buckets: [] };
-  }
-
-  const bucketIds = buckets.map((b) => b.id);
-
-  // Get value history for all buckets
-  const { data: historyData, error: historyError } = await supabase
-    .from('bucket_value_history')
-    .select(
-      'id, bucket_id, market_value, contributed_amount, recorded_at, source_type, created_at',
-    )
-    .eq('user_id', userId)
-    .in('bucket_id', bucketIds)
-    .gte('recorded_at', params.startDate)
-    .lte('recorded_at', params.endDate)
-    .order('recorded_at', { ascending: true }) // Must be ascending for history
-    .order('created_at', { ascending: true });
-
-  if (historyError) throw new Error(historyError.message);
-
-  // Map history data by bucket
-  const historyByBucket = new Map<number, AssetsBucketData['history']>();
-  historyData?.forEach((item) => {
-    if (!historyByBucket.has(item.bucket_id)) {
-      historyByBucket.set(item.bucket_id, []);
-    }
-    historyByBucket.get(item.bucket_id)!.push(item);
-  });
-
-  // Combine bucket info with history
-  const result: AssetsBucketData[] = buckets.map((bucket) => ({
-    id: bucket.id,
-    name: bucket.name,
-    type: bucket.type,
-    category: Array.isArray(bucket.category)
-      ? bucket.category[0] || null
-      : bucket.category || null,
-    account: Array.isArray(bucket.account)
-      ? bucket.account[0] || null
-      : bucket.account || null,
-    history: historyByBucket.get(bucket.id) || [],
-  }));
-
-  return { buckets: result };
 }
 
 export async function getLastBucketValueHistoryBefore(
@@ -528,4 +420,270 @@ async function adjustBucketValueHistoryForHistoricalMarket(
       });
     }
   }
+}
+
+// ============================================
+// ADDING TRANSACTION PROCEDURE
+// ============================================
+export async function bucketValueProcedureForAddingTransaction(
+  bucketId: number,
+  transactionDate: string,
+  amountDelta: number,
+  unitsDelta: number | null,
+  transactionId: number,
+  notes: string | null,
+): Promise<void> {
+  // Get the last bucket value history record before the transaction date
+  const lastHistoryBefore = await getLastBucketValueHistoryBefore(
+    bucketId,
+    transactionDate,
+  );
+
+  // Calculate new values
+  const { newContributedAmount, newMarketAmount, newTotalUnits } =
+    calculateBucketUpdate(lastHistoryBefore, amountDelta, unitsDelta);
+
+  // Adjust all subsequent bucket value history records
+  await adjustBucketValueHistoryForAddingHistoricalTransaction(
+    bucketId,
+    transactionDate,
+    {
+      contributedAmount: newContributedAmount,
+      marketValue: newMarketAmount,
+      totalUnits: newTotalUnits,
+    },
+  );
+
+  // Create bucket value history for this transaction
+  // Must be done after adjustment to avoid double counting
+  await insertBucketValueHistoryToDatabase({
+    bucket_id: bucketId,
+    contributed_amount: newContributedAmount,
+    market_value: newMarketAmount,
+    total_units: newTotalUnits,
+    recorded_at: transactionDate,
+    source_type: 'transaction',
+    source_id: transactionId,
+    notes: notes,
+  });
+
+  // Update the bucket table with the latest values from bucket_value_history
+  await updateBucketFromLatestHistory(bucketId);
+}
+
+export async function getBucketValueHistoriesAfterAdding(
+  bucketId: number,
+  afterDate: string,
+): Promise<BucketValueHistoryWithTransaction[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const query = supabase
+    .from('bucket_value_history')
+    .select(
+      `
+      *,
+      transaction:source_id(
+        amount,
+        from_bucket_id,
+        to_bucket_id,
+        from_units,
+        to_units
+      )
+    `,
+    )
+    .eq('user_id', userId)
+    .eq('bucket_id', bucketId)
+    .gt('recorded_at', afterDate)
+    .order('recorded_at', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  const { data, error } = await query;
+
+  if (error) throw new Error(error.message);
+
+  return data ?? [];
+}
+
+export async function adjustBucketValueHistoryForAddingHistoricalTransaction(
+  bucketId: number,
+  transactionDate: string,
+  newTransactionValues: {
+    contributedAmount: number;
+    marketValue: number;
+    totalUnits: number | null;
+  },
+): Promise<void> {
+  // Get all bucket value history records after the transaction date (with transaction details)
+  const historiesAfter = await getBucketValueHistoriesAfterAdding(
+    bucketId,
+    transactionDate,
+  );
+
+  // Use the newly added transaction values as the base for recalculation
+  let previousHistory: BucketValueHistory = {
+    contributed_amount: newTransactionValues.contributedAmount,
+    market_value: newTransactionValues.marketValue,
+    total_units: newTransactionValues.totalUnits,
+  } as BucketValueHistory;
+
+  // Recalculate all subsequent records based on their deltas
+  for (const history of historiesAfter) {
+    // If it's a market update, handle differently
+    if (history.source_type === 'market') {
+      // For market updates, we only update market_value, keep contributed_amount and total_units from previous
+      const newMarketValue = history.market_value; // Keep the market value as is
+      await updateBucketValueHistory(history.id, {
+        contributed_amount: previousHistory.contributed_amount,
+        market_value: newMarketValue,
+        total_units: previousHistory.total_units,
+      });
+
+      // Update previousHistory for next iteration
+      previousHistory = {
+        contributed_amount: previousHistory.contributed_amount,
+        market_value: newMarketValue,
+        total_units: previousHistory.total_units,
+      } as BucketValueHistory;
+    } else if (history.source_type === 'transaction' && history.transaction) {
+      // For transaction updates, use the transaction amount/units as deltas
+      const transaction = Array.isArray(history.transaction)
+        ? history.transaction[0]
+        : history.transaction;
+
+      // Determine the delta based on which bucket this is
+      let amountDelta = 0;
+      let unitsDelta: number | null = null;
+
+      if (transaction.from_bucket_id === bucketId) {
+        // This bucket is the source, so subtract
+        amountDelta = -transaction.amount;
+        unitsDelta = transaction.from_units ? -transaction.from_units : null;
+      } else if (transaction.to_bucket_id === bucketId) {
+        // This bucket is the destination, so add
+        amountDelta = transaction.amount;
+        unitsDelta = transaction.to_units ? transaction.to_units : null;
+      }
+
+      // Recalculate based on the transaction delta
+      const recalculated = calculateBucketUpdate(
+        previousHistory,
+        amountDelta,
+        unitsDelta,
+      );
+
+      await updateBucketValueHistory(history.id, {
+        contributed_amount: recalculated.newContributedAmount,
+        market_value: recalculated.newMarketAmount,
+        total_units: recalculated.newTotalUnits,
+      });
+
+      // Update previousHistory for next iteration
+      previousHistory = {
+        contributed_amount: recalculated.newContributedAmount,
+        market_value: recalculated.newMarketAmount,
+        total_units: recalculated.newTotalUnits,
+      } as BucketValueHistory;
+    }
+  }
+}
+
+// ============================================
+// QUERIES FOR CHARTS
+// ============================================
+export async function getAssetsValueHistory(
+  params: GetAssetsValueHistoryParams,
+): Promise<AssetsValueHistoryResponse> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Use specified bucket types
+  const bucketTypes = ['saving', 'investment'];
+
+  // First get all buckets of the specified types with category and location
+  const { data: buckets, error: bucketsError } = await supabase
+    .from('bucket')
+    .select(
+      `
+      id,
+      name,
+      type,
+      bucket_category_id,
+      account_id,
+      category:bucket_category_id(id, name, color),
+      account:account_id(id, name, color)
+    `,
+    )
+    .eq('user_id', userId)
+    .in('type', bucketTypes)
+    .order('type', { ascending: true });
+
+  if (bucketsError) throw new Error(bucketsError.message);
+  if (!buckets || buckets.length === 0) {
+    return { buckets: [] };
+  }
+
+  const bucketIds = buckets.map((b) => b.id);
+
+  // Get value history for all buckets
+  const { data: historyData, error: historyError } = await supabase
+    .from('bucket_value_history')
+    .select(
+      'id, bucket_id, market_value, contributed_amount, recorded_at, source_type, created_at',
+    )
+    .eq('user_id', userId)
+    .in('bucket_id', bucketIds)
+    .gte('recorded_at', params.startDate)
+    .lte('recorded_at', params.endDate)
+    .order('recorded_at', { ascending: true }) // Must be ascending for history
+    .order('created_at', { ascending: true });
+
+  if (historyError) throw new Error(historyError.message);
+
+  // Map history data by bucket
+  const historyByBucket = new Map<number, AssetsBucketData['history']>();
+  historyData?.forEach((item) => {
+    if (!historyByBucket.has(item.bucket_id)) {
+      historyByBucket.set(item.bucket_id, []);
+    }
+    historyByBucket.get(item.bucket_id)!.push(item);
+  });
+
+  // Combine bucket info with history
+  const result: AssetsBucketData[] = buckets.map((bucket) => ({
+    id: bucket.id,
+    name: bucket.name,
+    type: bucket.type,
+    category: Array.isArray(bucket.category)
+      ? bucket.category[0] || null
+      : bucket.category || null,
+    account: Array.isArray(bucket.account)
+      ? bucket.account[0] || null
+      : bucket.account || null,
+    history: historyByBucket.get(bucket.id) || [],
+  }));
+
+  return { buckets: result };
+}
+
+export async function getValueHistoryWithTransactionsByBucket(
+  params: GetValueHistoryWithTransactionsByBucketParams,
+): Promise<ValueHistoryWithTransaction[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Using PostgreSQL view or direct SQL via PostgREST is limited
+  // The cleanest approach is using a stored function (RPC)
+  const { data, error } = await supabase.rpc(
+    'get_value_history_with_transactions_by_bucket',
+    {
+      p_bucket_id: params.bucketId,
+      p_user_id: userId,
+      p_start_date: params.startDate ?? null,
+      p_end_date: params.endDate ?? null,
+    },
+  );
+
+  if (error) throw new Error(error.message);
+  return data;
 }

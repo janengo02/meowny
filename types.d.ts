@@ -347,7 +347,7 @@ type CreateTransactionParams = {
   from_bucket_id?: number | null;
   to_bucket_id?: number | null;
   amount: number;
-  transaction_date?: string;
+  transaction_date: string;
   notes?: string | null;
   // Unit tracking fields for investment buckets
   from_units?: number | null;
@@ -482,6 +482,16 @@ type TransactionWithBucketNames = Transaction & {
 // Value History with Transaction
 type ValueHistoryWithTransaction = BucketValueHistory & {
   transaction: TransactionWithBucketNames | null;
+};
+
+type BucketValueHistoryWithTransaction = BucketValueHistory & {
+  transaction?: {
+    amount: number;
+    from_bucket_id: number | null;
+    to_bucket_id: number | null;
+    from_units: number | null;
+    to_units: number | null;
+  } | null;
 };
 
 // Bucket Value History with Bucket details
@@ -624,9 +634,7 @@ interface Window {
       params: CreateBucketCategoryParams,
     ) => Promise<BucketCategory>;
     getAccounts: () => Promise<Account[]>;
-    createAccount: (
-      params: CreateAccountParams,
-    ) => Promise<Account>;
+    createAccount: (params: CreateAccountParams) => Promise<Account>;
     getAccountsWithBuckets: () => Promise<NormalizedAccountsResponse>;
     getTransactions: () => Promise<Transaction[]>;
     getTransaction: (id: number) => Promise<Transaction>;

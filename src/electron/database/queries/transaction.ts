@@ -1,172 +1,67 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
-import {
-  createBucketValueHistory,
-  getLastBucketValueHistoryBefore,
-  adjustBucketValueHistoryForHistoricalTransaction,
-} from './bucketValueHistory.js';
+
 import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
-import { updateBucketFromLatestHistory } from './bucket.js';
-import { withDatabaseLogging, logValidationError } from '../../logger/dbLogger.js';
+import { withDatabaseLogging } from '../../logger/dbLogger.js';
+import {
+  insertTransactionToDatabase,
+  validateTransactionParams,
+} from './transactionUtils.js';
+import { bucketValueProcedureForAddingTransaction } from './bucketValueHistory.js';
 
 export async function createTransaction(
   params: CreateTransactionParams,
 ): Promise<Transaction> {
-  return withDatabaseLogging('createTransaction', async () => {
-    const supabase = getSupabase();
-    const userId = await getCurrentUserId();
+  return withDatabaseLogging(
+    'createTransaction',
+    async () => {
+      // Step 1: Validate parameters
+      validateTransactionParams(params);
 
-    if (params.amount === undefined || params.amount === null) {
-      logValidationError('createTransaction', 'amount', 'Transaction amount is required');
-      throw new Error('Transaction amount is required');
-    }
-    if (params.amount <= 0) {
-      logValidationError('createTransaction', 'amount', 'Transaction amount must be greater than 0');
-      throw new Error('Transaction amount must be greater than 0');
-    }
-    if (!params.from_bucket_id && !params.to_bucket_id) {
-      logValidationError('createTransaction', 'buckets', 'At least one bucket (from or to) is required');
-      throw new Error('At least one bucket (from or to) is required');
-    }
+      // Step 2: Insert transaction to database
+      const transaction = await insertTransactionToDatabase(params);
 
-  const transactionDate = params.transaction_date ?? new Date().toISOString();
+      // Step 3: Update keyword-bucket mappings for intelligent bucket assignment
+      if (params.notes) {
+        await updateKeywordBucketMapping(
+          params.notes ?? null,
+          params.from_bucket_id ?? null,
+          params.to_bucket_id ?? null,
+        );
+      }
 
-  // Step 1: Insert the transaction
-  const { data: transaction, error: transactionError } = await supabase
-    .from('transaction')
-    .insert({
-      user_id: userId,
-      from_bucket_id: params.from_bucket_id ?? null,
-      to_bucket_id: params.to_bucket_id ?? null,
+      // Step 4: Update from_bucket if specified
+      if (params.from_bucket_id) {
+        await bucketValueProcedureForAddingTransaction(
+          params.from_bucket_id,
+          params.transaction_date,
+          -params.amount, // Negative delta for source bucket
+          params.from_units ? -params.from_units : null,
+          transaction.id,
+          params.notes ?? null,
+        );
+      }
+
+      // Step 5: Update to_bucket if specified
+      if (params.to_bucket_id) {
+        await bucketValueProcedureForAddingTransaction(
+          params.to_bucket_id,
+          params.transaction_date,
+          params.amount, // Positive delta for destination bucket
+          params.to_units ? params.to_units : null,
+          transaction.id,
+          params.notes ?? null,
+        );
+      }
+
+      return transaction;
+    },
+    {
       amount: params.amount,
-      from_units: params.from_units ?? null,
-      to_units: params.to_units ?? null,
-      transaction_date: transactionDate,
-      notes: params.notes ?? null,
-    })
-    .select()
-    .single();
-
-  if (transactionError) throw new Error(transactionError.message);
-
-  // Step 1.5: Update keyword-bucket mappings for intelligent bucket assignment
-  // Track keywords from notes for the bucket pair (from_bucket -> to_bucket)
-  if (params.notes) {
-    updateKeywordBucketMapping(
-      params.notes,
-      params.from_bucket_id ?? null,
-      params.to_bucket_id ?? null,
-    ).catch(
-      (err) => console.error('Failed to update keyword mapping:', err),
-    );
-  }
-
-  // Step 2: Update from_bucket if specified
-  if (params.from_bucket_id) {
-    // Get the last bucket value history record before the transaction date
-    const lastHistoryBefore = await getLastBucketValueHistoryBefore(
-      params.from_bucket_id,
-      transactionDate,
-    );
-
-    // Calculate new values based on the previous record (or 0 if no previous record)
-    const baseContributedAmount = lastHistoryBefore
-      ? lastHistoryBefore.contributed_amount
-      : 0;
-    const baseMarketValue = lastHistoryBefore
-      ? lastHistoryBefore.market_value
-      : 0;
-    const baseTotalUnits = lastHistoryBefore?.total_units ?? 0;
-
-    const newFromContributedAmount = baseContributedAmount - params.amount;
-    const newFromMarketAmount = baseMarketValue - params.amount;
-
-    // Calculate unit values for investment buckets
-    let newFromTotalUnits: number | null = null;
-
-    if (params.from_units) {
-      // Selling units: subtract from total
-      newFromTotalUnits = baseTotalUnits - params.from_units;
-    }
-
-    // Adjust all subsequent bucket value history records and update the bucket
-    await adjustBucketValueHistoryForHistoricalTransaction(
-      params.from_bucket_id,
-      transactionDate,
-      -params.amount,
-      params.from_units ? -params.from_units : null,
-    );
-
-    // Create bucket value history for from_bucket
-    // Must be done after adjustment to get correct contributed amount
-    await createBucketValueHistory({
-      bucket_id: params.from_bucket_id,
-      contributed_amount: newFromContributedAmount,
-      market_value: newFromMarketAmount,
-      total_units: newFromTotalUnits,
-      recorded_at: transactionDate,
-      source_type: 'transaction',
-      source_id: transaction.id,
-      notes: params.notes ?? null,
-    });
-    // Update the bucket table with the latest values from bucket_value_history
-    await updateBucketFromLatestHistory(params.from_bucket_id);
-  }
-
-  // Step 3: Update to_bucket if specified
-  if (params.to_bucket_id) {
-    // Get the last bucket value history record before the transaction date
-    const lastHistoryBefore = await getLastBucketValueHistoryBefore(
-      params.to_bucket_id,
-      transactionDate,
-    );
-
-    // Calculate new values based on the previous record (or 0 if no previous record)
-    const baseContributedAmount = lastHistoryBefore
-      ? lastHistoryBefore.contributed_amount
-      : 0;
-    const baseMarketValue = lastHistoryBefore
-      ? lastHistoryBefore.market_value
-      : 0;
-    const baseTotalUnits = lastHistoryBefore?.total_units ?? 0;
-
-    const newToContributedAmount = baseContributedAmount + params.amount;
-    const newToMarketAmount = baseMarketValue + params.amount;
-
-    // Calculate unit values for investment buckets
-    let newToTotalUnits: number | null = null;
-
-    if (params.to_units) {
-      // Buying units: add to total
-      newToTotalUnits = baseTotalUnits + params.to_units;
-    }
-
-    // Adjust all subsequent bucket value history records and update the bucket
-    await adjustBucketValueHistoryForHistoricalTransaction(
-      params.to_bucket_id,
-      transactionDate,
-      params.amount,
-      params.to_units ? params.to_units : null,
-    );
-
-    // Create bucket value history for to_bucket
-    // Must be done after adjustment to get correct contributed amount
-    await createBucketValueHistory({
-      bucket_id: params.to_bucket_id,
-      contributed_amount: newToContributedAmount,
-      market_value: newToMarketAmount,
-      total_units: newToTotalUnits,
-      recorded_at: transactionDate,
-      source_type: 'transaction',
-      source_id: transaction.id,
-      notes: params.notes ?? null,
-    });
-    // Update the bucket table with the latest values from bucket_value_history
-    await updateBucketFromLatestHistory(params.to_bucket_id);
-  }
-
-    return transaction;
-  }, { amount: params.amount, from_bucket_id: params.from_bucket_id, to_bucket_id: params.to_bucket_id });
+      from_bucket_id: params.from_bucket_id,
+      to_bucket_id: params.to_bucket_id,
+    },
+  );
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
@@ -230,8 +125,7 @@ export async function updateTransaction(
   if (params.amount !== undefined) updateData.amount = params.amount;
   if (params.from_units !== undefined)
     updateData.from_units = params.from_units;
-  if (params.to_units !== undefined)
-    updateData.to_units = params.to_units;
+  if (params.to_units !== undefined) updateData.to_units = params.to_units;
   if (params.transaction_date !== undefined)
     updateData.transaction_date = params.transaction_date;
   if (params.notes !== undefined) updateData.notes = params.notes;
@@ -306,6 +200,9 @@ export async function checkDuplicateTransaction(params: {
   return data !== null && data.length > 0;
 }
 
+// ============================================
+// QUERIES FOR CHARTS
+// ============================================
 export async function getExpenseTransactionsByPeriod(params: {
   startDate: string;
   endDate: string;
