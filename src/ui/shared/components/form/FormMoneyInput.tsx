@@ -45,7 +45,8 @@ export function FormMoneyInput({
   });
 
   // Get numeric value from field (already a number)
-  const numericValue = typeof field.value === 'number' ? field.value : undefined;
+  const numericValue =
+    typeof field.value === 'number' ? field.value : undefined;
 
   // Determine color based on value sign
   const getColor = () => {
@@ -81,7 +82,6 @@ export function FormMoneyInput({
       helperText={error?.message}
       slotProps={{
         input: {
-          disableUnderline: variant === 'standard',
           sx: {
             textAlign,
             fontWeight: 500,

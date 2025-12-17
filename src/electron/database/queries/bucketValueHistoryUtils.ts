@@ -48,14 +48,14 @@ export function calculateBucketUpdate(
 ): CalculateBucketUpdateResult {
   const baseContributedAmount = lastHistory?.contributed_amount ?? 0;
   const baseMarketValue = lastHistory?.market_value ?? 0;
-  const baseTotalUnits = lastHistory?.total_units ?? 0;
+  const baseTotalUnits = lastHistory?.total_units ?? null;
 
   let newContributedAmount = baseContributedAmount + amountDelta;
   let newMarketAmount = baseMarketValue + amountDelta;
 
-  let newTotalUnits: number | null = null;
+  let newTotalUnits: number | null = baseTotalUnits;
   if (unitsDelta !== null) {
-    newTotalUnits = baseTotalUnits + unitsDelta;
+    newTotalUnits = (baseTotalUnits ?? 0) + unitsDelta;
   }
   if (newTotalUnits !== null && newTotalUnits === 0) {
     // When selling all units, the contributed and market amounts should be zeroed out

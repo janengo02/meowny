@@ -176,11 +176,6 @@ const TransactionRowContent = React.memo(
             variant="standard"
             size="small"
             disabled={isBatchImporting || !!importResult}
-            slotProps={{
-              input: {
-                disableUnderline: true,
-              },
-            }}
           />
         </TableCell>
         <TableCell align="right">

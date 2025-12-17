@@ -434,7 +434,7 @@ export async function bucketValueProcedureForAddingTransaction(
   notes: string | null,
 ): Promise<void> {
   // Get the last bucket value history record before the transaction date
-  const lastHistoryBefore = await getLastBucketValueHistoryBefore(
+  const lastHistoryBefore = await getLastBucketValueHistoryBeforeAdding(
     bucketId,
     transactionDate,
   );
@@ -471,6 +471,30 @@ export async function bucketValueProcedureForAddingTransaction(
   await updateBucketFromLatestHistory(bucketId);
 }
 
+export async function getLastBucketValueHistoryBeforeAdding(
+  bucketId: number,
+  beforeDate: string,
+): Promise<BucketValueHistory | null> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const query = supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('user_id', userId)
+    .eq('bucket_id', bucketId)
+    .lte('recorded_at', beforeDate)
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  const { data, error } = await query;
+
+  if (error) throw new Error(error.message);
+
+  return data && data.length > 0 ? data[0] : null;
+}
+
 export async function getBucketValueHistoriesAfterAdding(
   bucketId: number,
   afterDate: string,
@@ -478,31 +502,51 @@ export async function getBucketValueHistoriesAfterAdding(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  const query = supabase
+  // First, get the bucket value histories
+  const { data: histories, error: historiesError } = await supabase
     .from('bucket_value_history')
-    .select(
-      `
-      *,
-      transaction:source_id(
-        amount,
-        from_bucket_id,
-        to_bucket_id,
-        from_units,
-        to_units
-      )
-    `,
-    )
+    .select('*')
     .eq('user_id', userId)
     .eq('bucket_id', bucketId)
     .gt('recorded_at', afterDate)
     .order('recorded_at', { ascending: true })
     .order('created_at', { ascending: true });
 
-  const { data, error } = await query;
+  if (historiesError) throw new Error(historiesError.message);
+  if (!histories || histories.length === 0) return [];
 
-  if (error) throw new Error(error.message);
+  // Get all transaction IDs from the histories where source_type is 'transaction'
+  const transactionIds = histories
+    .filter((h) => h.source_type === 'transaction' && h.source_id !== null)
+    .map((h) => h.source_id as number);
 
-  return data ?? [];
+  // If there are no transactions, return the histories with null transactions
+  if (transactionIds.length === 0) {
+    return histories.map((h) => ({ ...h, transaction: null }));
+  }
+
+  // Fetch all relevant transactions in one query
+  const { data: transactions, error: transactionsError } = await supabase
+    .from('transaction')
+    .select('id, amount, from_bucket_id, to_bucket_id, from_units, to_units')
+    .in('id', transactionIds)
+    .eq('user_id', userId);
+
+  if (transactionsError) throw new Error(transactionsError.message);
+
+  // Create a map of transactions by ID for quick lookup
+  const transactionMap = new Map(
+    transactions?.map((t) => [t.id, t]) ?? [],
+  );
+
+  // Combine histories with their transactions
+  return histories.map((history) => ({
+    ...history,
+    transaction:
+      history.source_type === 'transaction' && history.source_id
+        ? transactionMap.get(history.source_id) ?? null
+        : null,
+  }));
 }
 
 export async function adjustBucketValueHistoryForAddingHistoricalTransaction(

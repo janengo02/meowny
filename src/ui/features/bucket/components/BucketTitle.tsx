@@ -38,7 +38,6 @@ export function BucketTitle({ bucket }: BucketTitleProps) {
       fullWidth
       slotProps={{
         input: {
-          disableUnderline: true,
           sx: {
             fontSize: '1.5rem',
             fontWeight: 500,
