@@ -9,61 +9,6 @@ import {
 } from './transactionUtils.js';
 import { bucketValueProcedureForAddingTransaction } from './bucketValueHistory.js';
 
-export async function createTransaction(
-  params: CreateTransactionParams,
-): Promise<Transaction> {
-  return withDatabaseLogging(
-    'createTransaction',
-    async () => {
-      // Step 1: Validate parameters
-      validateTransactionParams(params);
-
-      // Step 2: Insert transaction to database
-      const transaction = await insertTransactionToDatabase(params);
-
-      // Step 3: Update keyword-bucket mappings for intelligent bucket assignment
-      if (params.notes) {
-        await updateKeywordBucketMapping(
-          params.notes ?? null,
-          params.from_bucket_id ?? null,
-          params.to_bucket_id ?? null,
-        );
-      }
-
-      // Step 4: Update from_bucket if specified
-      if (params.from_bucket_id) {
-        await bucketValueProcedureForAddingTransaction(
-          params.from_bucket_id,
-          params.transaction_date,
-          -params.amount, // Negative delta for source bucket
-          params.from_units ? -params.from_units : null,
-          transaction.id,
-          params.notes ?? null,
-        );
-      }
-
-      // Step 5: Update to_bucket if specified
-      if (params.to_bucket_id) {
-        await bucketValueProcedureForAddingTransaction(
-          params.to_bucket_id,
-          params.transaction_date,
-          params.amount, // Positive delta for destination bucket
-          params.to_units ? params.to_units : null,
-          transaction.id,
-          params.notes ?? null,
-        );
-      }
-
-      return transaction;
-    },
-    {
-      amount: params.amount,
-      from_bucket_id: params.from_bucket_id,
-      to_bucket_id: params.to_bucket_id,
-    },
-  );
-}
-
 export async function getTransactions(): Promise<Transaction[]> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
@@ -199,7 +144,63 @@ export async function checkDuplicateTransaction(params: {
 
   return data !== null && data.length > 0;
 }
+// ============================================
+// CREATE TRANSACTION
+// ============================================
+export async function createTransaction(
+  params: CreateTransactionParams,
+): Promise<Transaction> {
+  return withDatabaseLogging(
+    'createTransaction',
+    async () => {
+      // Step 1: Validate parameters
+      validateTransactionParams(params);
 
+      // Step 2: Insert transaction to database
+      const transaction = await insertTransactionToDatabase(params);
+
+      // Step 3: Update keyword-bucket mappings for intelligent bucket assignment
+      if (params.notes) {
+        await updateKeywordBucketMapping(
+          params.notes ?? null,
+          params.from_bucket_id ?? null,
+          params.to_bucket_id ?? null,
+        );
+      }
+
+      // Step 4: Update from_bucket if specified
+      if (params.from_bucket_id) {
+        await bucketValueProcedureForAddingTransaction(
+          params.from_bucket_id,
+          params.transaction_date,
+          -params.amount, // Negative delta for source bucket
+          params.from_units ? -params.from_units : null,
+          transaction.id,
+          params.notes ?? null,
+        );
+      }
+
+      // Step 5: Update to_bucket if specified
+      if (params.to_bucket_id) {
+        await bucketValueProcedureForAddingTransaction(
+          params.to_bucket_id,
+          params.transaction_date,
+          params.amount, // Positive delta for destination bucket
+          params.to_units ? params.to_units : null,
+          transaction.id,
+          params.notes ?? null,
+        );
+      }
+
+      return transaction;
+    },
+    {
+      amount: params.amount,
+      from_bucket_id: params.from_bucket_id,
+      to_bucket_id: params.to_bucket_id,
+    },
+  );
+}
 // ============================================
 // QUERIES FOR CHARTS
 // ============================================

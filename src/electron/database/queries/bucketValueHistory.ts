@@ -5,67 +5,8 @@ import { deleteTransaction } from './transaction.js';
 import {
   calculateBucketUpdate,
   insertBucketValueHistoryToDatabase,
+  validateBucketValueHistoryParams,
 } from './bucketValueHistoryUtils.js';
-
-export async function createBucketValueHistory(
-  params: CreateBucketValueHistoryParams,
-): Promise<BucketValueHistory> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  if (!params.bucket_id) {
-    throw new Error('Bucket ID is required');
-  }
-  if (!params.source_type) {
-    throw new Error('Source type is required');
-  }
-
-  const recordedAt = params.recorded_at ?? new Date().toISOString();
-
-  // Get the previous record before creating the new one (needed for contributed_amount and market adjustment)
-  const previousRecord = await getLastBucketValueHistoryBefore(
-    params.bucket_id,
-    recordedAt,
-  );
-
-  // Determine contributed_amount based on source_type and previous record
-  const contributedAmount =
-    params.contributed_amount ?? previousRecord?.contributed_amount ?? 0;
-
-  const totalUnits = params.total_units ?? previousRecord?.total_units ?? null;
-
-  const { data, error } = await supabase
-    .from('bucket_value_history')
-    .insert({
-      user_id: userId,
-      bucket_id: params.bucket_id,
-      contributed_amount: contributedAmount,
-      market_value: params.market_value ?? 0,
-      total_units: totalUnits,
-      recorded_at: recordedAt,
-      source_type: params.source_type,
-      source_id: params.source_id ?? null,
-      notes: params.notes ?? null,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  // If this is a market update, adjust subsequent records
-  if (params.source_type === 'market') {
-    await adjustBucketValueHistoryForHistoricalMarket(
-      params.bucket_id,
-      recordedAt,
-      params.market_value ?? 0,
-      previousRecord,
-    );
-    // Update the bucket table with the latest values
-    await updateBucketFromLatestHistory(params.bucket_id);
-  }
-
-  return data;
-}
 
 export async function getBucketValueHistory(
   id: number,
@@ -385,92 +326,9 @@ export async function getLatestBucketValueHistory(
   return data && data.length > 0 ? data[0] : null;
 }
 
-async function adjustBucketValueHistoryForHistoricalMarket(
-  bucketId: number,
-  recordedAt: string,
-  newMarketValue: number,
-  previousRecord: BucketValueHistory | null,
-  createdAt?: string,
-): Promise<void> {
-  // Get all records after this one
-  const recordsAfter = await getBucketValueHistoriesAfter(
-    bucketId,
-    recordedAt,
-    createdAt,
-  );
-  if (recordsAfter.length > 0) {
-    // Use the previously fetched record to calculate the market value change
-
-    // Calculate the market value change
-    const marketValueChange = previousRecord
-      ? newMarketValue - previousRecord.market_value
-      : newMarketValue;
-    // Adjust subsequent records until we encounter another 'market' source_type
-    for (const record of recordsAfter) {
-      if (record.source_type === 'market') {
-        // Stop adjusting when we encounter the next market update
-        break;
-      }
-
-      // Adjust the market_value
-      const adjustedMarketValue = record.market_value + marketValueChange;
-
-      await updateBucketValueHistory(record.id, {
-        market_value: adjustedMarketValue,
-      });
-    }
-  }
-}
-
 // ============================================
-// ADDING TRANSACTION PROCEDURE
+// GET HISTORY BEFORE AND AFTER ADDING
 // ============================================
-export async function bucketValueProcedureForAddingTransaction(
-  bucketId: number,
-  transactionDate: string,
-  amountDelta: number,
-  unitsDelta: number | null,
-  transactionId: number,
-  notes: string | null,
-): Promise<void> {
-  // Get the last bucket value history record before the transaction date
-  const lastHistoryBefore = await getLastBucketValueHistoryBeforeAdding(
-    bucketId,
-    transactionDate,
-  );
-
-  // Calculate new values
-  const { newContributedAmount, newMarketAmount, newTotalUnits } =
-    calculateBucketUpdate(lastHistoryBefore, amountDelta, unitsDelta);
-
-  // Adjust all subsequent bucket value history records
-  await adjustBucketValueHistoryForAddingHistoricalTransaction(
-    bucketId,
-    transactionDate,
-    {
-      contributedAmount: newContributedAmount,
-      marketValue: newMarketAmount,
-      totalUnits: newTotalUnits,
-    },
-  );
-
-  // Create bucket value history for this transaction
-  // Must be done after adjustment to avoid double counting
-  await insertBucketValueHistoryToDatabase({
-    bucket_id: bucketId,
-    contributed_amount: newContributedAmount,
-    market_value: newMarketAmount,
-    total_units: newTotalUnits,
-    recorded_at: transactionDate,
-    source_type: 'transaction',
-    source_id: transactionId,
-    notes: notes,
-  });
-
-  // Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(bucketId);
-}
-
 export async function getLastBucketValueHistoryBeforeAdding(
   bucketId: number,
   beforeDate: string,
@@ -547,6 +405,55 @@ export async function getBucketValueHistoriesAfterAdding(
         ? transactionMap.get(history.source_id) ?? null
         : null,
   }));
+}
+
+// ============================================
+// ADDING TRANSACTION PROCEDURE
+// ============================================
+export async function bucketValueProcedureForAddingTransaction(
+  bucketId: number,
+  transactionDate: string,
+  amountDelta: number,
+  unitsDelta: number | null,
+  transactionId: number,
+  notes: string | null,
+): Promise<void> {
+  // Get the last bucket value history record before the transaction date
+  const lastHistoryBefore = await getLastBucketValueHistoryBeforeAdding(
+    bucketId,
+    transactionDate,
+  );
+
+  // Calculate new values
+  const { newContributedAmount, newMarketAmount, newTotalUnits } =
+    calculateBucketUpdate(lastHistoryBefore, amountDelta, unitsDelta);
+
+  // Adjust all subsequent bucket value history records
+  await adjustBucketValueHistoryForAddingHistoricalTransaction(
+    bucketId,
+    transactionDate,
+    {
+      contributedAmount: newContributedAmount,
+      marketValue: newMarketAmount,
+      totalUnits: newTotalUnits,
+    },
+  );
+
+  // Create bucket value history for this transaction
+  // Must be done after adjustment to avoid double counting
+  await insertBucketValueHistoryToDatabase({
+    bucket_id: bucketId,
+    contributed_amount: newContributedAmount,
+    market_value: newMarketAmount,
+    total_units: newTotalUnits,
+    recorded_at: transactionDate,
+    source_type: 'transaction',
+    source_id: transactionId,
+    notes: notes,
+  });
+
+  // Update the bucket table with the latest values from bucket_value_history
+  await updateBucketFromLatestHistory(bucketId);
 }
 
 export async function adjustBucketValueHistoryForAddingHistoricalTransaction(
@@ -632,6 +539,124 @@ export async function adjustBucketValueHistoryForAddingHistoricalTransaction(
   }
 }
 
+// ============================================
+// ADDING MARKET VALUE PROCEDURE
+// ============================================
+export async function createBucketValueHistory(
+  params: CreateBucketValueHistoryParams,
+): Promise<BucketValueHistory> {
+  // Step 1: Validate parameters
+  validateBucketValueHistoryParams(params);
+
+  // Step 2: Get the last bucket value history record before the recorded date
+  const lastHistoryBefore = await getLastBucketValueHistoryBeforeAdding(
+    params.bucket_id,
+    params.recorded_at,
+  );
+  const newContributedAmount = lastHistoryBefore?.contributed_amount ?? 0;
+  const newMarketAmount = params.market_value ?? 0;
+  const newTotalUnits = lastHistoryBefore?.total_units ?? null;
+
+  // Step 3:Adjust all subsequent bucket value history records
+  await adjustBucketValueHistoryForAddingHistoricalMarket(
+    params.bucket_id,
+    params.recorded_at,
+    {
+      contributedAmount: newContributedAmount,
+      marketValue: newMarketAmount,
+      totalUnits: newTotalUnits,
+    },
+  );
+
+  // Step 4: Create bucket value history
+  // Must be done after adjustment to avoid double counting
+  const insertedHistory = await insertBucketValueHistoryToDatabase({
+    bucket_id: params.bucket_id,
+    contributed_amount: newContributedAmount,
+    market_value: newMarketAmount,
+    total_units: newTotalUnits,
+    recorded_at: params.recorded_at,
+    source_type: 'market', // Always 'market' here
+    source_id: null, // No source_id for market updates
+    notes: params.notes ?? null,
+  });
+
+  // Step 5:Update the bucket table with the latest values from bucket_value_history
+  await updateBucketFromLatestHistory(params.bucket_id);
+
+  return insertedHistory;
+}
+
+export async function adjustBucketValueHistoryForAddingHistoricalMarket(
+  bucketId: number,
+  recordedAt: string,
+  newTransactionValues: {
+    contributedAmount: number;
+    marketValue: number;
+    totalUnits: number | null;
+  },
+): Promise<void> {
+  // Get all bucket value history records after the transaction date (with transaction details)
+  const historiesAfter = await getBucketValueHistoriesAfterAdding(
+    bucketId,
+    recordedAt,
+  );
+
+  // Use the newly added transaction values as the base for recalculation
+  let previousHistory: BucketValueHistory = {
+    contributed_amount: newTransactionValues.contributedAmount,
+    market_value: newTransactionValues.marketValue,
+    total_units: newTransactionValues.totalUnits,
+  } as BucketValueHistory;
+
+  // Recalculate all subsequent records based on their deltas
+  for (const history of historiesAfter) {
+    // If it's a market update, handle differently
+    if (history.source_type === 'market') {
+      // Stop adjusting when we encounter the next market update
+      break;
+    } else if (history.source_type === 'transaction' && history.transaction) {
+      // For transaction updates, use the transaction amount/units as deltas
+      const transaction = Array.isArray(history.transaction)
+        ? history.transaction[0]
+        : history.transaction;
+
+      // Determine the delta based on which bucket this is
+      let amountDelta = 0;
+      let unitsDelta: number | null = null;
+
+      if (transaction.from_bucket_id === bucketId) {
+        // This bucket is the source, so subtract
+        amountDelta = -transaction.amount;
+        unitsDelta = transaction.from_units ? -transaction.from_units : null;
+      } else if (transaction.to_bucket_id === bucketId) {
+        // This bucket is the destination, so add
+        amountDelta = transaction.amount;
+        unitsDelta = transaction.to_units ? transaction.to_units : null;
+      }
+
+      // Recalculate based on the transaction delta
+      const recalculated = calculateBucketUpdate(
+        previousHistory,
+        amountDelta,
+        unitsDelta,
+      );
+
+      await updateBucketValueHistory(history.id, {
+        contributed_amount: recalculated.newContributedAmount,
+        market_value: recalculated.newMarketAmount,
+        total_units: recalculated.newTotalUnits,
+      });
+
+      // Update previousHistory for next iteration
+      previousHistory = {
+        contributed_amount: recalculated.newContributedAmount,
+        market_value: recalculated.newMarketAmount,
+        total_units: recalculated.newTotalUnits,
+      } as BucketValueHistory;
+    }
+  }
+}
 // ============================================
 // QUERIES FOR CHARTS
 // ============================================

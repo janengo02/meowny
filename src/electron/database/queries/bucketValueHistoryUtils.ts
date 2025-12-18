@@ -1,5 +1,39 @@
+import { logValidationError } from '../../logger/dbLogger.js';
 import { getCurrentUserId } from '../auth.js';
 import { getSupabase } from '../supabase.js';
+
+// ============================================
+// VALIDATION UTILITIES
+// ============================================
+
+export function validateBucketValueHistoryParams(
+  params: CreateBucketValueHistoryParams,
+): void {
+  if (!params.bucket_id) {
+    logValidationError(
+      'createBucketValueHistory',
+      'bucket_id',
+      'Bucket ID is required',
+    );
+    throw new Error('Bucket ID is required');
+  }
+  if (!params.source_type) {
+    logValidationError(
+      'createBucketValueHistory',
+      'source_type',
+      'Source type is required',
+    );
+    throw new Error('Source type is required');
+  }
+  if (!params.recorded_at) {
+    logValidationError(
+      'createBucketValueHistory',
+      'recorded_at',
+      'Recorded at date is required',
+    );
+    throw new Error('Recorded at date is required');
+  }
+}
 
 // ============================================
 // DATABASE UPDATE UTILITIES

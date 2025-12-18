@@ -308,7 +308,7 @@ type CreateBucketValueHistoryParams = {
   contributed_amount?: number;
   market_value?: number;
   total_units?: number | null;
-  recorded_at?: string;
+  recorded_at: string;
   source_type: SourceTypeEnum;
   source_id?: number | null;
   notes?: string | null;
