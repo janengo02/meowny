@@ -72,3 +72,16 @@ export async function insertTransactionToDatabase(
 
   return transaction;
 }
+
+export async function deleteTransactionToDatabase(id: number): Promise<void> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { error } = await supabase
+    .from('transaction')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+}

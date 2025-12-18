@@ -66,6 +66,140 @@ export async function insertBucketValueHistoryToDatabase(
   return data;
 }
 
+export async function updateBucketValueHistoryToDatabase(
+  id: number,
+  params: UpdateBucketValueHistoryParams,
+): Promise<BucketValueHistory> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const updateData: Record<string, unknown> = {};
+  if (params.bucket_id !== undefined) updateData.bucket_id = params.bucket_id;
+  if (params.contributed_amount !== undefined)
+    updateData.contributed_amount = params.contributed_amount;
+  if (params.market_value !== undefined)
+    updateData.market_value = params.market_value;
+  if (params.total_units !== undefined)
+    updateData.total_units = params.total_units;
+  if (params.recorded_at !== undefined)
+    updateData.recorded_at = params.recorded_at;
+  if (params.source_type !== undefined)
+    updateData.source_type = params.source_type;
+  if (params.source_id !== undefined) updateData.source_id = params.source_id;
+  if (params.notes !== undefined) updateData.notes = params.notes;
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .update(updateData)
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+
+export async function getBucketValueHistoryByTransaction(
+  bucketId: number,
+  transactionId: number,
+): Promise<BucketValueHistory | null> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('bucket_id', bucketId)
+    .eq('source_type', 'transaction')
+    .eq('source_id', transactionId)
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    // If no record found, return null instead of throwing
+    if (error.code === 'PGRST116') return null;
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function deleteBucketValueHistoryByTransactionToDatabase(
+  bucketId: number,
+  transactionId: number,
+): Promise<void> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { error } = await supabase
+    .from('bucket_value_history')
+    .delete()
+    .eq('bucket_id', bucketId)
+    .eq('source_type', 'transaction')
+    .eq('source_id', transactionId)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+}
+
+
+export async function getLatestBucketValueHistory(
+  bucketId: number,
+): Promise<BucketValueHistory | null> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('user_id', userId)
+    .eq('bucket_id', bucketId)
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (error) throw new Error(error.message);
+  return data && data.length > 0 ? data[0] : null;
+}
+
+
+export async function getBucketValueHistoryByIdForDeletion(
+  id: number,
+): Promise<BucketValueHistory | null> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('id', id)
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    // If no record found, return null instead of throwing
+    if (error.code === 'PGRST116') return null;
+    throw new Error(error.message);
+  }
+
+  return data;
+}
+
+export async function deleteBucketValueHistoryByIdToDatabase(id: number): Promise<void> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { error } = await supabase
+    .from('bucket_value_history')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  if (error) throw new Error(error.message);
+}
+
 // ============================================
 // CALCULATION UTILITIES
 // ============================================

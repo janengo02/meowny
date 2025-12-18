@@ -4,10 +4,14 @@ import { getCurrentUserId } from '../auth.js';
 import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
 import { withDatabaseLogging } from '../../logger/dbLogger.js';
 import {
+  deleteTransactionToDatabase,
   insertTransactionToDatabase,
   validateTransactionParams,
 } from './transactionUtils.js';
-import { bucketValueProcedureForAddingTransaction } from './bucketValueHistory.js';
+import {
+  bucketValueProcedureForAddingTransaction,
+  bucketValueProcedureForDeletingTransaction,
+} from './bucketValueHistory.js';
 
 export async function getTransactions(): Promise<Transaction[]> {
   const supabase = getSupabase();
@@ -87,18 +91,7 @@ export async function updateTransaction(
   return data;
 }
 
-export async function deleteTransaction(id: number): Promise<void> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
 
-  const { error } = await supabase
-    .from('transaction')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', userId);
-
-  if (error) throw new Error(error.message);
-}
 
 export async function checkDuplicateTransaction(params: {
   transaction_date: string;
@@ -201,6 +194,44 @@ export async function createTransaction(
     },
   );
 }
+
+// ============================================
+// DELETE TRANSACTION
+// ============================================
+export async function deleteTransaction(id: number): Promise<void> {
+  return withDatabaseLogging(
+    'deleteTransaction',
+    async () => {
+      // Step 1: Get the transaction to be deleted
+      const transaction = await getTransaction(id);
+
+      // Step 2: Reverse bucket value history for from_bucket
+      if (transaction.from_bucket_id) {
+        await bucketValueProcedureForDeletingTransaction(
+          transaction.from_bucket_id,
+          transaction.transaction_date,
+          transaction.id,
+        );
+      }
+
+      // Step 3: Reverse bucket value history for to_bucket
+      if (transaction.to_bucket_id) {
+        await bucketValueProcedureForDeletingTransaction(
+          transaction.to_bucket_id,
+          transaction.transaction_date,
+          transaction.id,
+        );
+      }
+
+      // Step 4: Delete the transaction from database
+      await deleteTransactionToDatabase(id);
+    },
+    {
+      transaction_id: id,
+    },
+  );
+}
+
 // ============================================
 // QUERIES FOR CHARTS
 // ============================================

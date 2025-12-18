@@ -16,6 +16,7 @@ import ShowChartIcon from '@mui/icons-material/ShowChart';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { Dayjs } from 'dayjs';
 import { useGetValueHistoryWithTransactionsByBucketQuery, useDeleteBucketValueHistoryMutation } from '../api/bucketValueHistoryApi';
+import { useDeleteTransactionMutation } from '../../transaction/api/transactionApi';
 import { formatMoney } from '../../../shared/utils';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import { useMemo } from 'react';
@@ -47,11 +48,25 @@ export function BucketValueHistoryTable({
     useGetValueHistoryWithTransactionsByBucketQuery(queryParams);
 
   const [deleteBucketValueHistory] = useDeleteBucketValueHistoryMutation();
+  const [deleteTransaction] = useDeleteTransactionMutation();
 
-  const handleDelete = async (historyId: number) => {
-    if (window.confirm('Are you sure you want to delete this history entry?')) {
+  const handleDelete = async (history: ValueHistoryWithTransaction) => {
+    const confirmMessage =
+      history.source_type === 'transaction'
+        ? 'Are you sure you want to delete this transaction? This will also remove history record(s) of all related buckets.'
+        : 'Are you sure you want to delete this market value entry?';
+
+    if (window.confirm(confirmMessage)) {
       try {
-        await deleteBucketValueHistory({ id: historyId, bucketId }).unwrap();
+        if (history.source_type === 'transaction') {
+          // Delete transaction (which will automatically handle bucket value history)
+          if (history.source_id) {
+            await deleteTransaction(history.source_id).unwrap();
+          }
+        } else {
+          // Delete market value history
+          await deleteBucketValueHistory({ id: history.id, bucketId }).unwrap();
+        }
       } catch (error) {
         console.error('Failed to delete history:', error);
       }
@@ -222,7 +237,7 @@ export function BucketValueHistoryTable({
               <TableCell align="center">
                 <IconButton
                   size="small"
-                  onClick={() => handleDelete(history.id)}
+                  onClick={() => handleDelete(history)}
                   aria-label="delete"
                   color="error"
                 >

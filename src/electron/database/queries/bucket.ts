@@ -1,8 +1,8 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
-import { getLatestBucketValueHistory } from './bucketValueHistory.js';
 import { clearKeywordMappingsForBucket } from './keywordBucketMapping.js';
 import { getAccount } from './account.js';
+import { getLatestBucketValueHistory } from './bucketValueHistoryUtils.js';
 
 export async function createBucket(
   params: CreateBucketParams,
