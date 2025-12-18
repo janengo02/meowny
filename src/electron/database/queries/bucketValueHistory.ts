@@ -12,35 +12,6 @@ import {
   validateBucketValueHistoryParams,
 } from './bucketValueHistoryUtils.js';
 
-
-export async function getBucketValueHistoriesByBucket(
-  params: GetBucketValueHistoriesByBucketParams,
-): Promise<BucketValueHistory[]> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  let query = supabase
-    .from('bucket_value_history')
-    .select()
-    .eq('user_id', userId)
-    .eq('bucket_id', params.bucketId);
-
-  // Add period filters if provided
-  if (params.startDate) {
-    query = query.gte('recorded_at', params.startDate);
-  }
-  if (params.endDate) {
-    query = query.lte('recorded_at', params.endDate);
-  }
-
-  const { data, error } = await query
-    .order('recorded_at', { ascending: true }) // Must be ascending for history
-    .order('created_at', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data;
-}
-
 // ============================================
 // GET HISTORY BEFORE AND AFTER ADDING
 // ============================================
@@ -819,6 +790,34 @@ export async function getValueHistoryWithTransactionsByBucket(
       p_end_date: params.endDate ?? null,
     },
   );
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+export async function getBucketValueHistoriesByBucket(
+  params: GetBucketValueHistoriesByBucketParams,
+): Promise<BucketValueHistory[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  let query = supabase
+    .from('bucket_value_history')
+    .select()
+    .eq('user_id', userId)
+    .eq('bucket_id', params.bucketId);
+
+  // Add period filters if provided
+  if (params.startDate) {
+    query = query.gte('recorded_at', params.startDate);
+  }
+  if (params.endDate) {
+    query = query.lte('recorded_at', params.endDate);
+  }
+
+  const { data, error } = await query
+    .order('recorded_at', { ascending: true }) // Must be ascending for history
+    .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
   return data;
