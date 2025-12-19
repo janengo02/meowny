@@ -17,6 +17,7 @@ interface FormMoneyInputProps {
   decimalScale?: number;
   fixedDecimalScale?: boolean;
   onValueChange?: (value: string) => void;
+  disableUnderline?: boolean; // Disable underline for standard variant
 }
 
 export function FormMoneyInput({
@@ -34,6 +35,7 @@ export function FormMoneyInput({
   decimalScale = 2,
   fixedDecimalScale = false,
   onValueChange,
+  disableUnderline = false,
 }: FormMoneyInputProps) {
   const { control } = useFormContext();
   const {
@@ -82,10 +84,16 @@ export function FormMoneyInput({
       helperText={error?.message}
       slotProps={{
         input: {
+          disableUnderline,
           sx: {
-            textAlign,
             fontWeight: 500,
             color: getColor(),
+            outline: 'none',
+          },
+        },
+        htmlInput: {
+          style: {
+            textAlign,
           },
         },
       }}

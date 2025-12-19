@@ -43,21 +43,51 @@ export const transactionImportSchema = baseTransactionSchema.safeExtend({
 // Manually define type to ensure UI state fields are required
 export type TransactionImportFormData = z.infer<typeof transactionImportSchema>;
 
-// Validation schema - transactionDate and either depositAmount or withdrawalAmount are required
-export const columnMappingSchema = z
-  .object({
+// Amount mapping strategy types
+export const amountMappingStrategySchema = z.enum([
+  'single_transaction', // Option 1: Single transaction amount column
+  'deposit_withdrawal', // Option 2: Separate deposit/withdrawal columns
+  'transaction_with_category', // Option 3: Transaction amount + category column
+]);
+export type AmountMappingStrategy = z.infer<typeof amountMappingStrategySchema>;
+
+// Validation schema for column mapping - varies based on strategy
+export const columnMappingSchema = z.discriminatedUnion('strategy', [
+  // Option 1: Single transaction column
+  z.object({
+    strategy: z.literal('single_transaction'),
     transactionDate: z.string().min(1, 'Transaction date column is required'),
-    depositAmount: z.string().optional(),
-    withdrawalAmount: z.string().optional(),
+    transactionAmount: z
+      .string()
+      .min(1, 'Transaction amount column is required'),
     notes: z.string().optional(),
-  })
-  .refine(
-    (data) => data.depositAmount || data.withdrawalAmount,
-    {
-      message: 'At least one of Deposit Amount or Withdrawal Amount column is required',
-      path: ['depositAmount'],
-    },
-  );
+  }),
+  // Option 2: Separate deposit/withdrawal columns
+  z.object({
+    strategy: z.literal('deposit_withdrawal'),
+    transactionDate: z.string().min(1, 'Transaction date column is required'),
+    depositAmount: z.string().min(1, 'Deposit amount column is required'),
+    withdrawalAmount: z.string().min(1, 'Withdrawal amount column is required'),
+    notes: z.string().optional(),
+  }),
+  // Option 3: Transaction amount + category column
+  z
+    .object({
+      strategy: z.literal('transaction_with_category'),
+      transactionDate: z.string().min(1, 'Transaction date column is required'),
+      transactionAmount: z
+        .string()
+        .min(1, 'Transaction amount column is required'),
+      categoryColumn: z.string().min(1, 'Category column is required'),
+      depositValue: z.string().min(1, 'Deposit value is required'),
+      withdrawalValue: z.string().min(1, 'Withdrawal value is required'),
+      notes: z.string().optional(),
+    })
+    .refine((data) => data.depositValue !== data.withdrawalValue, {
+      message: 'Deposit and Withdrawal values must be different',
+      path: ['withdrawalValue'],
+    }),
+]);
 export type ColumnMappingFormData = z.infer<typeof columnMappingSchema>;
 
 export type MappedTransaction = TransactionImportFormData & {

@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect } from 'react';
-import { TableRow, TableCell, Chip, CircularProgress } from '@mui/material';
+import {
+  TableRow,
+  TableCell,
+  Chip,
+  CircularProgress,
+  Box,
+} from '@mui/material';
 import {
   useForm,
   FormProvider,
@@ -176,29 +182,15 @@ const TransactionRowContent = React.memo(
             variant="standard"
             size="small"
             disabled={isBatchImporting || !!importResult}
+            slotProps={{
+              input: {
+                disableUnderline: true,
+                sx: {
+                  width: 200,
+                },
+              },
+            }}
           />
-        </TableCell>
-        <TableCell align="right">
-          {initialTransaction.is_deposit ? (
-            <FormMoneyInput
-              name="amount"
-              disabled={isBatchImporting || !!importResult}
-              allowNegative={false}
-            />
-          ) : (
-            <span style={{ opacity: 0.3 }}>—</span>
-          )}
-        </TableCell>
-        <TableCell align="right">
-          {!initialTransaction.is_deposit ? (
-            <FormMoneyInput
-              name="amount"
-              disabled={isBatchImporting || !!importResult}
-              allowNegative={false}
-            />
-          ) : (
-            <span style={{ opacity: 0.3 }}>—</span>
-          )}
         </TableCell>
         <TableCell>
           <FormTextField
@@ -214,6 +206,26 @@ const TransactionRowContent = React.memo(
             }}
           />
         </TableCell>
+        <TableCell align="right" sx={{ width: 150 }}>
+          <Box
+            sx={{
+              color: initialTransaction.is_deposit
+                ? 'success.main'
+                : 'error.main',
+            }}
+          >
+            <FormMoneyInput
+              name="amount"
+              disabled={isBatchImporting || !!importResult}
+              allowNegative={false}
+              variant="standard"
+              size="small"
+              textAlign="right"
+              disableUnderline={true}
+            />
+          </Box>
+        </TableCell>
+
         <TableCell>
           <FormBucketSelectField
             name="from_bucket_id"
@@ -222,6 +234,7 @@ const TransactionRowContent = React.memo(
             disabled={isBatchImporting || !!importResult}
             sx={{
               opacity: fromBucketIdWatch ? 1 : 0.5,
+              width: 180,
             }}
           />
         </TableCell>
@@ -233,10 +246,11 @@ const TransactionRowContent = React.memo(
             disabled={isBatchImporting || !!importResult}
             sx={{
               opacity: toBucketIdWatch ? 1 : 0.5,
+              width: 180,
             }}
           />
         </TableCell>
-        <TableCell>
+        <TableCell sx={{ width: 150 }}>
           {currentImportStatus === 'validating' && (
             <Chip
               label="Validating..."

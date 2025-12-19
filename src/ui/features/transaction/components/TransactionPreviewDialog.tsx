@@ -189,7 +189,7 @@ export function TransactionPreviewDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="lg"
+      maxWidth="xl"
       fullWidth
       PaperProps={{
         sx: {
@@ -236,19 +236,21 @@ export function TransactionPreviewDialog({
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 'bold' }}>Import</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>
+                <TableCell sx={{ fontWeight: 'bold', width: 200 }}>
                   Transaction Date
                 </TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }} align="right">
-                  Deposit Amount
-                </TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }} align="right">
-                  Withdrawal Amount
-                </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Notes</TableCell>
+                <TableCell
+                  sx={{ fontWeight: 'bold', width: 150 }}
+                  align="right"
+                >
+                  Amount
+                </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>From Bucket</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>To Bucket</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: 150 }}>
+                  Status
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

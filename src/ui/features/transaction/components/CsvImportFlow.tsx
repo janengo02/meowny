@@ -3,6 +3,7 @@ import { Button } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
+import { AmountMappingStrategyDialog } from './AmountMappingStrategyDialog';
 import { ColumnMappingDialog } from './ColumnMappingDialog';
 import { TransactionPreviewDialog } from './TransactionPreviewDialog';
 import { sanitizeMoneyInput } from '../../../shared/utils/formatMoney';
@@ -10,6 +11,8 @@ import { formatToDateTimeLocal } from '../../../shared/utils/dateTime';
 import type {
   ImportStatus,
   MappedTransaction,
+  AmountMappingStrategy,
+  ColumnMappingFormData,
 } from '../schemas/transaction.schema';
 interface CsvRow {
   [key: string]: string;
@@ -18,8 +21,11 @@ interface CsvRow {
 export function CsvImportFlow() {
   const [csvData, setCsvData] = useState<CsvRow[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [showStrategyDialog, setShowStrategyDialog] = useState(false);
   const [showMappingDialog, setShowMappingDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [selectedStrategy, setSelectedStrategy] =
+    useState<AmountMappingStrategy>('single_transaction');
   const [mappedTransactions, setMappedTransactions] = useState<
     MappedTransaction[]
   >([]);
@@ -50,8 +56,6 @@ export function CsvImportFlow() {
             to_bucket_id: bestAssignment.to_bucket_id,
           });
         });
-        console.log('Preloaded keyword mappings:', cache);
-
         setKeywordMappingsCache(cache);
       } catch (error) {
         console.error('Error preloading keyword mappings:', error);
@@ -112,7 +116,7 @@ export function CsvImportFlow() {
             const headers = Object.keys(results.data[0]);
             setCsvHeaders(headers);
             setCsvData(results.data);
-            setShowMappingDialog(true);
+            setShowStrategyDialog(true);
           }
         },
         error: (error: Error) => {
@@ -129,40 +133,75 @@ export function CsvImportFlow() {
     }
   };
 
+  const handleStrategySelect = (strategy: AmountMappingStrategy) => {
+    setSelectedStrategy(strategy);
+    setShowStrategyDialog(false);
+    setShowMappingDialog(true);
+  };
+
+  const handleMappingBack = () => {
+    setShowMappingDialog(false);
+    setShowStrategyDialog(true);
+  };
+
   const handleImportClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleMappingComplete = async (mapping: {
-    transactionDate: string;
-    depositAmount?: string;
-    withdrawalAmount?: string;
-    notes: string;
-  }) => {
-    // Map CSV data to transactions based on column mapping
+  const handleMappingComplete = async (mapping: ColumnMappingFormData) => {
+    // Map CSV data to transactions based on column mapping and strategy
     const mapped = csvData.map((row) => {
-      const notes = row[mapping.notes] || '';
+      const notes =
+        'notes' in mapping && mapping.notes ? row[mapping.notes] || '' : '';
 
-      // Calculate transaction amount from deposit/withdrawal columns
+      // Calculate transaction amount and deposit flag based on strategy
       let transactionAmount: number;
-      let isDeposit = false;
+      let isDeposit = true;
 
-      const depositValue = mapping.depositAmount
-        ? sanitizeMoneyInput(row[mapping.depositAmount] || '')
-        : 0;
-      const withdrawalValue = mapping.withdrawalAmount
-        ? sanitizeMoneyInput(row[mapping.withdrawalAmount] || '')
-        : 0;
+      switch (mapping.strategy) {
+        case 'single_transaction': {
+          // Option 1: Single transaction column (positive = deposit, negative = withdrawal)
+          const value = sanitizeMoneyInput(
+            row[mapping.transactionAmount] || '',
+          );
+          transactionAmount = Math.abs(value);
+          isDeposit = value >= 0;
+          break;
+        }
 
-      // Use whichever has a value (they should be mutually exclusive)
-      if (depositValue > 0) {
-        transactionAmount = depositValue;
-        isDeposit = true;
-      } else if (withdrawalValue > 0) {
-        transactionAmount = withdrawalValue;
-        isDeposit = false;
-      } else {
-        transactionAmount = 0;
+        case 'deposit_withdrawal': {
+          // Option 2: Separate deposit/withdrawal columns
+          const depositValue = sanitizeMoneyInput(
+            row[mapping.depositAmount] || '',
+          );
+          const withdrawalValue = sanitizeMoneyInput(
+            row[mapping.withdrawalAmount] || '',
+          );
+
+          // Use whichever has a value (they should be mutually exclusive)
+          if (depositValue > 0) {
+            transactionAmount = depositValue;
+            isDeposit = true;
+          } else if (withdrawalValue > 0) {
+            transactionAmount = withdrawalValue;
+            isDeposit = false;
+          } else {
+            transactionAmount = 0;
+          }
+          break;
+        }
+
+        case 'transaction_with_category': {
+          // Option 3: Transaction amount + category column
+          const value = sanitizeMoneyInput(
+            row[mapping.transactionAmount] || '',
+          );
+          transactionAmount = Math.abs(value);
+
+          const categoryValue = row[mapping.categoryColumn] || '';
+          isDeposit = categoryValue !== mapping.withdrawalValue;
+          break;
+        }
       }
 
       let fromBucketId: number | null = null;
@@ -233,10 +272,19 @@ export function CsvImportFlow() {
         Import CSV
       </Button>
 
+      <AmountMappingStrategyDialog
+        open={showStrategyDialog}
+        onClose={() => setShowStrategyDialog(false)}
+        onSelectStrategy={handleStrategySelect}
+      />
+
       <ColumnMappingDialog
         open={showMappingDialog}
         headers={csvHeaders}
+        csvData={csvData}
+        strategy={selectedStrategy}
         onClose={() => setShowMappingDialog(false)}
+        onBack={handleMappingBack}
         onComplete={handleMappingComplete}
       />
 
