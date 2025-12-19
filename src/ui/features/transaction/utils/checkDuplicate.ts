@@ -5,6 +5,8 @@ export const checkDuplicate = async (
   fromBucketId: number | null,
   toBucketId: number | null,
   notes: string | null,
+  fromUnits?: number | null,
+  toUnits?: number | null,
 ): Promise<boolean> => {
   try {
     const isDuplicate = await window.electron.checkDuplicateTransaction({
@@ -13,6 +15,8 @@ export const checkDuplicate = async (
       from_bucket_id: fromBucketId,
       to_bucket_id: toBucketId,
       notes: notes,
+      from_units: fromUnits,
+      to_units: toUnits,
     });
     return isDuplicate;
   } catch (error) {

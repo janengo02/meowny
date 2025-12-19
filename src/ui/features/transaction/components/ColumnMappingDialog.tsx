@@ -68,6 +68,7 @@ export function ColumnMappingDialog({
             transactionDate: '',
             transactionAmount: '',
             notes: '',
+            units: '',
           };
         case 'deposit_withdrawal':
           return {
@@ -76,6 +77,7 @@ export function ColumnMappingDialog({
             depositAmount: '',
             withdrawalAmount: '',
             notes: '',
+            units: '',
           };
         case 'transaction_with_category':
           return {
@@ -86,6 +88,7 @@ export function ColumnMappingDialog({
             depositValue: '',
             withdrawalValue: '',
             notes: '',
+            units: '',
           };
       }
     };
@@ -175,6 +178,12 @@ export function ColumnMappingDialog({
               options={headerOptions}
               disabled={isProcessing}
             />
+            <FormSelectField
+              name="units"
+              label="Units (Optional)"
+              options={headerOptions}
+              disabled={isProcessing}
+            />
           </>
         );
 
@@ -202,6 +211,12 @@ export function ColumnMappingDialog({
             <FormSelectField
               name="notes"
               label="Notes (Optional)"
+              options={headerOptions}
+              disabled={isProcessing}
+            />
+            <FormSelectField
+              name="units"
+              label="Units (Optional)"
               options={headerOptions}
               disabled={isProcessing}
             />
@@ -258,6 +273,12 @@ export function ColumnMappingDialog({
             <FormSelectField
               name="notes"
               label="Notes (Optional)"
+              options={headerOptions}
+              disabled={isProcessing}
+            />
+            <FormSelectField
+              name="units"
+              label="Units (Optional)"
               options={headerOptions}
               disabled={isProcessing}
             />

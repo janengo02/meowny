@@ -653,6 +653,8 @@ interface Window {
       from_bucket_id: number | null;
       to_bucket_id: number | null;
       notes: string | null;
+      from_units?: number | null;
+      to_units?: number | null;
     }) => Promise<boolean>;
     getExpenseTransactionsByPeriod: (
       params: GetExpenseTransactionsByPeriodParams,

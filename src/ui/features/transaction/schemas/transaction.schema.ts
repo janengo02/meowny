@@ -10,8 +10,8 @@ export const baseTransactionSchema = z
     notes: z.string().optional(),
     from_bucket_id: z.string().optional(),
     to_bucket_id: z.string().optional(),
-    from_units: z.number().positive().optional(),
-    to_units: z.number().positive().optional(),
+    from_units: z.number().positive().nullable().optional(),
+    to_units: z.number().positive().nullable().optional(),
   })
   .refine((data) => data.from_bucket_id || data.to_bucket_id, {
     message: 'At least one bucket (From or To) must be selected',
@@ -61,6 +61,7 @@ export const columnMappingSchema = z.discriminatedUnion('strategy', [
       .string()
       .min(1, 'Transaction amount column is required'),
     notes: z.string().optional(),
+    units: z.string().optional(),
   }),
   // Option 2: Separate deposit/withdrawal columns
   z.object({
@@ -69,6 +70,7 @@ export const columnMappingSchema = z.discriminatedUnion('strategy', [
     depositAmount: z.string().min(1, 'Deposit amount column is required'),
     withdrawalAmount: z.string().min(1, 'Withdrawal amount column is required'),
     notes: z.string().optional(),
+    units: z.string().optional(),
   }),
   // Option 3: Transaction amount + category column
   z
@@ -82,6 +84,7 @@ export const columnMappingSchema = z.discriminatedUnion('strategy', [
       depositValue: z.string().min(1, 'Deposit value is required'),
       withdrawalValue: z.string().min(1, 'Withdrawal value is required'),
       notes: z.string().optional(),
+      units: z.string().optional(),
     })
     .refine((data) => data.depositValue !== data.withdrawalValue, {
       message: 'Deposit and Withdrawal values must be different',
@@ -93,4 +96,5 @@ export type ColumnMappingFormData = z.infer<typeof columnMappingSchema>;
 export type MappedTransaction = TransactionImportFormData & {
   suggested_bucket_id?: number | null; // Optional: Bucket ID suggested by keyword mapping
   is_deposit?: boolean; // Track if this transaction is a deposit (for display purposes)
+  default_unit?: number | null; // Default units value from CSV import
 };

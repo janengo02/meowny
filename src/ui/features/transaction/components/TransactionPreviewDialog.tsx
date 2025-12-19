@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useCreateTransactionMutation } from '../api/transactionApi';
+import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 import { TransactionRow } from './TransactionRow';
 import { type MappedTransaction } from '../schemas/transaction.schema';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
@@ -35,6 +36,7 @@ export function TransactionPreviewDialog({
   onClose,
 }: TransactionPreviewDialogProps) {
   const [createTransaction] = useCreateTransactionMutation();
+  const { data: buckets = [] } = useGetBucketsQuery();
   const [editedTransactions, setEditedTransactions] = useState<
     MappedTransaction[]
   >([]);
@@ -49,6 +51,15 @@ export function TransactionPreviewDialog({
     message: string;
     severity: 'success' | 'error' | 'info';
   } | null>(null);
+
+  // Create a bucket type map for quick lookup
+  const bucketTypeMap = useMemo(() => {
+    const map = new Map<number, BucketTypeEnum>();
+    buckets.forEach((bucket) => {
+      map.set(bucket.id, bucket.type);
+    });
+    return map;
+  }, [buckets]);
 
   useEffect(() => {
     setEditedTransactions(initialMappedTransactions);
@@ -115,6 +126,8 @@ export function TransactionPreviewDialog({
             ? parseInt(transaction.to_bucket_id)
             : null;
           const notes = transaction.notes || null;
+          const fromUnits = transaction.from_units || null;
+          const toUnits = transaction.to_units || null;
 
           // Create transaction
           await createTransaction({
@@ -123,6 +136,8 @@ export function TransactionPreviewDialog({
             amount: transaction.amount,
             transaction_date: formatDateForDB(transaction.transaction_date),
             notes: notes,
+            from_units: fromUnits,
+            to_units: toUnits,
           }).unwrap();
 
           setEditedTransactions((prev) => {
@@ -246,9 +261,12 @@ export function TransactionPreviewDialog({
                 >
                   Amount
                 </TableCell>
+                <TableCell sx={{ fontWeight: 'bold', width: 150 }}>
+                  Units
+                </TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>From Bucket</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>To Bucket</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', width: 150 }}>
+                <TableCell sx={{ fontWeight: 'bold', width: 130 }}>
                   Status
                 </TableCell>
               </TableRow>
@@ -270,6 +288,7 @@ export function TransactionPreviewDialog({
                           ? editedTransaction?.import_status
                           : undefined
                       }
+                      bucketTypeMap={bucketTypeMap}
                       onUpdateTransaction={handleUpdateTransaction}
                     />
                   );

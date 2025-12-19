@@ -99,6 +99,8 @@ export async function checkDuplicateTransaction(params: {
   from_bucket_id: number | null;
   to_bucket_id: number | null;
   notes: string | null;
+  from_units?: number | null;
+  to_units?: number | null;
 }): Promise<boolean> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
@@ -129,6 +131,20 @@ export async function checkDuplicateTransaction(params: {
     query = query.is('to_bucket_id', null);
   } else {
     query = query.eq('to_bucket_id', params.to_bucket_id);
+  }
+
+  // Handle from_units - can be null or undefined
+  if (params.from_units === null || params.from_units === undefined) {
+    query = query.is('from_units', null);
+  } else {
+    query = query.eq('from_units', params.from_units);
+  }
+
+  // Handle to_units - can be null or undefined
+  if (params.to_units === null || params.to_units === undefined) {
+    query = query.is('to_units', null);
+  } else {
+    query = query.eq('to_units', params.to_units);
   }
 
   const { data, error } = await query.limit(1);

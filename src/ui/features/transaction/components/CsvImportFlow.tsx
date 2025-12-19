@@ -154,6 +154,12 @@ export function CsvImportFlow() {
       const notes =
         'notes' in mapping && mapping.notes ? row[mapping.notes] || '' : '';
 
+      // Parse units if column is mapped (use sanitizeMoneyInput to handle commas)
+      const defaultUnit =
+        'units' in mapping && mapping.units
+          ? sanitizeMoneyInput(row[mapping.units] || '0') || null
+          : null;
+
       // Calculate transaction amount and deposit flag based on strategy
       let transactionAmount: number;
       let isDeposit = true;
@@ -235,6 +241,9 @@ export function CsvImportFlow() {
         import_status: 'validating' as ImportStatus,
         should_import: true,
         is_deposit: isDeposit,
+        from_units: null,
+        to_units: null,
+        default_unit: defaultUnit,
       };
     });
 

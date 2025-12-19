@@ -5,6 +5,7 @@ import {
   Chip,
   CircularProgress,
   Box,
+  Typography,
 } from '@mui/material';
 import {
   useForm,
@@ -17,6 +18,7 @@ import { FormBucketSelectField } from '../../../shared/components/form/FormBucke
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormCheckbox } from '../../../shared/components/form/FormCheckbox';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
+import { FormNumberInput } from '../../../shared/components/form/FormNumberInput';
 import {
   transactionImportSchema,
   type ImportStatus,
@@ -31,6 +33,7 @@ interface TransactionRowProps {
   index: number;
   isBatchImporting: boolean;
   importResult?: 'importing' | 'success' | 'error'; // Status during/after import process
+  bucketTypeMap: Map<number, BucketTypeEnum>;
   onUpdateTransaction: (
     index: number,
     updatedFields: Partial<MappedTransaction>,
@@ -44,6 +47,7 @@ const TransactionRowContent = React.memo(
     index,
     isBatchImporting,
     importResult,
+    bucketTypeMap,
     onUpdateTransaction,
   }: TransactionRowProps) => {
     const { setValue, trigger } = useFormContext<TransactionImportFormData>();
@@ -55,6 +59,39 @@ const TransactionRowContent = React.memo(
     const importStatusWatch = useWatch({ name: 'import_status' });
     const transactionDateWatch = useWatch({ name: 'transaction_date' });
     const amountWatch = useWatch({ name: 'amount' }); // Still needed for validation
+    const fromUnitsWatch = useWatch({ name: 'from_units' });
+    const toUnitsWatch = useWatch({ name: 'to_units' });
+
+    // Determine if units fields should be shown based on bucket types
+    const fromBucketType = fromBucketIdWatch
+      ? bucketTypeMap.get(parseInt(fromBucketIdWatch))
+      : undefined;
+    const toBucketType = toBucketIdWatch
+      ? bucketTypeMap.get(parseInt(toBucketIdWatch))
+      : undefined;
+
+    const showFromUnits = fromBucketType === 'investment';
+    const showToUnits = toBucketType === 'investment';
+
+    // Update units fields when bucket type changes
+    useEffect(() => {
+      const defaultUnit = initialTransaction.default_unit ?? null;
+
+      // Update from_units: use default_unit if bucket is investment and from_units is empty
+      if (showFromUnits) {
+        setValue('from_units', defaultUnit);
+      } else {
+        // Clear from_units if bucket is not investment
+        setValue('from_units', undefined);
+      }
+
+      // Update to_units: use default_unit if bucket is investment and to_units is empty
+      if (showToUnits) {
+        setValue('to_units', defaultUnit);
+      } else {
+        setValue('to_units', undefined);
+      }
+    }, [showFromUnits, showToUnits, initialTransaction.default_unit, setValue]);
 
     const validateTransaction = useCallback(
       async (
@@ -63,6 +100,8 @@ const TransactionRowContent = React.memo(
         notesWatch: string,
         fromBucketIdWatch: string,
         toBucketIdWatch: string,
+        fromUnitsWatch: number | undefined,
+        toUnitsWatch: number | undefined,
       ) => {
         // Validate transaction
         const updatedFields = {
@@ -73,6 +112,8 @@ const TransactionRowContent = React.memo(
           to_bucket_id: toBucketIdWatch,
           import_status: 'validating' as ImportStatus,
           should_import: true,
+          from_units: fromUnitsWatch || null,
+          to_units: toUnitsWatch || null,
         };
 
         // Trigger validation and get the latest errors state
@@ -88,11 +129,47 @@ const TransactionRowContent = React.memo(
           return;
         }
         setValue('import_status', 'validating');
-        const amount = Math.abs(amountWatch);
+
+        // Check if investment buckets have required units
         const fromBucketId = fromBucketIdWatch
           ? parseInt(fromBucketIdWatch)
           : null;
         const toBucketId = toBucketIdWatch ? parseInt(toBucketIdWatch) : null;
+
+        const fromBucketType = fromBucketId
+          ? bucketTypeMap.get(fromBucketId)
+          : undefined;
+        const toBucketType = toBucketId
+          ? bucketTypeMap.get(toBucketId)
+          : undefined;
+
+        // Validate: if bucket is investment type, units must be positive
+        if (
+          fromBucketType === 'investment' &&
+          (!fromUnitsWatch || fromUnitsWatch <= 0)
+        ) {
+          setValue('import_status', 'invalid');
+          setValue('should_import', false);
+          updatedFields.import_status = 'invalid' as ImportStatus;
+          updatedFields.should_import = false;
+          onUpdateTransaction(index, updatedFields);
+          return;
+        }
+
+        if (
+          toBucketType === 'investment' &&
+          (!toUnitsWatch || toUnitsWatch <= 0)
+        ) {
+          setValue('import_status', 'invalid');
+          setValue('should_import', false);
+          updatedFields.import_status = 'invalid' as ImportStatus;
+          updatedFields.should_import = false;
+          onUpdateTransaction(index, updatedFields);
+          return;
+        }
+
+        // Check for duplicate in the database
+        const amount = Math.abs(amountWatch);
         const notesValue = notesWatch || null;
 
         try {
@@ -102,6 +179,8 @@ const TransactionRowContent = React.memo(
             fromBucketId,
             toBucketId,
             notesValue,
+            fromUnitsWatch || null,
+            toUnitsWatch || null,
           );
 
           const newStatus = hasDuplicate ? 'duplicate_detected' : 'ready';
@@ -120,7 +199,7 @@ const TransactionRowContent = React.memo(
           onUpdateTransaction(index, updatedFields);
         }
       },
-      [setValue, index, onUpdateTransaction, trigger],
+      [setValue, index, onUpdateTransaction, trigger, bucketTypeMap],
     );
 
     useEffect(() => {
@@ -131,6 +210,8 @@ const TransactionRowContent = React.memo(
         notesWatch,
         fromBucketIdWatch,
         toBucketIdWatch,
+        fromUnitsWatch,
+        toUnitsWatch,
       );
     }, [
       transactionDateWatch,
@@ -138,6 +219,8 @@ const TransactionRowContent = React.memo(
       notesWatch,
       fromBucketIdWatch,
       toBucketIdWatch,
+      fromUnitsWatch,
+      toUnitsWatch,
       validateTransaction,
       isBatchImporting,
       importResult,
@@ -225,7 +308,58 @@ const TransactionRowContent = React.memo(
             />
           </Box>
         </TableCell>
-
+        <TableCell sx={{ width: 150 }}>
+          <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+            {showFromUnits && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  Sell
+                </Typography>
+                <FormNumberInput
+                  name="from_units"
+                  disabled={isBatchImporting || !!importResult}
+                  allowNegative={false}
+                  variant="outlined"
+                  size="small"
+                  textAlign="right"
+                  decimalScale={4}
+                  placeholder="Units"
+                />
+              </Box>
+            )}
+            {showToUnits && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  Buy
+                </Typography>
+                <FormNumberInput
+                  name="to_units"
+                  disabled={isBatchImporting || !!importResult}
+                  allowNegative={false}
+                  variant="outlined"
+                  size="small"
+                  textAlign="right"
+                  decimalScale={4}
+                  placeholder="Units"
+                />
+              </Box>
+            )}
+          </Box>
+        </TableCell>
         <TableCell>
           <FormBucketSelectField
             name="from_bucket_id"
@@ -250,7 +384,8 @@ const TransactionRowContent = React.memo(
             }}
           />
         </TableCell>
-        <TableCell sx={{ width: 150 }}>
+
+        <TableCell sx={{ width: 130 }}>
           {currentImportStatus === 'validating' && (
             <Chip
               label="Validating..."
@@ -319,6 +454,8 @@ export const TransactionRow = React.memo((props: TransactionRowProps) => {
       to_bucket_id: props.initialTransaction.to_bucket_id,
       import_status: props.initialTransaction.import_status,
       should_import: props.initialTransaction.should_import,
+      from_units: props.initialTransaction.from_units ?? undefined,
+      to_units: props.initialTransaction.to_units ?? undefined,
     },
   });
 
