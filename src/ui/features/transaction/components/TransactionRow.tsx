@@ -310,6 +310,15 @@ const TransactionRowContent = React.memo(
         </TableCell>
         <TableCell sx={{ width: 150 }}>
           <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+            {!showFromUnits && !showToUnits && (
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontStyle: 'italic' }}
+              >
+                Select an investment bucket to enter units.
+              </Typography>
+            )}
             {showFromUnits && (
               <Box
                 sx={{

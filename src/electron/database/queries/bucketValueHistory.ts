@@ -779,20 +779,103 @@ export async function getValueHistoryWithTransactionsByBucket(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Using PostgreSQL view or direct SQL via PostgREST is limited
-  // The cleanest approach is using a stored function (RPC)
-  const { data, error } = await supabase.rpc(
-    'get_value_history_with_transactions_by_bucket',
-    {
-      p_bucket_id: params.bucketId,
-      p_user_id: userId,
-      p_start_date: params.startDate ?? null,
-      p_end_date: params.endDate ?? null,
-    },
+  // Build the bucket value history query
+  let historyQuery = supabase
+    .from('bucket_value_history')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('bucket_id', params.bucketId);
+
+  // Add period filters if provided
+  if (params.startDate) {
+    historyQuery = historyQuery.gte('recorded_at', params.startDate);
+  }
+  if (params.endDate) {
+    historyQuery = historyQuery.lte('recorded_at', params.endDate);
+  }
+
+  const { data: histories, error: historiesError } = await historyQuery
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (historiesError) throw new Error(historiesError.message);
+  if (!histories || histories.length === 0) return [];
+
+  // Get all transaction IDs from the histories where source_type is 'transaction'
+  const transactionIds = histories
+    .filter((h) => h.source_type === 'transaction' && h.source_id !== null)
+    .map((h) => h.source_id as number);
+
+  // If there are no transactions, return the histories with null transactions
+  if (transactionIds.length === 0) {
+    return histories.map((h) => ({ ...h, transaction: null }));
+  }
+
+  // Fetch all relevant transactions with bucket names in one query
+  const { data: transactions, error: transactionsError } = await supabase
+    .from('transaction')
+    .select(
+      `
+      id,
+      user_id,
+      from_bucket_id,
+      to_bucket_id,
+      amount,
+      transaction_date,
+      notes,
+      created_at,
+      updated_at,
+      from_units,
+      to_units,
+      from_bucket:bucket!transaction_from_bucket_id_fkey(name),
+      to_bucket:bucket!transaction_to_bucket_id_fkey(name)
+    `,
+    )
+    .in('id', transactionIds)
+    .eq('user_id', userId);
+
+  if (transactionsError) throw new Error(transactionsError.message);
+
+  // Create a map of transactions by ID for quick lookup
+  // Transform the data to include bucket names at the top level
+  const transactionMap = new Map(
+    transactions?.map((t) => {
+      const fromBucket = Array.isArray(t.from_bucket)
+        ? t.from_bucket[0]
+        : t.from_bucket;
+      const toBucket = Array.isArray(t.to_bucket)
+        ? t.to_bucket[0]
+        : t.to_bucket;
+
+      return [
+        t.id,
+        {
+          id: t.id,
+          user_id: t.user_id,
+          from_bucket_id: t.from_bucket_id,
+          to_bucket_id: t.to_bucket_id,
+          amount: t.amount,
+          transaction_date: t.transaction_date,
+          notes: t.notes,
+          created_at: t.created_at,
+          updated_at: t.updated_at,
+          from_units: t.from_units,
+          to_units: t.to_units,
+          from_bucket_name: fromBucket?.name ?? null,
+          to_bucket_name: toBucket?.name ?? null,
+        } as TransactionWithBucketNames,
+      ];
+    }) ?? [],
   );
 
-  if (error) throw new Error(error.message);
-  return data;
+  // Combine histories with their transactions
+  return histories.map((history) => ({
+    ...history,
+    transaction:
+      history.source_type === 'transaction' && history.source_id
+        ? transactionMap.get(history.source_id) ?? null
+        : null,
+  }));
 }
 
 export async function getBucketValueHistoriesByBucket(

@@ -1,5 +1,5 @@
 import { Box, Grid, IconButton, Typography } from '@mui/material';
-import { formatMoney, formatPercent } from '../../../shared/utils';
+import { formatMoney, formatPercent, formatUnits } from '../../../shared/utils';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import EditIcon from '@mui/icons-material/Edit';
 import { useState } from 'react';
@@ -46,7 +46,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                   Total Units
                 </Typography>
                 <Typography variant="h3" sx={{ mt: 0.5 }}>
-                  {totalUnits.toFixed(4)}
+                  {formatUnits(totalUnits)}
                 </Typography>
               </Box>
             </Grid>
@@ -80,6 +80,12 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     <Typography variant="h3" sx={{ mt: 0.5 }}>
                       {formatMoney(bucket.contributed_amount)}
                     </Typography>
+                    {bucket.type === 'investment' && totalUnits > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        {formatMoney(bucket.contributed_amount / totalUnits)}{' '}
+                        per unit
+                      </Typography>
+                    )}
                   </Box>
                   <IconButton
                     size="small"
@@ -128,6 +134,11 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     <Typography variant="h3" sx={{ mt: 0.5 }}>
                       {formatMoney(bucket.market_value)}
                     </Typography>
+                    {bucket.type === 'investment' && totalUnits > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        {formatMoney(bucket.market_value / totalUnits)} per unit
+                      </Typography>
+                    )}
                   </Box>
                   <IconButton
                     size="small"

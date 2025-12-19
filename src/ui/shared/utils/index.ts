@@ -1,2 +1,2 @@
-export { formatMoney, formatPercent } from './formatMoney';
+export { formatMoney, formatPercent, formatUnits } from './formatMoney';
 export { getTokyoDateTime } from './dateTime';

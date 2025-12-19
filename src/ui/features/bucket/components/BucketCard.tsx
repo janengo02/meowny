@@ -7,7 +7,7 @@ import {
   Chip,
   Box,
 } from '@mui/material';
-import { formatMoney, formatPercent } from '../../../shared/utils';
+import { formatMoney, formatPercent, formatUnits } from '../../../shared/utils';
 interface BucketCardProps {
   bucket: Bucket;
   onClick?: () => void;
@@ -48,7 +48,9 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
             </Typography>
             {(bucket.type === 'saving' || bucket.type === 'investment') && (
               <Chip
-                label={bucket.type.charAt(0).toUpperCase() + bucket.type.slice(1)}
+                label={
+                  bucket.type.charAt(0).toUpperCase() + bucket.type.slice(1)
+                }
                 size="small"
                 variant="outlined"
                 color={bucket.type === 'saving' ? 'info' : 'warning'}
@@ -68,37 +70,37 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
               </Grid>
               {bucket.type === 'investment' && (
                 <>
-                <Grid size={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Market Value
-                  </Typography>
-                  <Typography variant="body1" fontWeight={600}>
-                    {formatMoney(bucket.market_value)}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Units
-                  </Typography>
-                  <Typography variant="body1" fontWeight={600}>
-                    {bucket.total_units ? bucket.total_units.toFixed(4) : 0}
-                  </Typography>
-                </Grid>
-                <Grid size={6}>
-                  <Typography variant="caption" color="text.secondary">
-                    Gain/Lost
-                  </Typography>
-                  <Typography
-                    variant="body1"
-                    fontWeight={600}
-                    sx={{
-                      mt: 0.5,
-                      color: isPositive ? 'success.main' : 'error.main',
-                    }}
-                  >
-                    {formatPercent(gainLossPercent, 2, true)}
-                  </Typography>
-                </Grid>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Market Value
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {formatMoney(bucket.market_value)}
+                    </Typography>
+                  </Grid>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Units
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {bucket.total_units ? formatUnits(bucket.total_units) : 0}
+                    </Typography>
+                  </Grid>
+                  <Grid size={6}>
+                    <Typography variant="caption" color="text.secondary">
+                      Gain/Lost
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      fontWeight={600}
+                      sx={{
+                        mt: 0.5,
+                        color: isPositive ? 'success.main' : 'error.main',
+                      }}
+                    >
+                      {formatPercent(gainLossPercent, 2, true)}
+                    </Typography>
+                  </Grid>
                 </>
               )}
             </Grid>

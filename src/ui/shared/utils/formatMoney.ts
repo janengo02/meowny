@@ -40,6 +40,26 @@ export function formatPercent(
   return `${sign}${value.toFixed(decimals)}%`;
 }
 
+/**
+ * Formats a unit amount with thousands separators and up to 4 decimal places
+ * Trailing zeros in the decimal part are removed
+ * @param value - The numeric value to format
+ * @returns Formatted unit string
+ */
+export function formatUnits(value: number): string {
+  // Format with 4 decimal places
+  const formatted = value.toFixed(4);
+
+  // Remove trailing zeros after decimal point
+  const withoutTrailingZeros = formatted.replace(/\.?0+$/, '');
+
+  // Add thousands separators
+  const [integerPart, decimalPart] = withoutTrailingZeros.split('.');
+  const withSeparators = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  return decimalPart ? `${withSeparators}.${decimalPart}` : withSeparators;
+}
+
 export function sanitizeMoneyInput(input: string): number {
   const cleanValue = input.replace(/[^0-9.-]/g, '');
   const sanitizedAmount = parseFloat(cleanValue || '0');

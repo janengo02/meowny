@@ -169,16 +169,9 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         {/* Graph Section */}
         <Divider sx={{ my: 2 }} />
         <FormProvider {...methods}>
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 3,
-            }}
-          >
-            <Typography variant="h3">Performance & Logs</Typography>
-          </Box>
+          <Typography variant="h3" sx={{ mb: 3 }}>
+            Performance
+          </Typography>
 
           {/* Period Filter Controls */}
           <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
@@ -240,6 +233,10 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             periodFrom={periodFrom}
             periodTo={periodTo}
           />
+
+          <Typography variant="h3" sx={{ mb: 2 }}>
+            Logs
+          </Typography>
 
           {/* Value History Logs Section */}
           <BucketValueHistoryTable
