@@ -16,7 +16,6 @@ import {
   BarElement,
   Tooltip,
   Legend,
-  type ChartOptions,
   type ChartData,
 } from 'chart.js';
 import { useMemo } from 'react';
@@ -31,8 +30,13 @@ import { useState } from 'react';
 // Extend dayjs with plugins
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
-import { formatMoney } from '../../../shared/utils/formatMoney';
-import { CHART_COLORS, barTotalLabelPlugin } from '../../../shared/utils/chart';
+import {
+  CHART_COLORS,
+  barChartOptions,
+  barTotalLabelPlugin,
+  getCheckpointLabels,
+  getCheckpoints,
+} from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
@@ -64,64 +68,6 @@ const incomeChartFilterSchema = z
   );
 
 type IncomeChartFilterFormData = z.infer<typeof incomeChartFilterSchema>;
-
-const barChartOptions: ChartOptions<'bar'> = {
-  responsive: true,
-  maintainAspectRatio: false,
-  layout: {
-    padding: {
-      top: 25,
-    },
-  },
-  interaction: {
-    mode: 'index' as const,
-    intersect: false,
-  },
-  scales: {
-    x: {
-      stacked: true,
-    },
-    y: {
-      stacked: true,
-      beginAtZero: true,
-      ticks: {
-        callback: function (value) {
-          return formatMoney(value as number);
-        },
-      },
-    },
-  },
-  plugins: {
-    legend: {
-      display: true,
-      position: 'bottom' as const,
-      labels: {
-        boxWidth: 12,
-        padding: 8,
-        font: {
-          size: 10,
-        },
-      },
-    },
-    tooltip: {
-      callbacks: {
-        label: function (context) {
-          const value = context.parsed.y || 0;
-          // Skip showing zero values in tooltip
-          if (value === 0) {
-            return undefined;
-          }
-          const datasetLabel = context.dataset.label || '';
-          return `${datasetLabel}: ${formatMoney(value)}`;
-        },
-      },
-      filter: function (tooltipItem) {
-        // Filter out zero values from tooltip
-        return tooltipItem.parsed.y !== 0;
-      },
-    },
-  },
-};
 
 type TabValue = 'gross' | 'net' | 'comparison';
 
@@ -155,23 +101,28 @@ export function IncomeOverTimeChart() {
     [periodFrom, periodTo],
   );
 
-  const { data: incomeHistories, isLoading: isLoadingHistories, error } =
-    useGetIncomeHistoriesByPeriodQuery(queryParams);
+  const {
+    data: incomeHistories,
+    isLoading: isLoadingHistories,
+    error,
+  } = useGetIncomeHistoriesByPeriodQuery(queryParams);
 
   const chartData = useMemo(() => {
-    if (!incomeHistories || incomeHistories.length === 0 || !incomeCategories || !incomeTaxes) {
+    if (
+      !incomeHistories ||
+      incomeHistories.length === 0 ||
+      !incomeCategories ||
+      !incomeTaxes
+    ) {
       return null;
     }
 
     // Generate time checkpoints based on mode
-    const checkpoints: Dayjs[] = [];
-    let current = periodFrom.startOf(mode);
-    const end = periodTo.endOf(mode);
+    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
+    if (checkpoints.length === 0) return null;
 
-    while (current.isSameOrBefore(end, mode)) {
-      checkpoints.push(current);
-      current = current.add(1, mode);
-    }
+    // Format checkpoint labels
+    const labels = getCheckpointLabels(checkpoints, mode);
 
     // Create category color map
     const categoryNameMap = new Map<number, string>();
@@ -184,8 +135,8 @@ export function IncomeOverTimeChart() {
       new Set(
         incomeHistories
           .filter((h) => h.income_category_id !== null)
-          .map((h) => h.income_category_id!)
-      )
+          .map((h) => h.income_category_id!),
+      ),
     );
 
     // Calculate gross and net amounts by checkpoint and category
@@ -195,7 +146,7 @@ export function IncomeOverTimeChart() {
     const totalNetByCheckpoint = new Map<string, number>();
 
     checkpoints.forEach((checkpoint) => {
-      const key = checkpoint.format('YYYY-MM-DD');
+      const key = dayjs(checkpoint).format('YYYY-MM-DD');
       grossByCheckpointCategory.set(key, new Map());
       netByCheckpointCategory.set(key, new Map());
       totalGrossByCheckpoint.set(key, 0);
@@ -204,32 +155,43 @@ export function IncomeOverTimeChart() {
 
     incomeHistories.forEach((history) => {
       const receivedDate = dayjs(history.received_date);
-      const checkpoint = checkpoints.find((cp) => receivedDate.isSame(cp, mode));
+      const checkpoint = checkpoints.find((cp) =>
+        receivedDate.isSame(cp, mode),
+      );
 
       if (!checkpoint || history.income_category_id === null) return;
 
-      const checkpointKey = checkpoint.format('YYYY-MM-DD');
+      const checkpointKey = dayjs(checkpoint).format('YYYY-MM-DD');
       const categoryId = history.income_category_id;
 
       // Add gross amount
       const grossMap = grossByCheckpointCategory.get(checkpointKey)!;
-      grossMap.set(categoryId, (grossMap.get(categoryId) || 0) + history.gross_amount);
-      totalGrossByCheckpoint.set(checkpointKey, totalGrossByCheckpoint.get(checkpointKey)! + history.gross_amount);
+      grossMap.set(
+        categoryId,
+        (grossMap.get(categoryId) || 0) + history.gross_amount,
+      );
+      totalGrossByCheckpoint.set(
+        checkpointKey,
+        totalGrossByCheckpoint.get(checkpointKey)! + history.gross_amount,
+      );
 
       // Calculate net amount (gross - taxes for this history)
-      const historyTaxes = incomeTaxes.filter((tax) => tax.income_history_id === history.id);
-      const totalTax = historyTaxes.reduce((sum, tax) => sum + tax.tax_amount, 0);
+      const historyTaxes = incomeTaxes.filter(
+        (tax) => tax.income_history_id === history.id,
+      );
+      const totalTax = historyTaxes.reduce(
+        (sum, tax) => sum + tax.tax_amount,
+        0,
+      );
       const netAmount = history.gross_amount - totalTax;
 
       const netMap = netByCheckpointCategory.get(checkpointKey)!;
       netMap.set(categoryId, (netMap.get(categoryId) || 0) + netAmount);
-      totalNetByCheckpoint.set(checkpointKey, totalNetByCheckpoint.get(checkpointKey)! + netAmount);
+      totalNetByCheckpoint.set(
+        checkpointKey,
+        totalNetByCheckpoint.get(checkpointKey)! + netAmount,
+      );
     });
-
-    // Create labels for checkpoints
-    const labels = checkpoints.map((cp) =>
-      mode === 'month' ? cp.format('MMM YYYY') : cp.format('YYYY')
-    );
 
     // Create datasets based on active tab
     const datasets: ChartData<'bar'>['datasets'] = [];
@@ -241,8 +203,10 @@ export function IncomeOverTimeChart() {
         const color = CHART_COLORS[index % CHART_COLORS.length];
 
         const data = checkpoints.map((cp) => {
-          const checkpointKey = cp.format('YYYY-MM-DD');
-          return grossByCheckpointCategory.get(checkpointKey)?.get(categoryId) || 0;
+          const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
+          return (
+            grossByCheckpointCategory.get(checkpointKey)?.get(categoryId) || 0
+          );
         });
 
         // Only add dataset if it has non-zero values
@@ -267,8 +231,10 @@ export function IncomeOverTimeChart() {
         const color = CHART_COLORS[index % CHART_COLORS.length];
 
         const data = checkpoints.map((cp) => {
-          const checkpointKey = cp.format('YYYY-MM-DD');
-          return netByCheckpointCategory.get(checkpointKey)?.get(categoryId) || 0;
+          const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
+          return (
+            netByCheckpointCategory.get(checkpointKey)?.get(categoryId) || 0
+          );
         });
 
         // Only add dataset if it has non-zero values
@@ -289,12 +255,12 @@ export function IncomeOverTimeChart() {
     } else {
       // Comparison - total gross vs net (not by category)
       const grossData = checkpoints.map((cp) => {
-        const checkpointKey = cp.format('YYYY-MM-DD');
+        const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
         return totalGrossByCheckpoint.get(checkpointKey) || 0;
       });
 
       const netData = checkpoints.map((cp) => {
-        const checkpointKey = cp.format('YYYY-MM-DD');
+        const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
         return totalNetByCheckpoint.get(checkpointKey) || 0;
       });
 
@@ -322,7 +288,15 @@ export function IncomeOverTimeChart() {
     }
 
     return { labels, datasets };
-  }, [incomeHistories, incomeCategories, incomeTaxes, periodFrom, periodTo, mode, activeTab]);
+  }, [
+    incomeHistories,
+    incomeCategories,
+    incomeTaxes,
+    periodFrom,
+    periodTo,
+    mode,
+    activeTab,
+  ]);
 
   const isLoading = isLoadingHistories;
 
@@ -346,7 +320,9 @@ export function IncomeOverTimeChart() {
   return (
     <FormProvider {...methods}>
       <Card sx={{ height: 500 }}>
-        <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <CardContent
+          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+        >
           <Box
             sx={{
               display: 'flex',
@@ -366,7 +342,11 @@ export function IncomeOverTimeChart() {
           >
             <Tab label="Gross" value="gross" sx={{ minHeight: 36, py: 1 }} />
             <Tab label="Net" value="net" sx={{ minHeight: 36, py: 1 }} />
-            <Tab label="Gross vs Net" value="comparison" sx={{ minHeight: 36, py: 1 }} />
+            <Tab
+              label="Gross vs Net"
+              value="comparison"
+              sx={{ minHeight: 36, py: 1 }}
+            />
           </Tabs>
 
           {/* Filter controls */}
@@ -403,7 +383,11 @@ export function IncomeOverTimeChart() {
                 description="Please try refreshing the page"
               />
             ) : chartData ? (
-              <Bar data={chartData} options={barChartOptions} plugins={[barTotalLabelPlugin]} />
+              <Bar
+                data={chartData}
+                options={barChartOptions}
+                plugins={[barTotalLabelPlugin]}
+              />
             ) : (
               <EmptyState
                 icon={

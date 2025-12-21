@@ -428,6 +428,64 @@ export const horizontalBarChartOptions: ChartOptions<'bar'> = {
   },
 };
 
+export const barChartOptions: ChartOptions<'bar'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  layout: {
+    padding: {
+      top: 25,
+    },
+  },
+  interaction: {
+    mode: 'index' as const,
+    intersect: false,
+  },
+  scales: {
+    x: {
+      stacked: false,
+    },
+    y: {
+      stacked: false,
+      beginAtZero: true,
+      ticks: {
+        callback: function (value) {
+          return formatMoney(value as number);
+        },
+      },
+    },
+  },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'bottom' as const,
+      labels: {
+        boxWidth: 12,
+        padding: 8,
+        font: {
+          size: 10,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          const value = context.parsed.y || 0;
+          // Skip showing zero values in tooltip
+          if (value === 0) {
+            return undefined;
+          }
+          const datasetLabel = context.dataset.label || '';
+          return `${datasetLabel}: ${formatMoney(value)}`;
+        },
+      },
+      filter: function (tooltipItem) {
+        // Filter out zero values from tooltip
+        return tooltipItem.parsed.y !== 0;
+      },
+    },
+  },
+};
+
 // Helper to get checkpoint dates (end of month or year)
 export const getCheckpoints = (
   periodFrom: Dayjs | Date | string,
@@ -493,4 +551,24 @@ export const getHistoryAtCheckpoint = (
   );
 
   return nearestItem ?? null;
+};
+
+// Get total income at checkpoint from income histories
+export const getIncomeAtCheckpoint = (
+  incomeHistories: Pick<IncomeHistory, 'received_date' | 'gross_amount'>[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): number => {
+  const checkpointDayjs = dayjs(checkpoint);
+
+  return incomeHistories.reduce((total, history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    // Check if the received_date falls within the same period as checkpoint
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
+      return total + history.gross_amount;
+    }
+
+    return total;
+  }, 0);
 };

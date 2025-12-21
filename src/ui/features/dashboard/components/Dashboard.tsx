@@ -4,12 +4,11 @@ import { AccountList } from '../../account/components/AccountList';
 import { DashboardErrorProvider } from '../context/DashboardErrorProvider';
 import { useDashboardError } from '../hooks/useDashboardError';
 import { IncomeList } from '../../income/components/IncomeList';
-import { ChartPlaceholder } from './ChartPlaceholder';
 import { AssetsOverTimeChart } from './AssetsOverTimeChart';
 import { ExpensePieChart } from './ExpensePieChart';
 import { BucketGoalsChart } from './BucketGoalsChart';
 import { IncomeOverTimeChart } from './IncomeOverTimeChart';
-import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
+import { IncomeVsSavingsChart } from './IncomeVsSavingsChart';
 import { useGetAccountsWithBucketsQuery } from '../../account/api/accountApi';
 
 function DashboardContent() {
@@ -81,11 +80,7 @@ function DashboardContent() {
                 <IncomeOverTimeChart />
               </Grid>
               <Grid size={{ xs: 12, md: 6 }}>
-                <ChartPlaceholder
-                  title="Income vs Savings"
-                  height={250}
-                  icon={<CompareArrowsIcon sx={{ fontSize: 48 }} />}
-                />
+                <IncomeVsSavingsChart />
               </Grid>
             </Grid>
 
