@@ -144,6 +144,13 @@ app.on('ready', async () => {
   ipcMainHandle('db:createBucketValueHistory', async (args) => {
     return db.createBucketValueHistory(args as CreateBucketValueHistoryParams);
   });
+  ipcMainHandle('db:updateBucketValueHistory', async (args) => {
+    const { id, params } = args as {
+      id: number;
+      params: UpdateBucketValueHistoryParams;
+    };
+    return db.updateBucketValueHistory(id, params);
+  });
   ipcMainHandle('db:deleteBucketValueHistory', async (args) => {
     return db.deleteBucketValueHistory(args as number);
   });

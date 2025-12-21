@@ -578,6 +578,44 @@ export async function adjustBucketValueHistoryForDeletingHistoricalTransaction(
 }
 
 // ============================================
+// UPDATE MARKET VALUE HISTORY PROCEDURE
+// ============================================
+export async function updateBucketValueHistory(
+  id: number,
+  params: UpdateBucketValueHistoryParams,
+): Promise<BucketValueHistory> {
+  // Step 1: Get the old bucket value history record
+  const oldHistory = await getBucketValueHistoryByIdForDeletion(id);
+
+  if (!oldHistory) {
+    throw new Error(`Bucket value history with id ${id} not found`);
+  }
+
+  // Only allow updating market value history, not transaction history
+  if (oldHistory.source_type !== 'market') {
+    throw new Error(
+      'Only market value history records can be updated. Transaction history is managed automatically.',
+    );
+  }
+
+  // Step 2: Delete the old history record (this handles all adjustments)
+  await deleteBucketValueHistory(id);
+
+  // Step 3: Create the new history record with merged params
+  const newHistoryParams: CreateBucketValueHistoryParams = {
+    bucket_id: params.bucket_id ?? oldHistory.bucket_id,
+    market_value: params.market_value ?? oldHistory.market_value,
+    recorded_at: params.recorded_at ?? oldHistory.recorded_at,
+    source_type: 'market',
+    notes: params.notes !== undefined ? params.notes : oldHistory.notes,
+  };
+
+  const newHistory = await createBucketValueHistory(newHistoryParams);
+
+  return newHistory;
+}
+
+// ============================================
 // DELETE MARKET VALUE HISTORY PROCEDURE
 // ============================================
 export async function deleteBucketValueHistory(id: number): Promise<void> {

@@ -63,32 +63,35 @@ export async function updateTransaction(
   id: number,
   params: UpdateTransactionParams,
 ): Promise<Transaction> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
+  return withDatabaseLogging(
+    'updateTransaction',
+    async () => {
+      // Step 1: Get the old transaction
+      const oldTransaction = await getTransaction(id);
 
-  const updateData: Record<string, unknown> = {};
-  if (params.from_bucket_id !== undefined)
-    updateData.from_bucket_id = params.from_bucket_id;
-  if (params.to_bucket_id !== undefined)
-    updateData.to_bucket_id = params.to_bucket_id;
-  if (params.amount !== undefined) updateData.amount = params.amount;
-  if (params.from_units !== undefined)
-    updateData.from_units = params.from_units;
-  if (params.to_units !== undefined) updateData.to_units = params.to_units;
-  if (params.transaction_date !== undefined)
-    updateData.transaction_date = params.transaction_date;
-  if (params.notes !== undefined) updateData.notes = params.notes;
+      // Step 2: Delete the old transaction (this handles bucket value history cleanup)
+      await deleteTransaction(id);
 
-  const { data, error } = await supabase
-    .from('transaction')
-    .update(updateData)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select()
-    .single();
+      // Step 3: Create the new transaction with merged params
+      const newTransactionParams: CreateTransactionParams = {
+        from_bucket_id: params.from_bucket_id ?? oldTransaction.from_bucket_id,
+        to_bucket_id: params.to_bucket_id ?? oldTransaction.to_bucket_id,
+        amount: params.amount ?? oldTransaction.amount,
+        transaction_date: params.transaction_date ?? oldTransaction.transaction_date,
+        notes: params.notes !== undefined ? params.notes : oldTransaction.notes,
+        from_units: params.from_units !== undefined ? params.from_units : oldTransaction.from_units,
+        to_units: params.to_units !== undefined ? params.to_units : oldTransaction.to_units,
+      };
 
-  if (error) throw new Error(error.message);
-  return data;
+      const newTransaction = await createTransaction(newTransactionParams);
+
+      return newTransaction;
+    },
+    {
+      transaction_id: id,
+      ...params,
+    },
+  );
 }
 
 

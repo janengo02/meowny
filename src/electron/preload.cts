@@ -57,6 +57,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
   ) => ipcInvoke('db:getBucketValueHistoriesByBucket', params),
   createBucketValueHistory: (params: CreateBucketValueHistoryParams) =>
     ipcInvoke('db:createBucketValueHistory', params),
+  updateBucketValueHistory: (id: number, params: UpdateBucketValueHistoryParams) =>
+    ipcInvoke('db:updateBucketValueHistory', { id, params }),
   deleteBucketValueHistory: (id: number) =>
     ipcInvoke('db:deleteBucketValueHistory', id),
   getAssetsValueHistory: (params: GetAssetsValueHistoryParams) =>

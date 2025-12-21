@@ -15,7 +15,10 @@ import dayjs from 'dayjs';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import { DateTimePickerField } from '../../../shared/components/form/DateTimePickerField';
-import { useCreateBucketValueHistoryMutation } from '../api/bucketValueHistoryApi';
+import {
+  useCreateBucketValueHistoryMutation,
+  useUpdateBucketValueHistoryMutation,
+} from '../api/bucketValueHistoryApi';
 import {
   marketValueSchema,
   type MarketValueFormData,
@@ -27,6 +30,7 @@ interface MarketValueModalProps {
   currentMarketValue: number;
   open: boolean;
   onClose: () => void;
+  historyToEdit?: BucketValueHistory | null;
 }
 
 export function MarketValueModal({
@@ -34,11 +38,14 @@ export function MarketValueModal({
   currentMarketValue,
   open,
   onClose,
+  historyToEdit,
 }: MarketValueModalProps) {
-  const [createBucketValueHistory, { isLoading: isCreatingHistory }] =
+  const [createBucketValueHistory, { isLoading: isCreating }] =
     useCreateBucketValueHistoryMutation();
+  const [updateBucketValueHistory, { isLoading: isUpdating }] =
+    useUpdateBucketValueHistoryMutation();
 
-  const isLoading = isCreatingHistory;
+  const isLoading = isCreating || isUpdating;
 
   const form = useForm<MarketValueFormData>({
     resolver: zodResolver(marketValueSchema),
@@ -52,29 +59,55 @@ export function MarketValueModal({
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        market_value: currentMarketValue,
-        recorded_at: dayjs(),
-        notes: '',
-      });
+      if (historyToEdit) {
+        // Editing mode - populate form with history data
+        form.reset({
+          market_value: historyToEdit.market_value,
+          recorded_at: dayjs(historyToEdit.recorded_at),
+          notes: historyToEdit.notes || '',
+        });
+      } else {
+        // Create mode - reset to defaults
+        form.reset({
+          market_value: currentMarketValue,
+          recorded_at: dayjs(),
+          notes: '',
+        });
+      }
     }
-  }, [open, currentMarketValue, form]);
+  }, [open, currentMarketValue, historyToEdit, form]);
 
   const onSubmit = async (data: MarketValueFormData) => {
     try {
-      // Create bucket value history record
-      await createBucketValueHistory({
-        bucket_id: bucketId,
+      const historyData = {
         market_value: data.market_value,
         recorded_at: formatDateForDB(data.recorded_at),
-        source_type: 'market',
         notes: data.notes || null,
-      }).unwrap();
+      };
+
+      if (historyToEdit) {
+        // Edit mode: use update mutation
+        await updateBucketValueHistory({
+          id: historyToEdit.id,
+          bucketId,
+          params: historyData,
+        }).unwrap();
+      } else {
+        // Create mode: use create mutation
+        await createBucketValueHistory({
+          bucket_id: bucketId,
+          source_type: 'market',
+          ...historyData,
+        }).unwrap();
+      }
 
       form.reset();
       onClose();
     } catch (error) {
-      console.error('Failed to update market value:', error);
+      console.error(
+        `Failed to ${historyToEdit ? 'update' : 'create'} market value:`,
+        error,
+      );
     }
   };
 
@@ -107,7 +140,7 @@ export function MarketValueModal({
               pb: 1,
             }}
           >
-            Update Market Value
+            {historyToEdit ? 'Edit Market Value' : 'Update Market Value'}
             <IconButton onClick={handleClose} size="small">
               <CloseIcon />
             </IconButton>
@@ -144,7 +177,13 @@ export function MarketValueModal({
               variant="contained"
               disabled={isLoading || !form.formState.isValid}
             >
-              {isLoading ? 'Updating...' : 'Update'}
+              {isLoading
+                ? historyToEdit
+                  ? 'Updating...'
+                  : 'Adding...'
+                : historyToEdit
+                  ? 'Update'
+                  : 'Add'}
             </Button>
           </DialogActions>
         </Box>

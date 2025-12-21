@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import type { Dayjs } from 'dayjs';
 import {
   useGetValueHistoryWithTransactionsByBucketQuery,
@@ -20,7 +21,9 @@ import {
 import { useDeleteTransactionMutation } from '../../transaction/api/transactionApi';
 import { formatMoney, formatUnits } from '../../../shared/utils';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { TransactionModal } from '../../transaction/components/TransactionModal';
+import { MarketValueModal } from './MarketValueModal';
 
 interface BucketValueHistoryTableProps {
   bucketId: number;
@@ -50,6 +53,48 @@ export function BucketValueHistoryTable({
 
   const [deleteBucketValueHistory] = useDeleteBucketValueHistoryMutation();
   const [deleteTransaction] = useDeleteTransactionMutation();
+
+  // State for managing edit modals
+  const [editTransactionModalOpen, setEditTransactionModalOpen] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<TransactionWithBucketNames | null>(null);
+
+  const [editMarketValueModalOpen, setEditMarketValueModalOpen] = useState(false);
+  const [marketValueHistoryToEdit, setMarketValueHistoryToEdit] = useState<BucketValueHistory | null>(null);
+
+  const handleEdit = (history: ValueHistoryWithTransaction) => {
+    if (history.source_type === 'transaction' && history.transaction) {
+      setTransactionToEdit(history.transaction);
+      setEditTransactionModalOpen(true);
+    } else if (history.source_type === 'market') {
+      // For market value entries, we need to pass the BucketValueHistory
+      const marketValueHistory: BucketValueHistory = {
+        id: history.id,
+        user_id: history.user_id,
+        bucket_id: history.bucket_id,
+        contributed_amount: history.contributed_amount,
+        market_value: history.market_value,
+        recorded_at: history.recorded_at,
+        source_type: history.source_type,
+        source_id: history.source_id,
+        notes: history.notes,
+        created_at: history.created_at,
+        updated_at: history.updated_at,
+        total_units: history.total_units,
+      };
+      setMarketValueHistoryToEdit(marketValueHistory);
+      setEditMarketValueModalOpen(true);
+    }
+  };
+
+  const handleCloseTransactionEditModal = () => {
+    setEditTransactionModalOpen(false);
+    setTransactionToEdit(null);
+  };
+
+  const handleCloseMarketValueEditModal = () => {
+    setEditMarketValueModalOpen(false);
+    setMarketValueHistoryToEdit(null);
+  };
 
   const handleDelete = async (history: ValueHistoryWithTransaction) => {
     const confirmMessage =
@@ -303,6 +348,14 @@ export function BucketValueHistoryTable({
                 <TableCell align="center">
                   <IconButton
                     size="small"
+                    onClick={() => handleEdit(history)}
+                    aria-label="edit"
+                    color="primary"
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    size="small"
                     onClick={() => handleDelete(history)}
                     aria-label="delete"
                     color="error"
@@ -315,6 +368,22 @@ export function BucketValueHistoryTable({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Edit Transaction Modal */}
+      <TransactionModal
+        open={editTransactionModalOpen}
+        onClose={handleCloseTransactionEditModal}
+        transactionToEdit={transactionToEdit}
+      />
+
+      {/* Edit Market Value Modal */}
+      <MarketValueModal
+        bucketId={bucketId}
+        currentMarketValue={marketValueHistoryToEdit?.market_value || 0}
+        open={editMarketValueModalOpen}
+        onClose={handleCloseMarketValueEditModal}
+        historyToEdit={marketValueHistoryToEdit}
+      />
     </>
   );
 }

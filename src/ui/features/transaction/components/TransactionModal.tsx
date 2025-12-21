@@ -20,7 +20,10 @@ import {
   baseTransactionSchema,
   type BaseTransactionFormData,
 } from '../schemas/transaction.schema';
-import { useCreateTransactionMutation } from '../api/transactionApi';
+import {
+  useCreateTransactionMutation,
+  useUpdateTransactionMutation,
+} from '../api/transactionApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
@@ -30,15 +33,20 @@ interface TransactionModalProps {
   bucketId?: number;
   open: boolean;
   onClose: () => void;
+  transactionToEdit?: TransactionWithBucketNames | null;
 }
 
 export function TransactionModal({
   bucketId,
   open,
   onClose,
+  transactionToEdit,
 }: TransactionModalProps) {
-  const [createTransaction, { isLoading }] = useCreateTransactionMutation();
+  const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation();
+  const [updateTransaction, { isLoading: isUpdating }] = useUpdateTransactionMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
+
+  const isLoading = isCreating || isUpdating;
 
   const form = useForm<BaseTransactionFormData>({
     resolver: zodResolver(baseTransactionSchema),
@@ -52,22 +60,36 @@ export function TransactionModal({
     },
   });
 
-  // Reset form when modal opens with a new bucketId
+  // Reset form when modal opens with a new bucketId or transaction to edit
   useEffect(() => {
     if (open) {
-      form.reset({
-        from_bucket_id: '',
-        to_bucket_id: bucketId ? String(bucketId) : '',
-        amount: 0,
-        transaction_date: getTokyoDateTime(),
-        notes: '',
-      });
+      if (transactionToEdit) {
+        // Editing mode - populate form with transaction data
+        form.reset({
+          from_bucket_id: transactionToEdit.from_bucket_id ? String(transactionToEdit.from_bucket_id) : '',
+          to_bucket_id: transactionToEdit.to_bucket_id ? String(transactionToEdit.to_bucket_id) : '',
+          amount: transactionToEdit.amount,
+          transaction_date: transactionToEdit.transaction_date.replace(' ', 'T').slice(0, 19),
+          notes: transactionToEdit.notes || '',
+          from_units: transactionToEdit.from_units || undefined,
+          to_units: transactionToEdit.to_units || undefined,
+        });
+      } else {
+        // Create mode - reset to defaults
+        form.reset({
+          from_bucket_id: '',
+          to_bucket_id: bucketId ? String(bucketId) : '',
+          amount: 0,
+          transaction_date: getTokyoDateTime(),
+          notes: '',
+        });
+      }
     }
-  }, [open, bucketId, form]);
+  }, [open, bucketId, transactionToEdit, form]);
 
   const onSubmit = async (data: BaseTransactionFormData) => {
     try {
-      await createTransaction({
+      const transactionData = {
         from_bucket_id: data.from_bucket_id
           ? parseInt(data.from_bucket_id)
           : null,
@@ -77,12 +99,23 @@ export function TransactionModal({
         notes: data.notes || null,
         from_units: data.from_units || null,
         to_units: data.to_units || null,
-      }).unwrap();
+      };
+
+      if (transactionToEdit) {
+        // Edit mode: use update mutation (backend handles delete-recreate)
+        await updateTransaction({
+          id: transactionToEdit.id,
+          params: transactionData,
+        }).unwrap();
+      } else {
+        // Create mode: use create mutation
+        await createTransaction(transactionData).unwrap();
+      }
 
       form.reset();
       onClose();
     } catch (error) {
-      console.error('Failed to create transaction:', error);
+      console.error(`Failed to ${transactionToEdit ? 'update' : 'create'} transaction:`, error);
     }
   };
 
@@ -130,7 +163,7 @@ export function TransactionModal({
               pb: 1,
             }}
           >
-            Add Transaction
+            {transactionToEdit ? 'Edit Transaction' : 'Add Transaction'}
             <IconButton onClick={handleClose} size="small">
               <CloseIcon />
             </IconButton>
@@ -241,7 +274,9 @@ export function TransactionModal({
               variant="contained"
               disabled={isLoading || !form.formState.isValid}
             >
-              {isLoading ? 'Adding...' : 'Add Transaction'}
+              {isLoading
+                ? (transactionToEdit ? 'Updating...' : 'Adding...')
+                : (transactionToEdit ? 'Update Transaction' : 'Add Transaction')}
             </Button>
           </DialogActions>
         </Box>
