@@ -62,13 +62,18 @@ export async function getIncomeHistory(id: number): Promise<IncomeHistory> {
 
 export async function getIncomeHistoriesByPeriod(
   params: GetIncomeHistoriesByPeriodParams,
-): Promise<IncomeHistory[]> {
+): Promise<IncomeHistoryWithTaxes[]> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
   let query = supabase
     .from('income_history')
-    .select()
+    .select(
+      `
+      *,
+      income_taxes:income_tax(id, tax_amount)
+    `,
+    )
     .eq('user_id', userId);
 
   // Add period filters if provided
@@ -84,7 +89,23 @@ export async function getIncomeHistoriesByPeriod(
   });
 
   if (error) throw new Error(error.message);
-  return data;
+
+  // Transform the data to include net_amount
+  return data.map((item) => {
+    const totalTax = Array.isArray(item.income_taxes)
+      ? item.income_taxes.reduce(
+          (sum: number, tax: { id: number; tax_amount: number } | null) =>
+            sum + (tax?.tax_amount || 0),
+          0,
+        )
+      : 0;
+
+    return {
+      ...item,
+      income_taxes: item.income_taxes || [],
+      net_amount: item.gross_amount - totalTax,
+    };
+  });
 }
 
 export async function getIncomeHistoriesBySource(

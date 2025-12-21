@@ -27,7 +27,8 @@ import {
   CHART_COLORS,
   getCheckpointLabels,
   getCheckpoints,
-  getIncomeAtCheckpoint,
+  getNetIncomeAtCheckpoint,
+  getAssetContributionAtCheckpoint,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
@@ -116,12 +117,8 @@ export function IncomeVsSavingsChart() {
 
     // Calculate income by checkpoint using utility function
     const incomeData = checkpoints.map((checkpoint) =>
-      getIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
+      getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
     );
-
-    // Calculate asset contribution by checkpoint
-    // Asset contribution = sum of all contributed_amount changes from previous checkpoint
-    const assetContributionByCheckpoint = new Map<string, number>();
 
     // Group all bucket histories by bucket
     const bucketHistoriesMap = new Map<
@@ -132,43 +129,20 @@ export function IncomeVsSavingsChart() {
       bucketHistoriesMap.set(bucket.id, bucket.history);
     });
 
-    checkpoints.forEach((checkpoint, index) => {
-      const key = dayjs(checkpoint).format('YYYY-MM-DD');
-      let totalContribution = 0;
+    // Calculate asset contribution by checkpoint using utility function
+    const assetContributionData = checkpoints.map((checkpoint, index) => {
+      // For the first checkpoint, use the day before periodFrom at 23:59:59
+      // For subsequent checkpoints, use the previous checkpoint
+      const previousCheckpoint =
+        index > 0
+          ? checkpoints[index - 1]
+          : dayjs(periodFrom).subtract(1, 'day').endOf('day').toDate();
 
-      // For each bucket, calculate the contribution change
-      bucketHistoriesMap.forEach((history) => {
-        // Get the contributed_amount at this checkpoint
-        const checkpointHistory = history.findLast((h) =>
-          dayjs(h.recorded_at).isSameOrBefore(dayjs(checkpoint).endOf(mode)),
-        );
-
-        // Get the contributed_amount at the previous checkpoint
-        let previousContributedAmount = 0;
-        if (index > 0) {
-          const prevCheckpoint = checkpoints[index - 1];
-          const prevHistory = history.findLast((h) =>
-            dayjs(h.recorded_at).isSameOrBefore(
-              dayjs(prevCheckpoint).endOf(mode),
-            ),
-          );
-          previousContributedAmount = prevHistory?.contributed_amount || 0;
-        }
-
-        const currentContributedAmount =
-          checkpointHistory?.contributed_amount || 0;
-        const contribution =
-          currentContributedAmount - previousContributedAmount;
-        totalContribution += contribution;
-      });
-
-      assetContributionByCheckpoint.set(key, totalContribution);
-    });
-
-    // Create datasets
-    const assetContributionData = checkpoints.map((cp) => {
-      const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
-      return assetContributionByCheckpoint.get(checkpointKey) || 0;
+      return getAssetContributionAtCheckpoint(
+        bucketHistoriesMap,
+        checkpoint,
+        previousCheckpoint,
+      );
     });
 
     const datasets: ChartData<'bar'>['datasets'] = [

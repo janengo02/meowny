@@ -19,61 +19,47 @@ import {
   type ChartData,
 } from 'chart.js';
 import { useMemo } from 'react';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useState } from 'react';
 
-// Extend dayjs with plugins
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
 import {
   CHART_COLORS,
   barChartOptions,
   barTotalLabelPlugin,
   getCheckpointLabels,
   getCheckpoints,
+  getGrossIncomeByCategory,
+  getNetIncomeByCategory,
+  getGrossIncomeAtCheckpoint,
+  getNetIncomeAtCheckpoint,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
 import { useGetIncomeCategoriesQuery } from '../../income/api/incomeCategoryApi';
-import { useGetIncomeTaxesQuery } from '../../income/api/incomeTaxApi';
 import { useGetIncomeHistoriesByPeriodQuery } from '../../income/api/incomeHistoryApi';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import {
+  incomeChartFilterSchema,
+  type IncomeChartFilterFormData,
+  type TabValue,
+} from '../schemas/dashboard.schemas';
+
+// Extend dayjs with plugins
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 // Register Chart.js components (without plugin - it will be added per-instance)
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-// Form schema
-const incomeChartFilterSchema = z
-  .object({
-    mode: z.enum(['month', 'year']),
-    periodFrom: z.custom<Dayjs>((val) => val !== null && val !== undefined),
-    periodTo: z.custom<Dayjs>((val) => val !== null && val !== undefined),
-  })
-  .refine(
-    (data) =>
-      data.periodFrom.isBefore(data.periodTo) ||
-      data.periodFrom.isSame(data.periodTo),
-    {
-      message: 'Start date must be before or equal to end date',
-      path: ['periodTo'],
-    },
-  );
-
-type IncomeChartFilterFormData = z.infer<typeof incomeChartFilterSchema>;
-
-type TabValue = 'gross' | 'net' | 'comparison';
-
 export function IncomeOverTimeChart() {
   const { data: incomeCategories } = useGetIncomeCategoriesQuery();
-  const { data: incomeTaxes } = useGetIncomeTaxesQuery();
   const [activeTab, setActiveTab] = useState<TabValue>('gross');
 
   // Period filter form
@@ -87,33 +73,39 @@ export function IncomeOverTimeChart() {
     },
   });
 
-  const { control } = methods;
+  const {
+    control,
+    formState: { errors },
+  } = methods;
   const mode = useWatch({ control, name: 'mode' });
   const periodFrom = useWatch({ control, name: 'periodFrom' });
   const periodTo = useWatch({ control, name: 'periodTo' });
 
-  // Query params for filtered income histories
-  const queryParams = useMemo(
-    () => ({
-      startDate: formatDateForDB(periodFrom),
-      endDate: formatDateForDB(periodTo),
-    }),
-    [periodFrom, periodTo],
-  );
+  // Prepare query params
+  const queryParams = useMemo(() => {
+    // Don't query if there are validation errors
+    if (Object.keys(errors).length > 0) return null;
+
+    // Convert period inputs to ISO date strings
+    const startDate = formatDateForDB(periodFrom);
+    const endDate = formatDateForDB(periodTo);
+
+    return {
+      startDate,
+      endDate,
+    };
+  }, [periodFrom, periodTo, errors]);
 
   const {
     data: incomeHistories,
     isLoading: isLoadingHistories,
     error,
-  } = useGetIncomeHistoriesByPeriodQuery(queryParams);
+  } = useGetIncomeHistoriesByPeriodQuery(queryParams!, {
+    skip: !queryParams,
+  });
 
   const chartData = useMemo(() => {
-    if (
-      !incomeHistories ||
-      incomeHistories.length === 0 ||
-      !incomeCategories ||
-      !incomeTaxes
-    ) {
+    if (!incomeHistories || incomeHistories.length === 0 || !incomeCategories) {
       return null;
     }
 
@@ -124,7 +116,7 @@ export function IncomeOverTimeChart() {
     // Format checkpoint labels
     const labels = getCheckpointLabels(checkpoints, mode);
 
-    // Create category color map
+    // Create category name map
     const categoryNameMap = new Map<number, string>();
     incomeCategories.forEach((cat) => {
       categoryNameMap.set(cat.id, cat.name);
@@ -139,60 +131,6 @@ export function IncomeOverTimeChart() {
       ),
     );
 
-    // Calculate gross and net amounts by checkpoint and category
-    const grossByCheckpointCategory = new Map<string, Map<number, number>>();
-    const netByCheckpointCategory = new Map<string, Map<number, number>>();
-    const totalGrossByCheckpoint = new Map<string, number>();
-    const totalNetByCheckpoint = new Map<string, number>();
-
-    checkpoints.forEach((checkpoint) => {
-      const key = dayjs(checkpoint).format('YYYY-MM-DD');
-      grossByCheckpointCategory.set(key, new Map());
-      netByCheckpointCategory.set(key, new Map());
-      totalGrossByCheckpoint.set(key, 0);
-      totalNetByCheckpoint.set(key, 0);
-    });
-
-    incomeHistories.forEach((history) => {
-      const receivedDate = dayjs(history.received_date);
-      const checkpoint = checkpoints.find((cp) =>
-        receivedDate.isSame(cp, mode),
-      );
-
-      if (!checkpoint || history.income_category_id === null) return;
-
-      const checkpointKey = dayjs(checkpoint).format('YYYY-MM-DD');
-      const categoryId = history.income_category_id;
-
-      // Add gross amount
-      const grossMap = grossByCheckpointCategory.get(checkpointKey)!;
-      grossMap.set(
-        categoryId,
-        (grossMap.get(categoryId) || 0) + history.gross_amount,
-      );
-      totalGrossByCheckpoint.set(
-        checkpointKey,
-        totalGrossByCheckpoint.get(checkpointKey)! + history.gross_amount,
-      );
-
-      // Calculate net amount (gross - taxes for this history)
-      const historyTaxes = incomeTaxes.filter(
-        (tax) => tax.income_history_id === history.id,
-      );
-      const totalTax = historyTaxes.reduce(
-        (sum, tax) => sum + tax.tax_amount,
-        0,
-      );
-      const netAmount = history.gross_amount - totalTax;
-
-      const netMap = netByCheckpointCategory.get(checkpointKey)!;
-      netMap.set(categoryId, (netMap.get(categoryId) || 0) + netAmount);
-      totalNetByCheckpoint.set(
-        checkpointKey,
-        totalNetByCheckpoint.get(checkpointKey)! + netAmount,
-      );
-    });
-
     // Create datasets based on active tab
     const datasets: ChartData<'bar'>['datasets'] = [];
 
@@ -202,11 +140,13 @@ export function IncomeOverTimeChart() {
         const categoryName = categoryNameMap.get(categoryId) || 'Unknown';
         const color = CHART_COLORS[index % CHART_COLORS.length];
 
-        const data = checkpoints.map((cp) => {
-          const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
-          return (
-            grossByCheckpointCategory.get(checkpointKey)?.get(categoryId) || 0
+        const data = checkpoints.map((checkpoint) => {
+          const categoryMap = getGrossIncomeByCategory(
+            incomeHistories,
+            checkpoint,
+            mode,
           );
+          return categoryMap.get(categoryId) || 0;
         });
 
         // Only add dataset if it has non-zero values
@@ -230,11 +170,13 @@ export function IncomeOverTimeChart() {
         const categoryName = categoryNameMap.get(categoryId) || 'Unknown';
         const color = CHART_COLORS[index % CHART_COLORS.length];
 
-        const data = checkpoints.map((cp) => {
-          const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
-          return (
-            netByCheckpointCategory.get(checkpointKey)?.get(categoryId) || 0
+        const data = checkpoints.map((checkpoint) => {
+          const categoryMap = getNetIncomeByCategory(
+            incomeHistories,
+            checkpoint,
+            mode,
           );
+          return categoryMap.get(categoryId) || 0;
         });
 
         // Only add dataset if it has non-zero values
@@ -254,15 +196,13 @@ export function IncomeOverTimeChart() {
       });
     } else {
       // Comparison - total gross vs net (not by category)
-      const grossData = checkpoints.map((cp) => {
-        const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
-        return totalGrossByCheckpoint.get(checkpointKey) || 0;
-      });
+      const grossData = checkpoints.map((checkpoint) =>
+        getGrossIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
+      );
 
-      const netData = checkpoints.map((cp) => {
-        const checkpointKey = dayjs(cp).format('YYYY-MM-DD');
-        return totalNetByCheckpoint.get(checkpointKey) || 0;
-      });
+      const netData = checkpoints.map((checkpoint) =>
+        getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
+      );
 
       datasets.push({
         label: 'Gross',
@@ -291,7 +231,6 @@ export function IncomeOverTimeChart() {
   }, [
     incomeHistories,
     incomeCategories,
-    incomeTaxes,
     periodFrom,
     periodTo,
     mode,

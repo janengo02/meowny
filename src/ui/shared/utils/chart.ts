@@ -554,8 +554,129 @@ export const getHistoryAtCheckpoint = (
 };
 
 // Get total income at checkpoint from income histories
-export const getIncomeAtCheckpoint = (
-  incomeHistories: Pick<IncomeHistory, 'received_date' | 'gross_amount'>[],
+export const getNetIncomeAtCheckpoint = (
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'net_amount'
+  >[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): number => {
+  const checkpointDayjs = dayjs(checkpoint);
+
+  return incomeHistories.reduce((total, history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    // Check if the received_date falls within the same period as checkpoint
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
+      return total + history.net_amount;
+    }
+
+    return total;
+  }, 0);
+};
+
+// Get asset contribution at checkpoint (delta from previous checkpoint)
+export const getAssetContributionAtCheckpoint = (
+  bucketHistories: Map<
+    number,
+    Pick<
+      BucketValueHistory,
+      | 'id'
+      | 'market_value'
+      | 'contributed_amount'
+      | 'recorded_at'
+      | 'source_type'
+      | 'created_at'
+    >[]
+  >,
+  checkpoint: Date,
+  previousCheckpoint: Date,
+): number => {
+  let totalContribution = 0;
+
+  // For each bucket, calculate the contribution change
+  bucketHistories.forEach((history) => {
+    // Get the contributed_amount at this checkpoint
+    const checkpointHistory = getHistoryAtCheckpoint(history, checkpoint);
+
+    // Get the contributed_amount at the previous checkpoint
+    const prevHistory = getHistoryAtCheckpoint(history, previousCheckpoint);
+    const previousContributedAmount = prevHistory?.contributed_amount || 0;
+
+    const currentContributedAmount = checkpointHistory?.contributed_amount || 0;
+    const contribution = currentContributedAmount - previousContributedAmount;
+    totalContribution += contribution;
+  });
+
+  return totalContribution;
+};
+
+// Get gross income by category at checkpoint
+export const getGrossIncomeByCategory = (
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'gross_amount' | 'income_category_id'
+  >[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): Map<number, number> => {
+  const checkpointDayjs = dayjs(checkpoint);
+  const categoryMap = new Map<number, number>();
+
+  incomeHistories.forEach((history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    // Check if the received_date falls within the same period as checkpoint
+    if (
+      receivedDate.isSame(checkpointDayjs, mode) &&
+      history.income_category_id !== null
+    ) {
+      const categoryId = history.income_category_id;
+      categoryMap.set(
+        categoryId,
+        (categoryMap.get(categoryId) || 0) + history.gross_amount,
+      );
+    }
+  });
+
+  return categoryMap;
+};
+
+// Get net income by category at checkpoint
+export const getNetIncomeByCategory = (
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'net_amount' | 'income_category_id'
+  >[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): Map<number, number> => {
+  const checkpointDayjs = dayjs(checkpoint);
+  const categoryMap = new Map<number, number>();
+
+  incomeHistories.forEach((history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    // Check if the received_date falls within the same period as checkpoint
+    if (
+      receivedDate.isSame(checkpointDayjs, mode) &&
+      history.income_category_id !== null
+    ) {
+      const categoryId = history.income_category_id;
+      categoryMap.set(
+        categoryId,
+        (categoryMap.get(categoryId) || 0) + history.net_amount,
+      );
+    }
+  });
+
+  return categoryMap;
+};
+
+// Get total gross income at checkpoint
+export const getGrossIncomeAtCheckpoint = (
+  incomeHistories: Pick<IncomeHistoryWithTaxes, 'received_date' | 'gross_amount'>[],
   checkpoint: Date,
   mode: 'month' | 'year',
 ): number => {

@@ -14,7 +14,7 @@ export const incomeHistoryApi = baseApi.injectEndpoints({
       providesTags: ['Income'],
     }),
     getIncomeHistoriesByPeriod: builder.query<
-      IncomeHistory[],
+      IncomeHistoryWithTaxes[],
       { startDate?: string; endDate?: string }
     >({
       queryFn: async ({ startDate, endDate }) => {

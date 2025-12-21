@@ -227,6 +227,11 @@ type IncomeTax = {
   updated_at: string;
 };
 
+type IncomeHistoryWithTaxes = IncomeHistory & {
+  income_taxes: Pick<IncomeTax, 'id' | 'tax_amount'>[];
+  net_amount: number;
+};
+
 // ============================================
 // QUERY PARAMS
 // ============================================
@@ -591,7 +596,7 @@ type EventPayloadMapping = {
   'db:deleteIncomeCategory': void;
   'db:getIncomeHistories': IncomeHistory[];
   'db:getIncomeHistory': IncomeHistory;
-  'db:getIncomeHistoriesByPeriod': IncomeHistory[];
+  'db:getIncomeHistoriesByPeriod': IncomeHistoryWithTaxes[];
   'db:getIncomeHistoriesBySource': IncomeHistory[];
   'db:createIncomeHistory': IncomeHistory;
   'db:updateIncomeHistory': IncomeHistory;
@@ -714,7 +719,7 @@ interface Window {
     getIncomeHistory: (id: number) => Promise<IncomeHistory>;
     getIncomeHistoriesByPeriod: (
       params: GetIncomeHistoriesByPeriodParams,
-    ) => Promise<IncomeHistory[]>;
+    ) => Promise<IncomeHistoryWithTaxes[]>;
     getIncomeHistoriesBySource: (incomeId: number) => Promise<IncomeHistory[]>;
     createIncomeHistory: (
       params: CreateIncomeHistoryParams,

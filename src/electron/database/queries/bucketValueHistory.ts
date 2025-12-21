@@ -79,16 +79,14 @@ export async function getBucketValueHistoriesAfterAdding(
   if (transactionsError) throw new Error(transactionsError.message);
 
   // Create a map of transactions by ID for quick lookup
-  const transactionMap = new Map(
-    transactions?.map((t) => [t.id, t]) ?? [],
-  );
+  const transactionMap = new Map(transactions?.map((t) => [t.id, t]) ?? []);
 
   // Combine histories with their transactions
   return histories.map((history) => ({
     ...history,
     transaction:
       history.source_type === 'transaction' && history.source_id
-        ? transactionMap.get(history.source_id) ?? null
+        ? (transactionMap.get(history.source_id) ?? null)
         : null,
   }));
 }
@@ -433,16 +431,14 @@ export async function getBucketValueHistoriesAfterDeleting(
   if (transactionsError) throw new Error(transactionsError.message);
 
   // Create a map of transactions by ID for quick lookup
-  const transactionMap = new Map(
-    transactions?.map((t) => [t.id, t]) ?? [],
-  );
+  const transactionMap = new Map(transactions?.map((t) => [t.id, t]) ?? []);
 
   // Combine histories with their transactions
   return histories.map((history) => ({
     ...history,
     transaction:
       history.source_type === 'transaction' && history.source_id
-        ? transactionMap.get(history.source_id) ?? null
+        ? (transactionMap.get(history.source_id) ?? null)
         : null,
   }));
 }
@@ -475,7 +471,10 @@ export async function bucketValueProcedureForDeletingTransaction(
   );
 
   // Step 3: Delete the bucket value history record for this transaction
-  await deleteBucketValueHistoryByTransactionToDatabase(bucketId, transactionId);
+  await deleteBucketValueHistoryByTransactionToDatabase(
+    bucketId,
+    transactionId,
+  );
 
   // Step 4: Adjust all subsequent bucket value history records
   await adjustBucketValueHistoryForDeletingHistoricalTransaction(
@@ -732,7 +731,7 @@ export async function getAssetsValueHistory(
 
   const bucketIds = buckets.map((b) => b.id);
 
-  // Get value history for all buckets
+  // Get value history for all buckets within the date range
   const { data: historyData, error: historyError } = await supabase
     .from('bucket_value_history')
     .select(
@@ -747,8 +746,35 @@ export async function getAssetsValueHistory(
 
   if (historyError) throw new Error(historyError.message);
 
-  // Map history data by bucket
-  const historyByBucket = new Map<number, AssetsBucketData['history']>();
+  // Get the last value before startDate for each bucket
+  const { data: lastValuesBeforeStart, error: lastValuesError } = await supabase
+    .from('bucket_value_history')
+    .select(
+      'id, bucket_id, market_value, contributed_amount, recorded_at, source_type, created_at',
+    )
+    .eq('user_id', userId)
+    .in('bucket_id', bucketIds)
+    .lt('recorded_at', params.startDate)
+    .order('recorded_at', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (lastValuesError) throw new Error(lastValuesError.message);
+
+  // Create a map of the last value before start date for each bucket
+  const lastValueByBucket = new Map<
+    number,
+    AssetsBucketData['history'][number]
+  >(lastValuesBeforeStart?.map((item) => [item.bucket_id, item]) ?? []);
+
+  // Map history data by bucket, including the last value before start date
+  const historyByBucket = new Map<number, AssetsBucketData['history']>(
+    bucketIds.map((bucketId) => [
+      bucketId,
+      lastValueByBucket.has(bucketId) ? [lastValueByBucket.get(bucketId)!] : [],
+    ]),
+  );
+
+  // Then, add all history data within the date range
   historyData?.forEach((item) => {
     if (!historyByBucket.has(item.bucket_id)) {
       historyByBucket.set(item.bucket_id, []);
@@ -873,7 +899,7 @@ export async function getValueHistoryWithTransactionsByBucket(
     ...history,
     transaction:
       history.source_type === 'transaction' && history.source_id
-        ? transactionMap.get(history.source_id) ?? null
+        ? (transactionMap.get(history.source_id) ?? null)
         : null,
   }));
 }
