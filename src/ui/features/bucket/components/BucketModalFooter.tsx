@@ -20,7 +20,7 @@ export function BucketModalFooter({ bucket, onClose }: BucketModalFooterProps) {
         <>
           <Divider sx={{ mb: 3 }} />
           <Box>
-            <Typography variant="h3" sx={{ mb: 1 }}>
+            <Typography variant="h4" sx={{ mb: 1 }}>
               Notes
             </Typography>
             <Typography color="text.secondary">{bucket.notes}</Typography>

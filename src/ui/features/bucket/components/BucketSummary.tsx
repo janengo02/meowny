@@ -45,7 +45,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                 <Typography variant="caption" color="text.secondary">
                   Total Units
                 </Typography>
-                <Typography variant="h3" sx={{ mt: 0.5 }}>
+                <Typography variant="h4" sx={{ mt: 0.5 }}>
                   {formatUnits(totalUnits)}
                 </Typography>
               </Box>
@@ -77,7 +77,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     <Typography variant="caption" color="text.secondary">
                       Contributed
                     </Typography>
-                    <Typography variant="h3" sx={{ mt: 0.5 }}>
+                    <Typography variant="h4" sx={{ mt: 0.5 }}>
                       {formatMoney(bucket.contributed_amount)}
                     </Typography>
                     {bucket.type === 'investment' && totalUnits > 0 && (
@@ -131,7 +131,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     <Typography variant="caption" color="text.secondary">
                       Market Value
                     </Typography>
-                    <Typography variant="h3" sx={{ mt: 0.5 }}>
+                    <Typography variant="h4" sx={{ mt: 0.5 }}>
                       {formatMoney(bucket.market_value)}
                     </Typography>
                     {bucket.type === 'investment' && totalUnits > 0 && (
@@ -176,7 +176,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                   Gain/Loss
                 </Typography>
                 <Typography
-                  variant="h3"
+                  variant="h4"
                   sx={{
                     mt: 0.5,
                     color: isPositive ? 'success.main' : 'error.main',
@@ -226,7 +226,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                   <Typography variant="caption" color="text.secondary">
                     {bucket.type === 'expense' ? 'Spent' : 'Contributed'}
                   </Typography>
-                  <Typography variant="h3" sx={{ mt: 0.5 }}>
+                  <Typography variant="h4" sx={{ mt: 0.5 }}>
                     {formatMoney(bucket.contributed_amount)}
                   </Typography>
                 </Box>

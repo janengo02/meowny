@@ -169,7 +169,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
         {/* Graph Section */}
         <Divider sx={{ my: 2 }} />
         <FormProvider {...methods}>
-          <Typography variant="h3" sx={{ mb: 3 }}>
+          <Typography variant="h4" sx={{ mb: 3 }}>
             Performance
           </Typography>
 
@@ -234,7 +234,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             periodTo={periodTo}
           />
 
-          <Typography variant="h3" sx={{ mb: 2 }}>
+          <Typography variant="h4" sx={{ mb: 2 }}>
             Logs
           </Typography>
 

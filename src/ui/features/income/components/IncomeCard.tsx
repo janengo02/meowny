@@ -17,7 +17,7 @@ export function IncomeCard({ incomeSource, onClick }: IncomeCardProps) {
     <Card sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
       <CardActionArea onClick={onClick} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
         <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h3" gutterBottom>
+          <Typography variant="h4" gutterBottom>
             {incomeSource.name}
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>

@@ -29,6 +29,10 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
+        '&:hover': {
+          transform: 'translate(-2px, -2px)',
+          boxShadow: '8px 8px 0px rgba(0, 0, 0, 0.8)',
+        },
       }}
     >
       <CardActionArea
@@ -43,7 +47,7 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
       >
         <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
-            <Typography variant="h3" sx={{ flex: 1 }}>
+            <Typography variant="h4" sx={{ flex: 1 }}>
               {bucket.name}
             </Typography>
             {(bucket.type === 'saving' || bucket.type === 'investment') && (

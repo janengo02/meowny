@@ -62,7 +62,7 @@ export function BucketGoal({ bucketId }: BucketGoalProps) {
           alignItems: 'center',
         }}
       >
-        <Typography variant="h3">Goals</Typography>
+        <Typography variant="h4">Goals</Typography>
         {inactiveGoals.length > 0 && (
           <Button
             size="small"
