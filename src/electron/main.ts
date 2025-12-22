@@ -282,4 +282,12 @@ app.on('ready', async () => {
   ipcMainHandle('db:deleteTaxCategory', async (args) => {
     return db.deleteTaxCategory(args as number);
   });
+
+  // User Preferences handlers
+  ipcMainHandle('db:getUserPreference', async (args) => {
+    return db.getUserPreference(args as GetUserPreferenceParams);
+  });
+  ipcMainHandle('db:upsertUserPreference', async (args) => {
+    return db.upsertUserPreference(args as UpsertUserPreferenceParams);
+  });
 });

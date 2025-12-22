@@ -123,6 +123,12 @@ electron.contextBridge.exposeInMainWorld('electron', {
   updateTaxCategory: (id: number, params: UpdateTaxCategoryParams) =>
     ipcInvoke('db:updateTaxCategory', { id, params }),
   deleteTaxCategory: (id: number) => ipcInvoke('db:deleteTaxCategory', id),
+
+  // User Preferences methods
+  getUserPreference: (params: GetUserPreferenceParams) =>
+    ipcInvoke('db:getUserPreference', params),
+  upsertUserPreference: (params: UpsertUserPreferenceParams) =>
+    ipcInvoke('db:upsertUserPreference', params),
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {

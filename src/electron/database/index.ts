@@ -17,3 +17,6 @@ export * from './queries/incomeHistory.js';
 // Tax queries
 export * from './queries/taxCategory.js';
 export * from './queries/incomeTax.js';
+
+// User Preferences queries
+export * from './queries/userPreferences.js';

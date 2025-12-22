@@ -37,6 +37,7 @@ export function Navbar() {
   };
 
   return (
+    <>
     <AppBar
       position="static"
       color="transparent"
@@ -92,5 +93,7 @@ export function Navbar() {
         />
       </Toolbar>
     </AppBar>
+   
+ </>
   );
 }

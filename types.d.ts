@@ -232,6 +232,99 @@ type IncomeHistoryWithTaxes = IncomeHistory & {
   net_amount: number;
 };
 
+type UserPreference = {
+  id: number;
+  user_id: string;
+  preference_key: string;
+  preference_value: unknown;
+  created_at: string;
+  updated_at: string;
+};
+
+// ============================================
+// DASHBOARD LAYOUT TYPES
+// ============================================
+
+type DashboardSectionType =
+  | 'assetsOverTimeChart'
+  | 'expensePieChart'
+  | 'bucketGoalsChart'
+  | 'incomeOverTimeChart'
+  | 'incomeVsSavingsChart'
+  | 'assetAccounts'
+  | 'expenseAccounts'
+  | 'income';
+
+// Individual chart sections
+type DashboardAssetsOverTimeChartSection = {
+  type: 'assetsOverTimeChart';
+};
+
+type DashboardExpensePieChartSection = {
+  type: 'expensePieChart';
+};
+
+type DashboardBucketGoalsChartSection = {
+  type: 'bucketGoalsChart';
+};
+
+type DashboardIncomeOverTimeChartSection = {
+  type: 'incomeOverTimeChart';
+};
+
+type DashboardIncomeVsSavingsChartSection = {
+  type: 'incomeVsSavingsChart';
+};
+
+// Account and income sections
+type AssetAccountItem = {
+  accountId: number;
+  bucketOrder: number[];
+};
+
+type DashboardAssetAccountsSection = {
+  type: 'assetAccounts';
+  accounts: AssetAccountItem[];
+};
+
+type DashboardExpenseAccountsSection = {
+  type: 'expenseAccounts';
+};
+
+type DashboardIncomeSection = {
+  type: 'income';
+};
+
+type DashboardSection =
+  | DashboardAssetsOverTimeChartSection
+  | DashboardExpensePieChartSection
+  | DashboardBucketGoalsChartSection
+  | DashboardIncomeOverTimeChartSection
+  | DashboardIncomeVsSavingsChartSection
+  | DashboardAssetAccountsSection
+  | DashboardExpenseAccountsSection
+  | DashboardIncomeSection;
+
+type DashboardColumn = {
+  id: string;
+  width: number; // Total = 12 (Bootstrap grid system)
+  section: DashboardSection;
+};
+
+type DashboardRow = {
+  id: string;
+  order: number;
+  columns: DashboardColumn[];
+};
+
+type DashboardLayout = {
+  rows: DashboardRow[];
+};
+
+type DashboardLayoutPreference = {
+  dashboard_layout: DashboardLayout;
+};
+
 // ============================================
 // QUERY PARAMS
 // ============================================
@@ -459,6 +552,16 @@ type UpdateIncomeTaxParams = {
   notes?: string | null;
 };
 
+// User Preferences
+type GetUserPreferenceParams = {
+  preference_key: string;
+};
+
+type UpsertUserPreferenceParams = {
+  preference_key: string;
+  preference_value: unknown;
+};
+
 // ============================================
 // AUTH TYPES
 // ============================================
@@ -613,6 +716,8 @@ type EventPayloadMapping = {
   'db:createTaxCategory': TaxCategory;
   'db:updateTaxCategory': TaxCategory;
   'db:deleteTaxCategory': void;
+  'db:getUserPreference': UserPreference | null;
+  'db:upsertUserPreference': UserPreference;
 };
 
 type UnSubscribeFunction = () => void;
@@ -759,5 +864,13 @@ interface Window {
       params: UpdateTaxCategoryParams,
     ) => Promise<TaxCategory>;
     deleteTaxCategory: (id: number) => Promise<void>;
+
+    // User Preferences methods
+    getUserPreference: (
+      params: GetUserPreferenceParams,
+    ) => Promise<UserPreference | null>;
+    upsertUserPreference: (
+      params: UpsertUserPreferenceParams,
+    ) => Promise<UserPreference>;
   };
 }
