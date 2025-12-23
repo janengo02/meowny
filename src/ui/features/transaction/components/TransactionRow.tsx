@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import {
   TableRow,
   TableCell,
@@ -51,6 +51,11 @@ const TransactionRowContent = React.memo(
     onUpdateTransaction,
   }: TransactionRowProps) => {
     const { setValue, trigger } = useFormContext<TransactionImportFormData>();
+    const [selectedCell, setSelectedCell] = useState<'from' | 'to' | null>(
+      null,
+    );
+    const fromCellRef = useRef<HTMLTableCellElement>(null);
+    const toCellRef = useRef<HTMLTableCellElement>(null);
 
     const shouldImportWatch = useWatch({ name: 'should_import' });
     const notesWatch = useWatch({ name: 'notes' });
@@ -241,6 +246,27 @@ const TransactionRowContent = React.memo(
       onUpdateTransaction(index, updatedFields);
     };
 
+    // Handle click outside to deselect
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          fromCellRef.current &&
+          toCellRef.current &&
+          !fromCellRef.current.contains(event.target as Node) &&
+          !toCellRef.current.contains(event.target as Node)
+        ) {
+          setSelectedCell(null);
+        }
+      };
+
+      if (selectedCell) {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+          document.removeEventListener('mousedown', handleClickOutside);
+        };
+      }
+    }, [selectedCell]);
+
     return (
       <TableRow
         sx={{
@@ -309,7 +335,13 @@ const TransactionRowContent = React.memo(
           </Box>
         </TableCell>
         <TableCell sx={{ width: 150 }}>
-          <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1,
+              flexDirection: 'column',
+            }}
+          >
             {!showFromUnits && !showToUnits && (
               <Typography
                 variant="caption"
@@ -369,7 +401,19 @@ const TransactionRowContent = React.memo(
             )}
           </Box>
         </TableCell>
-        <TableCell>
+        <TableCell
+          ref={fromCellRef}
+          onClick={() => setSelectedCell('from')}
+          sx={{
+            position: 'relative',
+            cursor: 'pointer',
+            ...(selectedCell === 'from' && {
+              outline: '2px solid',
+              outlineColor: 'primary.main',
+              outlineOffset: '-2px',
+            }),
+          }}
+        >
           <FormBucketSelectField
             name="from_bucket_id"
             label=""
@@ -378,10 +422,41 @@ const TransactionRowContent = React.memo(
             sx={{
               opacity: fromBucketIdWatch ? 1 : 0.5,
               width: 180,
+              '& .MuiSelect-select': {
+                userSelect: 'text',
+                cursor: 'text',
+              },
+            }}
+            onCopy={(e) => {
+              const value = fromBucketIdWatch || '';
+              e.clipboardData.setData('text/plain', value);
+              e.preventDefault();
+            }}
+            onPaste={(e) => {
+              if (isBatchImporting || importResult) return;
+              const pastedValue = e.clipboardData.getData('text/plain').trim();
+              if (pastedValue && /^\d+$/.test(pastedValue)) {
+                setValue('from_bucket_id', pastedValue);
+                trigger();
+                onUpdateTransaction(index, { from_bucket_id: pastedValue });
+              }
+              e.preventDefault();
             }}
           />
         </TableCell>
-        <TableCell>
+        <TableCell
+          ref={toCellRef}
+          onClick={() => setSelectedCell('to')}
+          sx={{
+            position: 'relative',
+            cursor: 'pointer',
+            ...(selectedCell === 'to' && {
+              outline: '2px solid',
+              outlineColor: 'primary.main',
+              outlineOffset: '-2px',
+            }),
+          }}
+        >
           <FormBucketSelectField
             name="to_bucket_id"
             label=""
@@ -390,6 +465,25 @@ const TransactionRowContent = React.memo(
             sx={{
               opacity: toBucketIdWatch ? 1 : 0.5,
               width: 180,
+              '& .MuiSelect-select': {
+                userSelect: 'text',
+                cursor: 'text',
+              },
+            }}
+            onCopy={(e) => {
+              const value = toBucketIdWatch || '';
+              e.clipboardData.setData('text/plain', value);
+              e.preventDefault();
+            }}
+            onPaste={(e) => {
+              if (isBatchImporting || importResult) return;
+              const pastedValue = e.clipboardData.getData('text/plain').trim();
+              if (pastedValue && /^\d+$/.test(pastedValue)) {
+                setValue('to_bucket_id', pastedValue);
+                trigger();
+                onUpdateTransaction(index, { to_bucket_id: pastedValue });
+              }
+              e.preventDefault();
             }}
           />
         </TableCell>

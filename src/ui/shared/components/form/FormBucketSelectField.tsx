@@ -74,169 +74,224 @@ export function FormBucketSelectField({
     <Controller
       name={name}
       control={control}
-      render={({ field }) => (
-        <FormControl fullWidth error={Boolean(error)}>
-          <InputLabel>{label}</InputLabel>
-          <Select
-            {...field}
-            {...props}
-            label={label}
-            disabled={props.disabled ?? isSubmitting}
-            value={field.value ?? ''}
-            renderValue={(value) => {
-              if (!value) return <em>{noneLabel}</em>;
-              const bucket = bucketsById[Number(value)];
-              return bucket?.name || value;
-            }}
-            MenuProps={{
-              ...props.MenuProps,
-              sx: {
-                maxHeight: 400,
-              },
-            }}
-          >
-            {includeNone && (
-              <MenuItem
-                value=""
-                onClick={() => field.onChange('')}
-                sx={{ color: 'text.secondary' }}
-              >
-                {noneLabel}
-              </MenuItem>
-            )}
+      render={({ field }) => {
+        const selectedBucket = field.value
+          ? bucketsById[Number(field.value)]
+          : null;
+        const bucketType = selectedBucket?.type;
+        const outlineColor =
+          bucketType === 'saving'
+            ? 'info'
+            : bucketType === 'investment'
+              ? 'warning'
+              : undefined;
 
-            {accountsWithBuckets.map((account) => {
-              const { categorized, withoutCategory } = getBucketsByCategory(
-                account.buckets,
-              );
-              const hasBuckets =
-                Object.keys(categorized).length > 0 ||
-                withoutCategory.length > 0;
-
-              if (!hasBuckets) return null;
-
-              return (
-                <Box key={`account-${account.id}`} sx={{ width: '100%' }}>
-                  <Accordion
-                    defaultExpanded
-                    disableGutters
-                    elevation={0}
-                    sx={{
-                      backgroundColor: 'transparent',
-                      '&:before': { display: 'none' },
-                      '& .MuiAccordionSummary-root': {
-                        minHeight: 32,
-                        padding: '0 16px',
-                        backgroundColor: 'action.hover',
-                        '&:hover': {
-                          backgroundColor: 'action.selected',
+        return (
+          <FormControl
+            fullWidth
+            error={Boolean(error)}
+            color={outlineColor}
+            sx={
+              bucketType === 'expense'
+                ? {
+                    '& .MuiOutlinedInput-root': {
+                      '& fieldset': {
+                        borderColor: 'grey.500',
+                      },
+                      '&:hover fieldset': {
+                        borderColor: 'grey.500',
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'grey.500',
+                      },
+                    },
+                    '& .MuiInputLabel-root': {
+                      color: 'grey.500',
+                      '&.Mui-focused': {
+                        color: 'grey.500',
+                      },
+                    },
+                  }
+                : outlineColor
+                  ? {
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: `${outlineColor}.main`,
+                        },
+                        '&:hover fieldset': {
+                          borderColor: `${outlineColor}.main`,
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: `${outlineColor}.main`,
                         },
                       },
-                      '& .MuiAccordionSummary-content': {
-                        margin: '4px 0',
-                      },
-                      '& .MuiAccordionDetails-root': {
-                        padding: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                      },
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={<ExpandMoreIcon fontSize="small" />}
+                    }
+                  : undefined
+            }
+          >
+            <InputLabel color={outlineColor}>{label}</InputLabel>
+            <Select
+              {...field}
+              {...props}
+              label={label}
+              color={outlineColor}
+              disabled={props.disabled ?? isSubmitting}
+              value={field.value ?? ''}
+              renderValue={(value) => {
+                if (!value) return <em>{noneLabel}</em>;
+                const bucket = bucketsById[Number(value)];
+                return bucket?.name || value;
+              }}
+              MenuProps={{
+                ...props.MenuProps,
+                sx: {
+                  maxHeight: 400,
+                },
+              }}
+            >
+              {includeNone && (
+                <MenuItem
+                  value=""
+                  onClick={() => field.onChange('')}
+                  sx={{ color: 'text.secondary' }}
+                >
+                  {noneLabel}
+                </MenuItem>
+              )}
+
+              {accountsWithBuckets.map((account) => {
+                const { categorized, withoutCategory } = getBucketsByCategory(
+                  account.buckets,
+                );
+                const hasBuckets =
+                  Object.keys(categorized).length > 0 ||
+                  withoutCategory.length > 0;
+
+                if (!hasBuckets) return null;
+
+                return (
+                  <Box key={`account-${account.id}`} sx={{ width: '100%' }}>
+                    <Accordion
+                      defaultExpanded
+                      disableGutters
+                      elevation={0}
                       sx={{
-                        fontWeight: 'bold',
-                        fontSize: '0.875rem',
+                        backgroundColor: 'transparent',
+                        '&:before': { display: 'none' },
+                        '& .MuiAccordionSummary-root': {
+                          minHeight: 32,
+                          padding: '0 16px',
+                          backgroundColor: 'action.hover',
+                          '&:hover': {
+                            backgroundColor: 'action.selected',
+                          },
+                        },
+                        '& .MuiAccordionSummary-content': {
+                          margin: '4px 0',
+                        },
+                        '& .MuiAccordionDetails-root': {
+                          padding: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                        },
                       }}
                     >
-                      {account.name}
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      {/* Uncategorized buckets */}
-                      {withoutCategory.map((bucket) => (
-                        <MenuItem
-                          key={`bucket-${bucket.id}`}
-                          value={String(bucket.id)}
-                          onClick={() => field.onChange(String(bucket.id))}
-                          sx={{ pl: 4 }}
-                        >
-                          {bucket.name}
-                        </MenuItem>
-                      ))}
+                      <AccordionSummary
+                        expandIcon={<ExpandMoreIcon fontSize="small" />}
+                        sx={{
+                          fontWeight: 'bold',
+                          fontSize: '0.875rem',
+                        }}
+                      >
+                        {account.name}
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        {/* Uncategorized buckets */}
+                        {withoutCategory.map((bucket) => (
+                          <MenuItem
+                            key={`bucket-${bucket.id}`}
+                            value={String(bucket.id)}
+                            onClick={() => field.onChange(String(bucket.id))}
+                            sx={{ pl: 4 }}
+                          >
+                            {bucket.name}
+                          </MenuItem>
+                        ))}
 
-                      {/* Categories */}
-                      {Object.entries(categorized).map(
-                        ([categoryId, buckets]) => {
-                          const category = categoriesById[Number(categoryId)];
-                          if (!category) return null;
+                        {/* Categories */}
+                        {Object.entries(categorized).map(
+                          ([categoryId, buckets]) => {
+                            const category = categoriesById[Number(categoryId)];
+                            if (!category) return null;
 
-                          return (
-                            <Accordion
-                              key={`category-${categoryId}`}
-                              disableGutters
-                              elevation={0}
-                              sx={{
-                                backgroundColor: 'transparent',
-                                '&:before': { display: 'none' },
-                                '& .MuiAccordionSummary-root': {
-                                  minHeight: 28,
-                                  padding: '0 16px 0 32px',
-                                  '&:hover': {
-                                    backgroundColor: 'action.hover',
-                                  },
-                                },
-                                '& .MuiAccordionSummary-content': {
-                                  margin: '2px 0',
-                                },
-                                '& .MuiAccordionDetails-root': {
-                                  padding: 0,
-                                  display: 'flex',
-                                  flexDirection: 'column',
-                                },
-                              }}
-                            >
-                              <AccordionSummary
-                                expandIcon={
-                                  <ExpandMoreIcon
-                                    fontSize="small"
-                                    sx={{ fontSize: '1rem' }}
-                                  />
-                                }
+                            return (
+                              <Accordion
+                                key={`category-${categoryId}`}
+                                disableGutters
+                                elevation={0}
                                 sx={{
-                                  fontSize: '0.8125rem',
-                                  fontWeight: 500,
-                                  color: 'text.secondary',
+                                  backgroundColor: 'transparent',
+                                  '&:before': { display: 'none' },
+                                  '& .MuiAccordionSummary-root': {
+                                    minHeight: 28,
+                                    padding: '0 16px 0 32px',
+                                    '&:hover': {
+                                      backgroundColor: 'action.hover',
+                                    },
+                                  },
+                                  '& .MuiAccordionSummary-content': {
+                                    margin: '2px 0',
+                                  },
+                                  '& .MuiAccordionDetails-root': {
+                                    padding: 0,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                  },
                                 }}
                               >
-                                {category.name}
-                              </AccordionSummary>
-                              <AccordionDetails>
-                                {buckets.map((bucket) => (
-                                  <MenuItem
-                                    key={`bucket-${bucket.id}`}
-                                    value={String(bucket.id)}
-                                    onClick={() =>
-                                      field.onChange(String(bucket.id))
-                                    }
-                                    sx={{ pl: 8 }}
-                                  >
-                                    {bucket.name}
-                                  </MenuItem>
-                                ))}
-                              </AccordionDetails>
-                            </Accordion>
-                          );
-                        },
-                      )}
-                    </AccordionDetails>
-                  </Accordion>
-                </Box>
-              );
-            })}
-          </Select>
-          {error && <FormHelperText>{error}</FormHelperText>}
-        </FormControl>
-      )}
+                                <AccordionSummary
+                                  expandIcon={
+                                    <ExpandMoreIcon
+                                      fontSize="small"
+                                      sx={{ fontSize: '1rem' }}
+                                    />
+                                  }
+                                  sx={{
+                                    fontSize: '0.8125rem',
+                                    fontWeight: 500,
+                                    color: 'text.secondary',
+                                  }}
+                                >
+                                  {category.name}
+                                </AccordionSummary>
+                                <AccordionDetails>
+                                  {buckets.map((bucket) => (
+                                    <MenuItem
+                                      key={`bucket-${bucket.id}`}
+                                      value={String(bucket.id)}
+                                      onClick={() =>
+                                        field.onChange(String(bucket.id))
+                                      }
+                                      sx={{ pl: 8 }}
+                                    >
+                                      {bucket.name}
+                                    </MenuItem>
+                                  ))}
+                                </AccordionDetails>
+                              </Accordion>
+                            );
+                          },
+                        )}
+                      </AccordionDetails>
+                    </Accordion>
+                  </Box>
+                );
+              })}
+            </Select>
+            {error && <FormHelperText>{error}</FormHelperText>}
+          </FormControl>
+        );
+      }}
     />
   );
 }
