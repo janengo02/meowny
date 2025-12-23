@@ -66,24 +66,12 @@ export async function updateTransaction(
   return withDatabaseLogging(
     'updateTransaction',
     async () => {
-      // Step 1: Get the old transaction
-      const oldTransaction = await getTransaction(id);
-
-      // Step 2: Delete the old transaction (this handles bucket value history cleanup)
+      // Step 1: Delete the old transaction (this handles bucket value history cleanup)
       await deleteTransaction(id);
 
-      // Step 3: Create the new transaction with merged params
-      const newTransactionParams: CreateTransactionParams = {
-        from_bucket_id: params.from_bucket_id ?? oldTransaction.from_bucket_id,
-        to_bucket_id: params.to_bucket_id ?? oldTransaction.to_bucket_id,
-        amount: params.amount ?? oldTransaction.amount,
-        transaction_date: params.transaction_date ?? oldTransaction.transaction_date,
-        notes: params.notes !== undefined ? params.notes : oldTransaction.notes,
-        from_units: params.from_units !== undefined ? params.from_units : oldTransaction.from_units,
-        to_units: params.to_units !== undefined ? params.to_units : oldTransaction.to_units,
-      };
+      // Step 2: Create the new transaction with merged params
 
-      const newTransaction = await createTransaction(newTransactionParams);
+      const newTransaction = await createTransaction(params);
 
       return newTransaction;
     },
@@ -93,8 +81,6 @@ export async function updateTransaction(
     },
   );
 }
-
-
 
 export async function checkDuplicateTransaction(params: {
   transaction_date: string;

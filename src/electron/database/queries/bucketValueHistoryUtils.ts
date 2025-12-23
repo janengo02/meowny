@@ -100,7 +100,6 @@ export async function updateBucketValueHistoryToDatabase(
   return data;
 }
 
-
 export async function getBucketValueHistoryByTransaction(
   bucketId: number,
   transactionId: number,
@@ -141,9 +140,12 @@ export async function deleteBucketValueHistoryByTransactionToDatabase(
     .eq('source_id', transactionId)
     .eq('user_id', userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    // If no record found, return null instead of throwing
+    if (error.code === 'PGRST116') return;
+    throw new Error(error.message);
+  }
 }
-
 
 export async function getLatestBucketValueHistory(
   bucketId: number,
@@ -163,7 +165,6 @@ export async function getLatestBucketValueHistory(
   if (error) throw new Error(error.message);
   return data && data.length > 0 ? data[0] : null;
 }
-
 
 export async function getBucketValueHistoryByIdForDeletion(
   id: number,
@@ -187,7 +188,9 @@ export async function getBucketValueHistoryByIdForDeletion(
   return data;
 }
 
-export async function deleteBucketValueHistoryByIdToDatabase(id: number): Promise<void> {
+export async function deleteBucketValueHistoryByIdToDatabase(
+  id: number,
+): Promise<void> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
@@ -197,7 +200,11 @@ export async function deleteBucketValueHistoryByIdToDatabase(id: number): Promis
     .eq('id', id)
     .eq('user_id', userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    // If no record found, return null instead of throwing
+    if (error.code === 'PGRST116') return;
+    throw new Error(error.message);
+  }
 }
 
 // ============================================

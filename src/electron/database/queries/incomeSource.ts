@@ -95,5 +95,9 @@ export async function deleteIncomeSource(id: number): Promise<void> {
     .eq('id', id)
     .eq('user_id', userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    // If no record found, return null instead of throwing
+    if (error.code === 'PGRST116') return;
+    throw new Error(error.message);
+  }
 }

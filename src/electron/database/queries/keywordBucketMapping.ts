@@ -64,7 +64,8 @@ export async function updateKeywordBucketMapping(
 
     if (existingMapping) {
       // Update existing keyword mapping
-      const bucketAssignCount = existingMapping.bucket_assign_count as BucketAssignCount[];
+      const bucketAssignCount =
+        existingMapping.bucket_assign_count as BucketAssignCount[];
       const existingBucketIndex = bucketAssignCount.findIndex(
         (item) =>
           item.from_bucket_id === fromBucketId &&
@@ -81,11 +82,14 @@ export async function updateKeywordBucketMapping(
         );
       } else {
         // Add new bucket pair to the list
-        updatedCount = [...bucketAssignCount, {
-          from_bucket_id: fromBucketId,
-          to_bucket_id: toBucketId,
-          count: 1
-        }];
+        updatedCount = [
+          ...bucketAssignCount,
+          {
+            from_bucket_id: fromBucketId,
+            to_bucket_id: toBucketId,
+            count: 1,
+          },
+        ];
       }
 
       const { error: updateError } = await supabase
@@ -105,11 +109,13 @@ export async function updateKeywordBucketMapping(
         .insert({
           user_id: userId,
           keyword: keyword,
-          bucket_assign_count: [{
-            from_bucket_id: fromBucketId,
-            to_bucket_id: toBucketId,
-            count: 1
-          }],
+          bucket_assign_count: [
+            {
+              from_bucket_id: fromBucketId,
+              to_bucket_id: toBucketId,
+              count: 1,
+            },
+          ],
         });
 
       if (insertError) {
@@ -172,10 +178,11 @@ export async function getBucketFromKeywords(
     }
 
     // Find the bucket pair with the highest count
-    const bucketAssignCount = mapping.bucket_assign_count as BucketAssignCount[];
+    const bucketAssignCount =
+      mapping.bucket_assign_count as BucketAssignCount[];
 
     const bestAssignment = bucketAssignCount.reduce((best, current) =>
-      current.count > best.count ? current : best
+      current.count > best.count ? current : best,
     );
 
     return {
@@ -221,7 +228,11 @@ export async function deleteKeywordBucketMapping(id: number): Promise<void> {
     .eq('id', id)
     .eq('user_id', userId);
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    // If no record found, return null instead of throwing
+    if (error.code === 'PGRST116') return;
+    throw new Error(error.message);
+  }
 }
 
 /**
@@ -246,10 +257,12 @@ export async function clearKeywordMappingsForBucket(
 
   // Update each mapping to remove any bucket pair that references this bucket
   for (const mapping of mappings) {
-    const updatedCounts = (mapping.bucket_assign_count as BucketAssignCount[])
-      .filter((item) =>
-        item.from_bucket_id !== bucketId && item.to_bucket_id !== bucketId
-      );
+    const updatedCounts = (
+      mapping.bucket_assign_count as BucketAssignCount[]
+    ).filter(
+      (item) =>
+        item.from_bucket_id !== bucketId && item.to_bucket_id !== bucketId,
+    );
 
     if (updatedCounts.length === 0) {
       // No more bucket pairs for this keyword, delete the mapping
@@ -263,7 +276,10 @@ export async function clearKeywordMappingsForBucket(
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error clearing keyword mapping for bucket:', updateError);
+        console.error(
+          'Error clearing keyword mapping for bucket:',
+          updateError,
+        );
       }
     }
   }

@@ -293,22 +293,18 @@ export function BucketValueHistoryTable({
                           <br />
                         </>
                       )}
-                      {history.transaction.from_bucket_id !== bucketId && (
-                        <Typography variant="caption" color="text.secondary">
-                          From:{' '}
-                          {history.transaction.from_bucket_id === null
-                            ? 'Income'
-                            : history.transaction.from_bucket_name}
-                        </Typography>
-                      )}
-                      {history.transaction.to_bucket_id !== bucketId && (
-                        <Typography variant="caption" color="text.secondary">
-                          To:{' '}
-                          {history.transaction.to_bucket_id === null
-                            ? 'Untracked Expenses'
-                            : history.transaction.to_bucket_name}
-                        </Typography>
-                      )}
+                      {history.transaction.from_bucket_id !== bucketId &&
+                        history.transaction.from_bucket_id !== null && (
+                          <Typography variant="caption" color="text.secondary">
+                            From: {history.transaction.from_bucket_name}
+                          </Typography>
+                        )}
+                      {history.transaction.to_bucket_id !== bucketId &&
+                        history.transaction.to_bucket_id !== null && (
+                          <Typography variant="caption" color="text.secondary">
+                            To: {history.transaction.to_bucket_name}
+                          </Typography>
+                        )}
                     </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary">

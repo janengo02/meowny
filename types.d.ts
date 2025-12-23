@@ -452,16 +452,7 @@ type CreateTransactionParams = {
   to_units?: number | null;
 };
 
-type UpdateTransactionParams = {
-  from_bucket_id?: number | null;
-  to_bucket_id?: number | null;
-  amount?: number;
-  transaction_date?: string;
-  notes?: string | null;
-  // Unit tracking fields for investment buckets
-  from_units?: number | null;
-  to_units?: number | null;
-};
+type UpdateTransactionParams = CreateTransactionParams;
 
 type ExpenseTransactionSummary = {
   bucket_id: number;

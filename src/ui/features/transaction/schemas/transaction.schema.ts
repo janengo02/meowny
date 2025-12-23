@@ -16,6 +16,10 @@ export const baseTransactionSchema = z
   .refine((data) => data.from_bucket_id || data.to_bucket_id, {
     message: 'At least one bucket (From or To) must be selected',
     path: ['to_bucket_id', 'from_bucket_id'],
+  })
+  .refine((data) => data.from_bucket_id !== data.to_bucket_id, {
+    message: 'From bucket and To bucket cannot be the same',
+    path: ['to_bucket_id', 'from_bucket_id'],
   });
 
 export type BaseTransactionFormData = z.infer<typeof baseTransactionSchema>;
