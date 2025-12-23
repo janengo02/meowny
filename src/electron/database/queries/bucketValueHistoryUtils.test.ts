@@ -16,6 +16,9 @@ describe('calculateBucketUpdate', () => {
       notes: null,
       created_at: '2024-06-14T10:00:00.000Z',
       updated_at: '2024-06-14T10:00:00.000Z',
+      contributed_amount_delta: 1000,
+      market_value_delta: 1000,
+      total_units_delta: 50,
     };
 
     it('should add positive amount delta to contributed and market amounts', () => {
@@ -155,6 +158,9 @@ describe('calculateBucketUpdate', () => {
       notes: null,
       created_at: '2024-06-14T10:00:00.000Z',
       updated_at: '2024-06-14T10:00:00.000Z',
+      contributed_amount_delta: 2000,
+      market_value_delta: 2000,
+      total_units_delta: null,
     };
 
     it('should handle amount changes without units tracking', () => {
@@ -188,6 +194,9 @@ describe('calculateBucketUpdate', () => {
       notes: null,
       created_at: '2024-06-14T10:00:00.000Z',
       updated_at: '2024-06-14T10:00:00.000Z',
+      contributed_amount_delta: 1000,
+      market_value_delta: 1000,
+      total_units_delta: 100,
     };
 
     it('should handle very large amounts', () => {
@@ -246,6 +255,9 @@ describe('calculateBucketUpdate', () => {
         notes: null,
         created_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-01T00:00:00.000Z',
+        contributed_amount_delta: 5000,
+        market_value_delta: 5000,
+        total_units_delta: 100,
       };
 
       // Buying $2000 worth of investment (40 units at $50/unit)
@@ -270,6 +282,9 @@ describe('calculateBucketUpdate', () => {
         notes: null,
         created_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-01T00:00:00.000Z',
+        contributed_amount_delta: 5000,
+        market_value_delta: 5000,
+        total_units_delta: 100,
       };
 
       // Selling 30 units at $60/unit = -$1800
@@ -294,6 +309,9 @@ describe('calculateBucketUpdate', () => {
         notes: null,
         created_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-01T00:00:00.000Z',
+        contributed_amount_delta: 5000,
+        market_value_delta: 5000,
+        total_units_delta: 100,
       };
 
       // Selling all 100 units at $55/unit = -$5500
@@ -319,6 +337,9 @@ describe('calculateBucketUpdate', () => {
         notes: null,
         created_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-01T00:00:00.000Z',
+        contributed_amount_delta: 10000,
+        market_value_delta: 10000,
+        total_units_delta: null,
       };
 
       // Depositing $500
@@ -343,6 +364,9 @@ describe('calculateBucketUpdate', () => {
         notes: null,
         created_at: '2024-01-01T00:00:00.000Z',
         updated_at: '2024-01-01T00:00:00.000Z',
+        contributed_amount_delta: 10000,
+        market_value_delta: 10000,
+        total_units_delta: null,
       };
 
       // Withdrawing $3000

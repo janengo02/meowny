@@ -57,6 +57,10 @@ export async function insertBucketValueHistoryToDatabase(
       source_type: params.source_type,
       source_id: params.source_id ?? null,
       notes: params.notes ?? null,
+      // Delta columns for performance optimization
+      contributed_amount_delta: params.contributed_amount_delta ?? 0,
+      market_value_delta: params.market_value_delta ?? 0,
+      total_units_delta: params.total_units_delta ?? null,
     })
     .select()
     .single();
@@ -98,6 +102,34 @@ export async function updateBucketValueHistoryToDatabase(
 
   if (error) throw new Error(error.message);
   return data;
+}
+
+/**
+ * Batch update multiple bucket value history records using a single query
+ * This is much more efficient than updating records one by one in a loop
+ * Uses PostgreSQL function with JSONB to properly handle NULL values
+ */
+export async function batchUpdateBucketValueHistoryToDatabase(
+  updates: Array<{
+    id: number;
+    contributed_amount: number;
+    market_value: number;
+    total_units: number | null;
+  }>,
+): Promise<void> {
+  if (updates.length === 0) return;
+
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Execute the batch update using the PostgreSQL function
+  // Pass updates as JSONB array to properly handle NULL values
+  const { error } = await supabase.rpc('batch_update_bucket_value_history', {
+    p_user_id: userId,
+    p_updates: updates,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 export async function getBucketValueHistoryByTransaction(
@@ -210,7 +242,7 @@ export function calculateBucketUpdate(
   let newMarketAmount = baseMarketValue + amountDelta;
 
   let newTotalUnits: number | null = baseTotalUnits;
-  if (unitsDelta !== null) {
+  if (unitsDelta !== null && unitsDelta !== 0) {
     newTotalUnits = (baseTotalUnits ?? 0) + unitsDelta;
   }
   if (newTotalUnits !== null && newTotalUnits === 0) {

@@ -151,6 +151,10 @@ type BucketValueHistory = {
   // Unit tracking fields for investment buckets
   total_units: number | null;
   // Note: avg_cost_per_unit can be calculated as contributed_amount / total_units
+  // Delta columns for performance optimization (added in migration 007)
+  contributed_amount_delta: number;
+  market_value_delta: number;
+  total_units_delta: number | null;
 };
 
 type IncomeSource = {
@@ -410,6 +414,10 @@ type CreateBucketValueHistoryParams = {
   source_type: SourceTypeEnum;
   source_id?: number | null;
   notes?: string | null;
+  // Delta columns for performance optimization
+  contributed_amount_delta?: number;
+  market_value_delta?: number;
+  total_units_delta?: number | null;
 };
 
 type UpdateBucketValueHistoryParams = {
@@ -421,6 +429,10 @@ type UpdateBucketValueHistoryParams = {
   source_type?: SourceTypeEnum;
   source_id?: number | null;
   notes?: string | null;
+  // Delta columns for performance optimization
+  contributed_amount_delta?: number;
+  market_value_delta?: number;
+  total_units_delta?: number | null;
 };
 
 type GetAssetsValueHistoryParams = {

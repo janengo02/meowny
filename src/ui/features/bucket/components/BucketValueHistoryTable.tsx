@@ -84,6 +84,9 @@ export function BucketValueHistoryTable({
         created_at: history.created_at,
         updated_at: history.updated_at,
         total_units: history.total_units,
+        contributed_amount_delta: history.contributed_amount_delta,
+        market_value_delta: history.market_value_delta,
+        total_units_delta: history.total_units_delta,
       };
       setMarketValueHistoryToEdit(marketValueHistory);
       setEditMarketValueModalOpen(true);
