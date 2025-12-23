@@ -55,11 +55,15 @@ export function BucketValueHistoryTable({
   const [deleteTransaction] = useDeleteTransactionMutation();
 
   // State for managing edit modals
-  const [editTransactionModalOpen, setEditTransactionModalOpen] = useState(false);
-  const [transactionToEdit, setTransactionToEdit] = useState<TransactionWithBucketNames | null>(null);
+  const [editTransactionModalOpen, setEditTransactionModalOpen] =
+    useState(false);
+  const [transactionToEdit, setTransactionToEdit] =
+    useState<TransactionWithBucketNames | null>(null);
 
-  const [editMarketValueModalOpen, setEditMarketValueModalOpen] = useState(false);
-  const [marketValueHistoryToEdit, setMarketValueHistoryToEdit] = useState<BucketValueHistory | null>(null);
+  const [editMarketValueModalOpen, setEditMarketValueModalOpen] =
+    useState(false);
+  const [marketValueHistoryToEdit, setMarketValueHistoryToEdit] =
+    useState<BucketValueHistory | null>(null);
 
   const handleEdit = (history: ValueHistoryWithTransaction) => {
     if (history.source_type === 'transaction' && history.transaction) {

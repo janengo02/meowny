@@ -26,7 +26,7 @@ import {
 } from '../api/transactionApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
-import { formatDateForDB } from '../../../shared/utils/dateTime';
+import { formatDateForDB, formatToTokyoDateTime } from '../../../shared/utils/dateTime';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 
 interface TransactionModalProps {
@@ -69,7 +69,7 @@ export function TransactionModal({
           from_bucket_id: transactionToEdit.from_bucket_id ? String(transactionToEdit.from_bucket_id) : '',
           to_bucket_id: transactionToEdit.to_bucket_id ? String(transactionToEdit.to_bucket_id) : '',
           amount: transactionToEdit.amount,
-          transaction_date: transactionToEdit.transaction_date.replace(' ', 'T').slice(0, 19),
+          transaction_date: formatToTokyoDateTime(transactionToEdit.transaction_date),
           notes: transactionToEdit.notes || '',
           from_units: transactionToEdit.from_units || undefined,
           to_units: transactionToEdit.to_units || undefined,

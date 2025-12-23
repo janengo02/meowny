@@ -91,6 +91,53 @@ export const formatToDateOnly = (dateString: string): string => {
   }
 };
 
+/**
+ * Converts a date string to Tokyo timezone and formats it for datetime-local input
+ * @param dateString - Date string from database (ISO format or similar)
+ * @returns Date string in Tokyo timezone formatted as YYYY-MM-DDTHH:mm:ss
+ */
+export function formatToTokyoDateTime(dateString: string): string {
+  if (!dateString) return '';
+
+  try {
+    const date = new Date(dateString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date format: ${dateString}`);
+      return '';
+    }
+
+    // Get Tokyo time components using Intl.DateTimeFormat
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Tokyo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(date);
+    const getValue = (type: string) =>
+      parts.find((part) => part.type === type)?.value || '';
+
+    const year = getValue('year');
+    const month = getValue('month');
+    const day = getValue('day');
+    const hour = getValue('hour');
+    const minute = getValue('minute');
+    const second = getValue('second');
+
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+  } catch (error) {
+    console.error(`Error formatting date to Tokyo timezone: ${dateString}`, error);
+    return '';
+  }
+}
+
 export const formatDateForDB = (date: string | Date | Dayjs): string => {
   if (!date) return '';
   const formattedDate = dayjs(date);
