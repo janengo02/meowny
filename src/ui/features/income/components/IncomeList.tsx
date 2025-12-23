@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { Box, Button, CircularProgress, Grid, Typography } from '@mui/material';
+import { Box, CircularProgress, Grid, Typography } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
 import {
   useCreateIncomeSourceMutation,
   useGetIncomeSourcesQuery,
 } from '../api/incomeSourceApi';
 import { useDashboardError } from '../../dashboard/hooks/useDashboardError';
-import AddIcon from '@mui/icons-material/Add';
 import { IncomeCard } from './IncomeCard';
 import { IncomeModal } from './IncomeModal';
 import { AddIncomeCard } from './AddIncomeCard';
@@ -16,8 +15,7 @@ export function IncomeList() {
   const [selectedIncomeId, setSelectedIncomeId] = useState<number | null>(null);
   const { isLoading: isLoadingIncomeSources, error: incomeSourcesError } =
     useGetIncomeSourcesQuery();
-  const [createIncomeSource, { isLoading: isCreatingIncomeSource }] =
-    useCreateIncomeSourceMutation();
+  const [createIncomeSource] = useCreateIncomeSourceMutation();
   const { setError } = useDashboardError();
 
   if (incomeSourcesError) {
@@ -48,26 +46,10 @@ export function IncomeList() {
   }
 
   return (
-    <Box sx={{ mb: 4 }}>
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          mb: 2,
-        }}
-      >
-        <Typography variant="h2">Your Income Sources</Typography>
-        <Button
-          variant="text"
-          startIcon={<AddIcon />}
-          onClick={handleCreateIncomeSource}
-          disabled={isCreatingIncomeSource}
-        >
-          Create Income Source
-        </Button>
-      </Box>
-
+    <>
+      <Typography variant="h2" sx={{ p: 2 }}>
+        Your Income Sources
+      </Typography>
       <Grid container spacing={2}>
         {incomeSources.map((incomeSource) => (
           <Grid
@@ -91,6 +73,6 @@ export function IncomeList() {
         open={selectedIncomeId !== null}
         onClose={() => setSelectedIncomeId(null)}
       />
-    </Box>
+    </>
   );
 }

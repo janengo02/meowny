@@ -267,17 +267,17 @@ export function IncomeOverTimeChart() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              mb: 2,
+              mb: 3,
             }}
           >
-            <Typography variant="h6">Income Over Time</Typography>
+            <Typography variant="h2">Income Over Time</Typography>
           </Box>
 
           {/* Tabs */}
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
-            sx={{ mb: 2, minHeight: 36 }}
+            sx={{ mb: 3, minHeight: 36 }}
           >
             <Tab label="Gross" value="gross" sx={{ minHeight: 36, py: 1 }} />
             <Tab label="Net" value="net" sx={{ minHeight: 36, py: 1 }} />
@@ -289,7 +289,7 @@ export function IncomeOverTimeChart() {
           </Tabs>
 
           {/* Filter controls */}
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
             <FormSelectField
               name="mode"
               label="View Mode"

@@ -100,7 +100,7 @@ export function IncomeModal({
 
       <DialogContent sx={{ pt: 2 }}>
         {/* Income History Section */}
-        <Box sx={{ mb: 4 }}>
+        <Box sx={{ mb: 3 }}>
           <IncomeHistoryTable incomeSourceId={incomeSourceId} />
         </Box>
 

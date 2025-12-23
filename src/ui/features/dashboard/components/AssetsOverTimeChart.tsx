@@ -186,21 +186,21 @@ export function AssetsOverTimeChart() {
 
   return (
     <FormProvider {...methods}>
-      <Card>
+      <Card sx={{ p: 0 }}>
         <CardContent>
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              mb: 1,
+              mb: 3,
             }}
           >
-            <Typography variant="h6">Assets Over Time</Typography>
+            <Typography variant="h2">Assets Over Time</Typography>
           </Box>
 
           {/* Controls */}
-          <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
+          <Stack direction="row" justifyContent="space-between">
             <Stack direction="row" spacing={2}>
               {/* Mode Select */}
               <FormSelectField

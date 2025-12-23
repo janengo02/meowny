@@ -200,14 +200,14 @@ export function IncomeVsSavingsChart() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              mb: 2,
+              mb: 3,
             }}
           >
-            <Typography variant="h6">Income vs Savings</Typography>
+            <Typography variant="h2">Income vs Savings</Typography>
           </Box>
 
           {/* Filter controls */}
-          <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+          <Stack direction="row" spacing={2}>
             <FormSelectField
               name="mode"
               label="View Mode"

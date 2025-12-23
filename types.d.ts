@@ -308,7 +308,7 @@ type DashboardSection =
 type DashboardColumn = {
   id: string;
   width: number; // Total = 12 (Bootstrap grid system)
-  section: DashboardSection;
+  sections: DashboardSection[]; // Support multiple sections stacked vertically
 };
 
 type DashboardRow = {

@@ -9,7 +9,11 @@ type DraggableRowProps = {
   isDragEnabled: boolean;
 };
 
-export function DraggableRow({ row, children, isDragEnabled }: DraggableRowProps) {
+export function DraggableRow({
+  row,
+  children,
+  isDragEnabled,
+}: DraggableRowProps) {
   const {
     attributes,
     listeners,
@@ -38,7 +42,7 @@ export function DraggableRow({ row, children, isDragEnabled }: DraggableRowProps
   }
 
   return (
-    <Box ref={setNodeRef} style={style} sx={{ position: 'relative', mb: 3 }}>
+    <Box ref={setNodeRef} style={style} sx={{ position: 'relative' }}>
       {/* Drag Handle */}
       <Paper
         elevation={isDragging ? 8 : 0}

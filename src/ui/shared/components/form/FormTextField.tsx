@@ -20,6 +20,7 @@ export function FormTextField({ name, ...props }: FormTextFieldProps) {
       {...register(name)}
       {...props}
       error={Boolean(error)}
+      sx={{ borderColor: error ? 'error.main' : undefined, ...props.sx }}
       helperText={error}
       disabled={props.disabled ?? isSubmitting}
       fullWidth

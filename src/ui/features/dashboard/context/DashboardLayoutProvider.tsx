@@ -10,6 +10,35 @@ type DashboardLayoutProviderProps = {
   children: ReactNode;
 };
 
+// Migration helper to convert old layout format (section) to new format (sections array)
+function migrateLayout(layout: any): DashboardLayout {
+  return {
+    ...layout,
+    rows: layout.rows.map((row: any) => ({
+      ...row,
+      columns: row.columns.map((col: any) => {
+        // If column has 'section' (old format), convert to 'sections' array
+        if (col.section && !col.sections) {
+          return {
+            ...col,
+            sections: [col.section],
+            section: undefined,
+          };
+        }
+        // If column already has 'sections' array, keep it
+        if (col.sections) {
+          return col;
+        }
+        // Default: empty sections array
+        return {
+          ...col,
+          sections: [],
+        };
+      }),
+    })),
+  };
+}
+
 // Default layout: Each chart is a separate draggable row
 const DEFAULT_LAYOUT: DashboardLayout = {
   rows: [
@@ -20,9 +49,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-1-1',
           width: 12,
-          section: {
-            type: 'assetsOverTimeChart',
-          },
+          sections: [
+            {
+              type: 'assetsOverTimeChart',
+            },
+          ],
         },
       ],
     },
@@ -33,10 +64,12 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-2-1',
           width: 12,
-          section: {
-            type: 'assetAccounts',
-            accounts: [],
-          },
+          sections: [
+            {
+              type: 'assetAccounts',
+              accounts: [],
+            },
+          ],
         },
       ],
     },
@@ -47,9 +80,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-3-1',
           width: 12,
-          section: {
-            type: 'expensePieChart',
-          },
+          sections: [
+            {
+              type: 'expensePieChart',
+            },
+          ],
         },
       ],
     },
@@ -60,9 +95,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-4-1',
           width: 12,
-          section: {
-            type: 'bucketGoalsChart',
-          },
+          sections: [
+            {
+              type: 'bucketGoalsChart',
+            },
+          ],
         },
       ],
     },
@@ -73,9 +110,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-5-1',
           width: 12,
-          section: {
-            type: 'expenseAccounts',
-          },
+          sections: [
+            {
+              type: 'expenseAccounts',
+            },
+          ],
         },
       ],
     },
@@ -86,9 +125,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-6-1',
           width: 12,
-          section: {
-            type: 'incomeOverTimeChart',
-          },
+          sections: [
+            {
+              type: 'incomeOverTimeChart',
+            },
+          ],
         },
       ],
     },
@@ -99,9 +140,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-7-1',
           width: 12,
-          section: {
-            type: 'incomeVsSavingsChart',
-          },
+          sections: [
+            {
+              type: 'incomeVsSavingsChart',
+            },
+          ],
         },
       ],
     },
@@ -112,9 +155,11 @@ const DEFAULT_LAYOUT: DashboardLayout = {
         {
           id: 'col-8-1',
           width: 12,
-          section: {
-            type: 'income',
-          },
+          sections: [
+            {
+              type: 'income',
+            },
+          ],
         },
       ],
     },
@@ -129,11 +174,11 @@ export function DashboardLayoutProvider({
   const [saveLayoutMutation] = useSaveDashboardLayoutMutation();
   const [localLayout, setLocalLayout] = useState<DashboardLayout | null>(null);
 
-  // Use saved layout, local layout, or default
+  // Use saved layout, local layout, or default (with migration)
   const layout = useMemo(() => {
     if (localLayout) return localLayout;
     if (savedLayoutPreference?.dashboard_layout) {
-      return savedLayoutPreference.dashboard_layout;
+      return migrateLayout(savedLayoutPreference.dashboard_layout);
     }
     return DEFAULT_LAYOUT;
   }, [savedLayoutPreference, localLayout]);

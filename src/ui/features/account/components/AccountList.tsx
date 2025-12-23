@@ -1,4 +1,4 @@
-import { Grid, Typography, Box } from '@mui/material';
+import { Grid, Typography } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
 import { AccountCard } from './AccountCard';
 import { AddAccountCard } from './AddAccountCard';
@@ -16,11 +16,9 @@ export function AccountList({ type }: AccountListProps) {
 
   return (
     <>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h2" gutterBottom>
-          {type.charAt(0).toUpperCase() + type.slice(1)} Accounts
-        </Typography>
-      </Box>
+      <Typography variant="h2" sx={{ p: 2 }}>
+        {type.charAt(0).toUpperCase() + type.slice(1)} Accounts
+      </Typography>
 
       <Grid container spacing={3}>
         {accountIds.map((accountId) => (

@@ -36,7 +36,6 @@ export function AccountCard({ accountId }: AccountCardProps) {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            mb: 2,
           }}
         >
           <Box>
@@ -48,19 +47,14 @@ export function AccountCard({ accountId }: AccountCardProps) {
 
         <Grid container spacing={2} sx={{ mt: 1 }}>
           {buckets.map((bucket) => (
-            <Grid
-              key={bucket.id}
-              size={{ xs: 6, sm: 3, md: 2 }}
-            >
+            <Grid key={bucket.id} size={{ xs: 6, sm: 3, md: 2 }}>
               <BucketCard
                 bucket={bucket}
                 onClick={() => setSelectedBucketId(bucket.id)}
               />
             </Grid>
           ))}
-          <Grid
-            size={{ xs: 6, sm: 3, md: 2 }}
-          >
+          <Grid size={{ xs: 6, sm: 3, md: 2 }}>
             <AddBucketCard account={account} />
           </Grid>
         </Grid>

@@ -187,7 +187,8 @@ export function BucketGoalsChart() {
           acc.data.push(100 - Math.min(metric.currentPercent, 100));
           acc.metadata.push({
             amount:
-              metric.maxAmount - Math.min(metric.currentStatus, metric.maxAmount),
+              metric.maxAmount -
+              Math.min(metric.currentStatus, metric.maxAmount),
             target: metric.maxAmount,
           });
         }
@@ -315,10 +316,10 @@ export function BucketGoalsChart() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            mb: 2,
+            mb: 3,
           }}
         >
-          <Typography variant="h6">Goals</Typography>
+          <Typography variant="h2">Goals</Typography>
         </Box>
 
         {/* Tabs for bucket types */}
@@ -327,7 +328,7 @@ export function BucketGoalsChart() {
           onChange={(_event, newValue: BucketTypeEnum) =>
             setSelectedTab(newValue)
           }
-          sx={{ mb: 2, minHeight: 36 }}
+          sx={{ minHeight: 36 }}
         >
           <Tab label="Expense" value="expense" sx={{ minHeight: 36, py: 1 }} />
           <Tab label="Saving" value="saving" sx={{ minHeight: 36, py: 1 }} />

@@ -130,10 +130,10 @@ export function ExpensePieChart() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              mb: 2,
+              mb: 3,
             }}
           >
-            <Typography variant="h6">Expenses</Typography>
+            <Typography variant="h2">Expenses</Typography>
           </Box>
 
           {/* Month Navigation */}
@@ -142,7 +142,6 @@ export function ExpensePieChart() {
             spacing={1}
             alignItems="center"
             justifyContent="center"
-            sx={{ mb: 2 }}
           >
             <IconButton onClick={handlePrevMonth} size="small">
               <ChevronLeftIcon />

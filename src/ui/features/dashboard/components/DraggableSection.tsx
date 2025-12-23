@@ -1,32 +1,29 @@
 import { Box, Paper, IconButton } from '@mui/material';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import { useDraggable } from '@dnd-kit/core';
 import { DragIndicator as DragHandleIcon } from '@mui/icons-material';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 type DraggableSectionProps = {
-  id: string; // Format: "row-id:column-id"
+  id: string; // Format: "row-id:column-id:section-index"
   children: ReactNode;
   isDragEnabled: boolean;
 };
 
-export function DraggableSection({ id, children, isDragEnabled }: DraggableSectionProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-    isOver,
-  } = useSortable({
-    id,
-    disabled: !isDragEnabled,
-  });
+export function DraggableSection({
+  id,
+  children,
+  isDragEnabled,
+}: DraggableSectionProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id,
+      disabled: !isDragEnabled,
+    });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
     opacity: isDragging ? 0.5 : 1,
   };
 
@@ -40,32 +37,29 @@ export function DraggableSection({ id, children, isDragEnabled }: DraggableSecti
       style={style}
       sx={{
         position: 'relative',
-        minHeight: '100px',
-        border: isDragEnabled ? '2px dashed' : 'none',
-        borderColor: isOver ? 'primary.main' : isDragging ? 'primary.light' : 'divider',
-        borderRadius: 2,
-        p: isDragEnabled ? 2 : 0,
-        backgroundColor: isOver
-          ? 'action.hover'
-          : isDragging
-            ? 'action.selected'
-            : 'transparent',
-        transition: 'all 0.2s',
+        opacity: isDragging ? 0.5 : 1,
+        transition: 'opacity 0.2s',
+        '&:hover .drag-handle': {
+          opacity: 1,
+        },
       }}
     >
-      {/* Drag Handle - top right corner */}
+      {/* Drag Handle - outside left, visible on hover */}
       <Paper
-        elevation={isDragging ? 8 : 0}
+        className="drag-handle"
+        elevation={isDragging ? 8 : 2}
         sx={{
           position: 'absolute',
-          top: 8,
-          right: 8,
+          top: 4,
+          left: -24,
           zIndex: 10,
           cursor: isDragging ? 'grabbing' : 'grab',
-          borderRadius: '4px',
+          borderRadius: '3px',
           backgroundColor: 'background.paper',
           border: '1px solid',
-          borderColor: 'divider',
+          borderColor: isDragging ? 'primary.main' : 'divider',
+          opacity: 0,
+          transition: 'opacity 0.2s, border-color 0.2s',
           '&:hover': {
             backgroundColor: 'action.hover',
             borderColor: 'primary.main',
@@ -79,12 +73,13 @@ export function DraggableSection({ id, children, isDragEnabled }: DraggableSecti
           sx={{
             cursor: 'inherit',
             padding: '2px',
+            borderRadius: '3px',
+            fontSize: '0.75rem',
           }}
         >
-          <DragHandleIcon fontSize="small" />
+          <DragHandleIcon fontSize="inherit" />
         </IconButton>
       </Paper>
-
       {children}
     </Box>
   );
