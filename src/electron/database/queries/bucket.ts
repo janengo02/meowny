@@ -2,7 +2,6 @@ import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 import { clearKeywordMappingsForBucket } from './keywordBucketMapping.js';
 import { getAccount } from './account.js';
-import { getLatestBucketValueHistory } from './bucketValueHistoryUtils.js';
 
 export async function createBucket(
   params: CreateBucketParams,
@@ -172,16 +171,21 @@ export async function deleteBucket(id: number): Promise<void> {
   }
 }
 
-export async function updateBucketFromLatestHistory(
+/**
+ * Optimized version: Update bucket values directly without querying history
+ * Use this when you already have the latest values calculated
+ */
+export async function updateBucketWithValues(
   bucketId: number,
+  values: {
+    contributed_amount: number;
+    market_value: number;
+    total_units: number | null;
+  },
 ): Promise<void> {
-  const latestHistory = await getLatestBucketValueHistory(bucketId);
-
-  if (latestHistory) {
-    await updateBucket(bucketId, {
-      contributed_amount: latestHistory.contributed_amount,
-      market_value: latestHistory.market_value,
-      total_units: latestHistory.total_units,
-    });
-  }
+  await updateBucket(bucketId, {
+    contributed_amount: values.contributed_amount,
+    market_value: values.market_value,
+    total_units: values.total_units,
+  });
 }

@@ -1,6 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
-import { updateBucketFromLatestHistory } from './bucket.js';
+import { updateBucketWithValues } from './bucket.js';
 import {
   calculateBucketUpdate,
   deleteBucketValueHistoryByIdToDatabase,
@@ -112,16 +112,17 @@ export async function bucketValueProcedureForAddingTransaction(
   const { newContributedAmount, newMarketAmount, newTotalUnits } =
     calculateBucketUpdate(lastHistoryBefore, amountDelta, unitsDelta);
 
-  // Adjust all subsequent bucket value history records
-  await adjustBucketValueHistoryForAddingHistoricalTransaction(
-    bucketId,
-    transactionDate,
-    {
-      contributedAmount: newContributedAmount,
-      marketValue: newMarketAmount,
-      totalUnits: newTotalUnits,
-    },
-  );
+  // Adjust all subsequent bucket value history records and get final values
+  const finalValues =
+    await adjustBucketValueHistoryForAddingHistoricalTransaction(
+      bucketId,
+      transactionDate,
+      {
+        contributedAmount: newContributedAmount,
+        marketValue: newMarketAmount,
+        totalUnits: newTotalUnits,
+      },
+    );
 
   // Create bucket value history for this transaction
   // Must be done after adjustment to avoid double counting
@@ -136,8 +137,8 @@ export async function bucketValueProcedureForAddingTransaction(
     notes: notes,
   });
 
-  // Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(bucketId);
+  // Update bucket with the final values (already contains correct values whether we adjusted or not)
+  await updateBucketWithValues(bucketId, finalValues);
 }
 
 export async function adjustBucketValueHistoryForAddingHistoricalTransaction(
@@ -148,7 +149,11 @@ export async function adjustBucketValueHistoryForAddingHistoricalTransaction(
     marketValue: number;
     totalUnits: number | null;
   },
-): Promise<void> {
+): Promise<{
+  contributed_amount: number;
+  market_value: number;
+  total_units: number | null;
+}> {
   // Get all bucket value history records after the transaction date (with transaction details)
   const historiesAfter = await getBucketValueHistoriesAfterAdding(
     bucketId,
@@ -221,6 +226,15 @@ export async function adjustBucketValueHistoryForAddingHistoricalTransaction(
       } as BucketValueHistory;
     }
   }
+
+  // Return the final values after all adjustments
+  // If no histories after, this will be the newTransactionValues
+  // If there are histories after, this will be the final calculated values
+  return {
+    contributed_amount: previousHistory.contributed_amount,
+    market_value: previousHistory.market_value,
+    total_units: previousHistory.total_units,
+  };
 }
 
 // ============================================
@@ -242,15 +256,16 @@ export async function createBucketValueHistory(
   const newTotalUnits = lastHistoryBefore?.total_units ?? null;
 
   // Step 3:Adjust all subsequent bucket value history records
-  await adjustBucketValueHistoryForAddingHistoricalMarket(
-    params.bucket_id,
-    params.recorded_at,
-    {
-      contributedAmount: newContributedAmount,
-      marketValue: newMarketAmount,
-      totalUnits: newTotalUnits,
-    },
-  );
+  const { finalValues, shouldUpdateBucket } =
+    await adjustBucketValueHistoryForAddingHistoricalMarket(
+      params.bucket_id,
+      params.recorded_at,
+      {
+        contributedAmount: newContributedAmount,
+        marketValue: newMarketAmount,
+        totalUnits: newTotalUnits,
+      },
+    );
 
   // Step 4: Create bucket value history
   // Must be done after adjustment to avoid double counting
@@ -265,8 +280,11 @@ export async function createBucketValueHistory(
     notes: params.notes ?? null,
   });
 
-  // Step 5:Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(params.bucket_id);
+  // Step 5: Update bucket with final values if we should
+  // Only update if we didn't stop at a later market update (which already has correct values)
+  if (shouldUpdateBucket) {
+    await updateBucketWithValues(params.bucket_id, finalValues);
+  }
 
   return insertedHistory;
 }
@@ -279,7 +297,14 @@ export async function adjustBucketValueHistoryForAddingHistoricalMarket(
     marketValue: number;
     totalUnits: number | null;
   },
-): Promise<void> {
+): Promise<{
+  finalValues: {
+    contributed_amount: number;
+    market_value: number;
+    total_units: number | null;
+  };
+  shouldUpdateBucket: boolean;
+}> {
   // Get all bucket value history records after the transaction date (with transaction details)
   const historiesAfter = await getBucketValueHistoriesAfterAdding(
     bucketId,
@@ -293,11 +318,15 @@ export async function adjustBucketValueHistoryForAddingHistoricalMarket(
     total_units: newTransactionValues.totalUnits,
   } as BucketValueHistory;
 
+  let stoppedAtMarketUpdate = false;
+
   // Recalculate all subsequent records based on their deltas
   for (const history of historiesAfter) {
     // If it's a market update, handle differently
     if (history.source_type === 'market') {
       // Stop adjusting when we encounter the next market update
+      // That market update has the correct absolute values, so we don't need to update bucket
+      stoppedAtMarketUpdate = true;
       break;
     } else if (history.source_type === 'transaction' && history.transaction) {
       // For transaction updates, use the transaction amount/units as deltas
@@ -340,6 +369,17 @@ export async function adjustBucketValueHistoryForAddingHistoricalMarket(
       } as BucketValueHistory;
     }
   }
+
+  // Return the final values and whether we should update bucket
+  // If we stopped at a market update, don't update bucket (that market record has correct values)
+  return {
+    finalValues: {
+      contributed_amount: previousHistory.contributed_amount,
+      market_value: previousHistory.market_value,
+      total_units: previousHistory.total_units,
+    },
+    shouldUpdateBucket: !stoppedAtMarketUpdate,
+  };
 }
 
 // ============================================
@@ -477,19 +517,20 @@ export async function bucketValueProcedureForDeletingTransaction(
   );
 
   // Step 4: Adjust all subsequent bucket value history records
-  await adjustBucketValueHistoryForDeletingHistoricalTransaction(
-    bucketId,
-    transactionDate,
-    historyToDelete.created_at,
-    {
-      contributedAmount: lastHistoryBefore?.contributed_amount ?? 0,
-      marketValue: lastHistoryBefore?.market_value ?? 0,
-      totalUnits: lastHistoryBefore?.total_units ?? null,
-    },
-  );
+  const finalValues =
+    await adjustBucketValueHistoryForDeletingHistoricalTransaction(
+      bucketId,
+      transactionDate,
+      historyToDelete.created_at,
+      {
+        contributedAmount: lastHistoryBefore?.contributed_amount ?? 0,
+        marketValue: lastHistoryBefore?.market_value ?? 0,
+        totalUnits: lastHistoryBefore?.total_units ?? null,
+      },
+    );
 
-  // Step 5: Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(bucketId);
+  // Step 5: Update bucket with final values (already contains correct values whether we adjusted or not)
+  await updateBucketWithValues(bucketId, finalValues);
 }
 
 export async function adjustBucketValueHistoryForDeletingHistoricalTransaction(
@@ -501,7 +542,11 @@ export async function adjustBucketValueHistoryForDeletingHistoricalTransaction(
     marketValue: number;
     totalUnits: number | null;
   },
-): Promise<void> {
+): Promise<{
+  contributed_amount: number;
+  market_value: number;
+  total_units: number | null;
+}> {
   // Get all bucket value history records after the deleted transaction
   const historiesAfter = await getBucketValueHistoriesAfterDeleting(
     bucketId,
@@ -575,6 +620,15 @@ export async function adjustBucketValueHistoryForDeletingHistoricalTransaction(
       } as BucketValueHistory;
     }
   }
+
+  // Return the final values after all adjustments
+  // If no histories after, this will be the previousValues
+  // If there are histories after, this will be the final calculated values
+  return {
+    contributed_amount: previousHistory.contributed_amount,
+    market_value: previousHistory.market_value,
+    total_units: previousHistory.total_units,
+  };
 }
 
 // ============================================
@@ -644,19 +698,23 @@ export async function deleteBucketValueHistory(id: number): Promise<void> {
   await deleteBucketValueHistoryByIdToDatabase(id);
 
   // Step 4: Adjust all subsequent bucket value history records
-  await adjustBucketValueHistoryForDeletingHistoricalMarket(
-    historyToDelete.bucket_id,
-    historyToDelete.recorded_at,
-    historyToDelete.created_at,
-    {
-      contributedAmount: lastHistoryBefore?.contributed_amount ?? 0,
-      marketValue: lastHistoryBefore?.market_value ?? 0,
-      totalUnits: lastHistoryBefore?.total_units ?? null,
-    },
-  );
+  const { finalValues, shouldUpdateBucket } =
+    await adjustBucketValueHistoryForDeletingHistoricalMarket(
+      historyToDelete.bucket_id,
+      historyToDelete.recorded_at,
+      historyToDelete.created_at,
+      {
+        contributedAmount: lastHistoryBefore?.contributed_amount ?? 0,
+        marketValue: lastHistoryBefore?.market_value ?? 0,
+        totalUnits: lastHistoryBefore?.total_units ?? null,
+      },
+    );
 
-  // Step 5: Update the bucket table with the latest values from bucket_value_history
-  await updateBucketFromLatestHistory(historyToDelete.bucket_id);
+  // Step 5: Update bucket with final values if we should
+  // Only update if we didn't stop at a later market update (which already has correct values)
+  if (shouldUpdateBucket) {
+    await updateBucketWithValues(historyToDelete.bucket_id, finalValues);
+  }
 }
 
 export async function adjustBucketValueHistoryForDeletingHistoricalMarket(
@@ -668,7 +726,14 @@ export async function adjustBucketValueHistoryForDeletingHistoricalMarket(
     marketValue: number;
     totalUnits: number | null;
   },
-): Promise<void> {
+): Promise<{
+  finalValues: {
+    contributed_amount: number;
+    market_value: number;
+    total_units: number | null;
+  };
+  shouldUpdateBucket: boolean;
+}> {
   // Get all bucket value history records after the deleted market update
   const historiesAfter = await getBucketValueHistoriesAfterDeleting(
     bucketId,
@@ -683,11 +748,15 @@ export async function adjustBucketValueHistoryForDeletingHistoricalMarket(
     total_units: previousValues.totalUnits,
   } as BucketValueHistory;
 
+  let stoppedAtMarketUpdate = false;
+
   // Recalculate all subsequent records based on their deltas
   for (const history of historiesAfter) {
     // If it's a market update, handle differently
     if (history.source_type === 'market') {
       // Stop adjusting when we encounter the next market update
+      // That market update has the correct absolute values, so we don't need to update bucket
+      stoppedAtMarketUpdate = true;
       break;
     } else if (history.source_type === 'transaction' && history.transaction) {
       // For transaction updates, use the transaction amount/units as deltas
@@ -730,6 +799,17 @@ export async function adjustBucketValueHistoryForDeletingHistoricalMarket(
       } as BucketValueHistory;
     }
   }
+
+  // Return the final values and whether we should update bucket
+  // If we stopped at a market update, don't update bucket (that market record has correct values)
+  return {
+    finalValues: {
+      contributed_amount: previousHistory.contributed_amount,
+      market_value: previousHistory.market_value,
+      total_units: previousHistory.total_units,
+    },
+    shouldUpdateBucket: !stoppedAtMarketUpdate,
+  };
 }
 
 // ============================================

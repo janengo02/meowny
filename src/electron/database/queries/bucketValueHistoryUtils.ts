@@ -147,25 +147,6 @@ export async function deleteBucketValueHistoryByTransactionToDatabase(
   }
 }
 
-export async function getLatestBucketValueHistory(
-  bucketId: number,
-): Promise<BucketValueHistory | null> {
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  const { data, error } = await supabase
-    .from('bucket_value_history')
-    .select()
-    .eq('user_id', userId)
-    .eq('bucket_id', bucketId)
-    .order('recorded_at', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  if (error) throw new Error(error.message);
-  return data && data.length > 0 ? data[0] : null;
-}
-
 export async function getBucketValueHistoryByIdForDeletion(
   id: number,
 ): Promise<BucketValueHistory | null> {

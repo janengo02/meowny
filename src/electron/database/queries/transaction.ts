@@ -158,12 +158,15 @@ export async function createTransaction(
       const transaction = await insertTransactionToDatabase(params);
 
       // Step 3: Update keyword-bucket mappings for intelligent bucket assignment
+      // Fire-and-forget to avoid blocking transaction creation
       if (params.notes) {
-        await updateKeywordBucketMapping(
+        updateKeywordBucketMapping(
           params.notes ?? null,
           params.from_bucket_id ?? null,
           params.to_bucket_id ?? null,
-        );
+        ).catch((error) => {
+          console.error('Error updating keyword mapping:', error);
+        });
       }
 
       // Step 4: Update from_bucket if specified
