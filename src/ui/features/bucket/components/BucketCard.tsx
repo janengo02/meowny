@@ -7,20 +7,13 @@ import {
   Chip,
   Box,
 } from '@mui/material';
-import { formatMoney, formatPercent, formatUnits } from '../../../shared/utils';
+import { formatMoney } from '../../../shared/utils';
 interface BucketCardProps {
   bucket: Bucket;
   onClick?: () => void;
 }
 
 export function BucketCard({ bucket, onClick }: BucketCardProps) {
-  const gainLoss = bucket.market_value - bucket.contributed_amount;
-  const gainLossPercent =
-    bucket.contributed_amount > 0
-      ? (gainLoss / bucket.contributed_amount) * 100
-      : 0;
-  const isPositive = gainLoss >= 0;
-
   return (
     <Card
       variant="outlined"
@@ -45,11 +38,24 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
           width: '100%',
         }}
       >
-        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Box sx={{ display: 'flex', alignItems: 'start', gap: 1, mb: 1 }}>
-            <Typography variant="h4" sx={{ flex: 1 }}>
-              {bucket.name}
-            </Typography>
+        <CardContent
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            px: 2,
+            py: 1,
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'start',
+              gap: 1,
+              mb: 1,
+            }}
+          >
             {(bucket.type === 'saving' || bucket.type === 'investment') && (
               <Chip
                 label={
@@ -58,12 +64,19 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
                 size="small"
                 variant="outlined"
                 color={bucket.type === 'saving' ? 'info' : 'warning'}
-                sx={{ textTransform: 'capitalize' }}
+                sx={{
+                  textTransform: 'capitalize',
+                  ml: -1,
+                  fontSize: '0.75rem',
+                }}
               />
             )}
+            <Typography variant="h4" sx={{ flex: 1 }}>
+              {bucket.name}
+            </Typography>
           </Box>
           {bucket.type !== 'expense' && (
-            <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid container spacing={2}>
               <Grid size={6}>
                 <Typography variant="caption" color="text.secondary">
                   Contributed
@@ -73,39 +86,14 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
                 </Typography>
               </Grid>
               {bucket.type === 'investment' && (
-                <>
-                  <Grid size={6}>
-                    <Typography variant="caption" color="text.secondary">
-                      Market Value
-                    </Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {formatMoney(bucket.market_value)}
-                    </Typography>
-                  </Grid>
-                  <Grid size={6}>
-                    <Typography variant="caption" color="text.secondary">
-                      Units
-                    </Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      {bucket.total_units ? formatUnits(bucket.total_units) : 0}
-                    </Typography>
-                  </Grid>
-                  <Grid size={6}>
-                    <Typography variant="caption" color="text.secondary">
-                      Gain/Lost
-                    </Typography>
-                    <Typography
-                      variant="body1"
-                      fontWeight={600}
-                      sx={{
-                        mt: 0.5,
-                        color: isPositive ? 'success.main' : 'error.main',
-                      }}
-                    >
-                      {formatPercent(gainLossPercent, 2, true)}
-                    </Typography>
-                  </Grid>
-                </>
+                <Grid size={6}>
+                  <Typography variant="caption" color="text.secondary">
+                    Market Value
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {formatMoney(bucket.market_value)}
+                  </Typography>
+                </Grid>
               )}
             </Grid>
           )}

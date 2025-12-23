@@ -42,7 +42,8 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: '"Space Grotesk", "Noto Sans", "Noto Sans JP", "Noto Sans SC", sans-serif',
+    fontFamily:
+      '"Space Grotesk", "Noto Sans", "Noto Sans JP", "Noto Sans SC", sans-serif',
     h1: {
       fontSize: '1.75rem',
       fontWeight: 700,
@@ -228,15 +229,10 @@ export const theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          fontWeight: 600,
+          fontWeight: 400,
           letterSpacing: '0.03em',
           border: '2px solid #000000',
           boxShadow: '2px 2px 0px rgba(0, 0, 0, 0.8)',
-          transition: 'all 0.15s ease',
-          '&:hover': {
-            transform: 'translate(-1px, -1px)',
-            boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.8)',
-          },
         },
       },
     },

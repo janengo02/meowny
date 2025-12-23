@@ -191,21 +191,13 @@ export function IncomeVsSavingsChart() {
 
   return (
     <FormProvider {...methods}>
-      <Card sx={{ height: 500 }}>
+      <Typography variant="h2" sx={{ p: 1 }}>
+        Income vs Savings
+      </Typography>
+      <Card sx={{ height: 500, pt: 1 }}>
         <CardContent
           sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 3,
-            }}
-          >
-            <Typography variant="h2">Income vs Savings</Typography>
-          </Box>
-
           {/* Filter controls */}
           <Stack direction="row" spacing={2}>
             <FormSelectField

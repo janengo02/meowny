@@ -1,5 +1,4 @@
 import {
-  Box,
   Card,
   CardActionArea,
   CardContent,
@@ -14,20 +13,47 @@ interface IncomeCardProps {
 
 export function IncomeCard({ incomeSource, onClick }: IncomeCardProps) {
   return (
-    <Card sx={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
-      <CardActionArea onClick={onClick} sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%' }}>
-        <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Card
+      sx={{
+        height: '100%',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <CardActionArea
+        onClick={onClick}
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          width: '100%',
+        }}
+      >
+        <CardContent
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'start',
+            gap: 1,
+            mb: 1,
+          }}
+        >
+          <Chip
+            label={incomeSource.is_active ? 'Active' : 'Inactive'}
+            size="small"
+            color={incomeSource.is_active ? 'success' : 'default'}
+            variant="outlined"
+            sx={{
+              textTransform: 'capitalize',
+              ml: -1,
+              fontSize: '0.75rem',
+            }}
+          />
           <Typography variant="h4" gutterBottom>
             {incomeSource.name}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-            <Chip
-              label={incomeSource.is_active ? 'Active' : 'Inactive'}
-              size="small"
-              color={incomeSource.is_active ? 'success' : 'default'}
-              variant="outlined"
-            />
-          </Box>
         </CardContent>
       </CardActionArea>
     </Card>

@@ -258,26 +258,19 @@ export function IncomeOverTimeChart() {
 
   return (
     <FormProvider {...methods}>
+      <Typography variant="h2" sx={{ p: 1 }}>
+        Income Over Time
+      </Typography>
+
       <Card sx={{ height: 500 }}>
         <CardContent
           sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 3,
-            }}
-          >
-            <Typography variant="h2">Income Over Time</Typography>
-          </Box>
-
           {/* Tabs */}
           <Tabs
             value={activeTab}
             onChange={(_, newValue) => setActiveTab(newValue)}
-            sx={{ mb: 3, minHeight: 36 }}
+            sx={{ mb: 4, minHeight: 36 }}
           >
             <Tab label="Gross" value="gross" sx={{ minHeight: 36, py: 1 }} />
             <Tab label="Net" value="net" sx={{ minHeight: 36, py: 1 }} />

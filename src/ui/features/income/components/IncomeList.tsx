@@ -47,7 +47,7 @@ export function IncomeList() {
 
   return (
     <>
-      <Typography variant="h2" sx={{ p: 2 }}>
+      <Typography variant="h2" sx={{ p: 1 }}>
         Your Income Sources
       </Typography>
       <Grid container spacing={2}>

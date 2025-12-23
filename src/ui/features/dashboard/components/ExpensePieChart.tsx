@@ -99,6 +99,7 @@ export function ExpensePieChart() {
   const handleMonthChange = (newValue: Dayjs | null) => {
     if (newValue) {
       setTargetMonth(newValue);
+      methods.setValue('targetMonth', newValue);
     }
   };
 
@@ -121,21 +122,13 @@ export function ExpensePieChart() {
 
   return (
     <FormProvider {...methods}>
+      <Typography variant="h2" sx={{ p: 1 }}>
+        Expenses
+      </Typography>
       <Card sx={{ height: 500 }}>
         <CardContent
           sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              mb: 3,
-            }}
-          >
-            <Typography variant="h2">Expenses</Typography>
-          </Box>
-
           {/* Month Navigation */}
           <Stack
             direction="row"

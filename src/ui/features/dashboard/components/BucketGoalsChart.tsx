@@ -307,60 +307,58 @@ export function BucketGoalsChart() {
   }
 
   return (
-    <Card sx={{ height: 500 }}>
-      <CardContent
-        sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-      >
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            mb: 3,
-          }}
+    <>
+      <Typography variant="h2" sx={{ p: 1 }}>
+        Goals
+      </Typography>
+      <Card sx={{ height: 500 }}>
+        <CardContent
+          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
         >
-          <Typography variant="h2">Goals</Typography>
-        </Box>
-
-        {/* Tabs for bucket types */}
-        <Tabs
-          value={selectedTab}
-          onChange={(_event, newValue: BucketTypeEnum) =>
-            setSelectedTab(newValue)
-          }
-          sx={{ minHeight: 36 }}
-        >
-          <Tab label="Expense" value="expense" sx={{ minHeight: 36, py: 1 }} />
-          <Tab label="Saving" value="saving" sx={{ minHeight: 36, py: 1 }} />
-          <Tab
-            label="Investment"
-            value="investment"
-            sx={{ minHeight: 36, py: 1 }}
-          />
-        </Tabs>
-
-        {/* Chart */}
-        <Box sx={{ flex: 1, minHeight: 0 }}>
-          {error ? (
-            <ErrorState
-              title="Failed to load bucket goals"
-              description="Please try refreshing the page"
+          {/* Tabs for bucket types */}
+          <Tabs
+            value={selectedTab}
+            onChange={(_event, newValue: BucketTypeEnum) =>
+              setSelectedTab(newValue)
+            }
+            sx={{ minHeight: 36 }}
+          >
+            <Tab
+              label="Expense"
+              value="expense"
+              sx={{ minHeight: 36, py: 1 }}
             />
-          ) : chartData ? (
-            <Bar data={chartData} options={horizontalBarChartOptions} />
-          ) : (
-            <EmptyState
-              icon={
-                <TrendingUpIcon
-                  sx={{ fontSize: 48, color: 'text.disabled', opacity: 0.5 }}
-                />
-              }
-              title="No active bucket goals"
-              description="Create bucket goals with max amounts to track your progress"
+            <Tab label="Saving" value="saving" sx={{ minHeight: 36, py: 1 }} />
+            <Tab
+              label="Investment"
+              value="investment"
+              sx={{ minHeight: 36, py: 1 }}
             />
-          )}
-        </Box>
-      </CardContent>
-    </Card>
+          </Tabs>
+
+          {/* Chart */}
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            {error ? (
+              <ErrorState
+                title="Failed to load bucket goals"
+                description="Please try refreshing the page"
+              />
+            ) : chartData ? (
+              <Bar data={chartData} options={horizontalBarChartOptions} />
+            ) : (
+              <EmptyState
+                icon={
+                  <TrendingUpIcon
+                    sx={{ fontSize: 48, color: 'text.disabled', opacity: 0.5 }}
+                  />
+                }
+                title="No active bucket goals"
+                description="Create bucket goals with max amounts to track your progress"
+              />
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+    </>
   );
 }

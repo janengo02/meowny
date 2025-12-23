@@ -16,11 +16,11 @@ export function AccountList({ type }: AccountListProps) {
 
   return (
     <>
-      <Typography variant="h2" sx={{ p: 2 }}>
+      <Typography variant="h2" sx={{ p: 1 }}>
         {type.charAt(0).toUpperCase() + type.slice(1)} Accounts
       </Typography>
 
-      <Grid container spacing={3}>
+      <Grid container>
         {accountIds.map((accountId) => (
           <Grid key={accountId} size={{ xs: 12 }}>
             <AccountCard accountId={accountId} />
