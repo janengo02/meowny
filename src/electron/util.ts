@@ -51,6 +51,53 @@ export function ipcMainHandle<Key extends keyof EventPayloadMapping>(
   });
 }
 
+export function ipcMainHandleWithEvent<Key extends keyof EventPayloadMapping>(
+  key: Key,
+  handler: (
+    args: unknown,
+    event: Electron.IpcMainInvokeEvent,
+  ) => Promise<EventPayloadMapping[Key]>,
+) {
+  ipcMain.handle(key, async (event, args) => {
+    const endTimer = logger.startTimer('ipc', key as string);
+
+    // Validate event
+    if (event.senderFrame) {
+      try {
+        validateEventFrame(event.senderFrame);
+      } catch (error) {
+        logger.error('ipc', key as string, error as Error, {
+          reason: 'Event validation failed',
+        });
+        endTimer();
+        throw error;
+      }
+
+      try {
+        logger.debug('ipc', key as string, 'Request received', { args });
+        const result = await handler(args, event);
+        logger.info('ipc', key as string, 'Request completed successfully');
+        endTimer();
+        return result;
+      } catch (error) {
+        // Ensure error is serializable across IPC
+        const message =
+          error instanceof Error ? error.message : 'An unknown error occurred';
+        logger.error('ipc', key as string, error as Error, { args });
+        endTimer();
+        throw new Error(message);
+      }
+    }
+
+    const maliciousError = new Error('Malicious event');
+    logger.error('ipc', key as string, maliciousError, {
+      reason: 'No sender frame',
+    });
+    endTimer();
+    throw maliciousError;
+  });
+}
+
 export function ipcWebContentsSend<Key extends keyof EventPayloadMapping>(
   key: Key,
   webContents: WebContents,

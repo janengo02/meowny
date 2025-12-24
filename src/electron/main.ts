@@ -1,6 +1,11 @@
 import 'dotenv/config';
 import { app, BrowserWindow } from 'electron';
-import { ipcMainHandle, ipcMainOn, isDev } from './util.js';
+import {
+  ipcMainHandle,
+  ipcMainHandleWithEvent,
+  ipcMainOn,
+  isDev,
+} from './util.js';
 import { getPreloadPath, getUIPath } from './pathResolver.js';
 import { createMenu } from './menu.js';
 import * as auth from './database/auth.js';
@@ -103,8 +108,14 @@ app.on('ready', async () => {
   ipcMainHandle('db:createTransaction', async (args) => {
     return db.createTransaction(args as CreateTransactionParams);
   });
-  ipcMainHandle('db:batchCreateTransactions', async (args) => {
-    return db.batchCreateTransactions(args as CreateTransactionParams[]);
+  ipcMainHandleWithEvent('db:batchCreateTransactions', async (args, event) => {
+    return db.batchCreateTransactions(
+      args as CreateTransactionParams[],
+      (progress) => {
+        // Send progress updates to renderer
+        event.sender.send('db:batchCreateTransactions:progress', progress);
+      },
+    );
   });
   ipcMainHandle('db:updateTransaction', async (args) => {
     const { id, params } = args as {

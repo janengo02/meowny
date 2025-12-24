@@ -212,6 +212,7 @@ export async function createTransaction(
 // ============================================
 export async function batchCreateTransactions(
   paramsArray: CreateTransactionParams[],
+  onProgress?: (progress: { completed: number; total: number }) => void,
 ): Promise<Transaction[]> {
   return withDatabaseLogging(
     'batchCreateTransactions',
@@ -239,6 +240,7 @@ export async function batchCreateTransactions(
       });
 
       // Step 4: Update bucket value histories for each transaction
+      const total = transactions.length;
       for (let i = 0; i < transactions.length; i++) {
         const transaction = transactions[i];
         const params = paramsArray[i];
@@ -265,6 +267,11 @@ export async function batchCreateTransactions(
             transaction.id,
             params.notes ?? null,
           );
+        }
+
+        // Report progress after each transaction is fully processed
+        if (onProgress) {
+          onProgress({ completed: i + 1, total });
         }
       }
 

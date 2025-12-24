@@ -131,6 +131,22 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:getUserPreference', params),
   upsertUserPreference: (params: UpsertUserPreferenceParams) =>
     ipcInvoke('db:upsertUserPreference', params),
+
+  // Event listeners
+  onBatchCreateTransactionsProgress: (
+    callback: (progress: BatchCreateTransactionsProgress) => void,
+  ) => {
+    const listener = (_event: unknown, progress: BatchCreateTransactionsProgress) => {
+      callback(progress);
+    };
+    electron.ipcRenderer.on('db:batchCreateTransactions:progress', listener);
+    return () => {
+      electron.ipcRenderer.removeListener(
+        'db:batchCreateTransactions:progress',
+        listener,
+      );
+    };
+  },
 } satisfies Window['electron']);
 
 function ipcSend<Key extends keyof EventPayloadMapping>(key: Key) {

@@ -648,6 +648,11 @@ type AssetsValueHistoryResponse = {
 // IPC EVENT TYPES
 // ============================================
 
+type BatchCreateTransactionsProgress = {
+  completed: number;
+  total: number;
+};
+
 type EventPayloadMapping = {
   frameMinimize: void;
   frameMaximize: void;
@@ -675,6 +680,7 @@ type EventPayloadMapping = {
   'db:getTransactionsByBucket': Transaction[];
   'db:createTransaction': Transaction;
   'db:batchCreateTransactions': Transaction[];
+  'db:batchCreateTransactions:progress': BatchCreateTransactionsProgress;
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
   'db:checkDuplicateTransaction': boolean;
@@ -879,5 +885,10 @@ interface Window {
     upsertUserPreference: (
       params: UpsertUserPreferenceParams,
     ) => Promise<UserPreference>;
+
+    // Event listeners
+    onBatchCreateTransactionsProgress: (
+      callback: (progress: BatchCreateTransactionsProgress) => void,
+    ) => () => void;
   };
 }

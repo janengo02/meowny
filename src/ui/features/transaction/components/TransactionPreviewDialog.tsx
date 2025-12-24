@@ -65,6 +65,38 @@ export function TransactionPreviewDialog({
     setEditedTransactions(initialMappedTransactions);
   }, [initialMappedTransactions]);
 
+  // Set up progress event listener
+  useEffect(() => {
+    const unsubscribe = window.electron.onBatchCreateTransactionsProgress(
+      (progress) => {
+        // Update individual transaction statuses as they complete
+        setEditedTransactions((prev) => {
+          const updated = [...prev];
+          const transactionsToImport = prev.filter(
+            (t) => t.should_import && t.import_status !== 'ready',
+          );
+
+          // Mark completed transactions as success
+          for (let i = 0; i < Math.min(progress.completed, transactionsToImport.length); i++) {
+            const originalIndex = prev.indexOf(transactionsToImport[i]);
+            if (originalIndex !== -1 && updated[originalIndex].import_status === 'importing') {
+              updated[originalIndex] = {
+                ...updated[originalIndex],
+                import_status: 'success',
+              };
+            }
+          }
+
+          return updated;
+        });
+      },
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   // Count transactions that will be imported
   const importCount = useMemo(() => {
     return editedTransactions.filter(
@@ -145,21 +177,9 @@ export function TransactionPreviewDialog({
         return updated;
       });
 
-      // Batch create all transactions
+      // Batch create all transactions (progress updates will come via event listener)
       const paramsArray = transactionsToImport.map((t) => t.params);
       await batchCreateTransactions(paramsArray).unwrap();
-
-      // Update all transactions to success status
-      setEditedTransactions((prev) => {
-        const updated = [...prev];
-        transactionsToImport.forEach(({ index }) => {
-          updated[index] = {
-            ...updated[index],
-            import_status: 'success',
-          };
-        });
-        return updated;
-      });
 
       const successCount = transactionsToImport.length;
 
