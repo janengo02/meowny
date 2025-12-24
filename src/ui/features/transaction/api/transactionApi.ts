@@ -49,6 +49,21 @@ export const transactionApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['Transaction', 'Bucket'],
     }),
+    batchCreateTransactions: builder.mutation<
+      Transaction[],
+      CreateTransactionParams[]
+    >({
+      queryFn: async (paramsArray) => {
+        try {
+          const transactions =
+            await window.electron.batchCreateTransactions(paramsArray);
+          return { data: transactions };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['Transaction', 'Bucket'],
+    }),
     updateTransaction: builder.mutation<
       Transaction,
       { id: number; params: UpdateTransactionParams }
@@ -104,6 +119,7 @@ export const {
   useGetTransactionQuery,
   useGetTransactionsByBucketQuery,
   useCreateTransactionMutation,
+  useBatchCreateTransactionsMutation,
   useUpdateTransactionMutation,
   useDeleteTransactionMutation,
   useGetExpenseTransactionsByPeriodQuery,

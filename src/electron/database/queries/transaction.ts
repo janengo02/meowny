@@ -1,12 +1,16 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 
-import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
+import {
+  updateKeywordBucketMapping,
+  batchUpdateKeywordBucketMappings,
+} from './keywordBucketMapping.js';
 import { withDatabaseLogging } from '../../logger/dbLogger.js';
 import {
   deleteTransactionToDatabase,
   insertTransactionToDatabase,
   validateTransactionParams,
+  batchInsertTransactionsToDatabase,
 } from './transactionUtils.js';
 import {
   bucketValueProcedureForAddingTransaction,
@@ -199,6 +203,75 @@ export async function createTransaction(
       amount: params.amount,
       from_bucket_id: params.from_bucket_id,
       to_bucket_id: params.to_bucket_id,
+    },
+  );
+}
+
+// ============================================
+// BATCH CREATE TRANSACTIONS
+// ============================================
+export async function batchCreateTransactions(
+  paramsArray: CreateTransactionParams[],
+): Promise<Transaction[]> {
+  return withDatabaseLogging(
+    'batchCreateTransactions',
+    async () => {
+      if (paramsArray.length === 0) return [];
+
+      // Step 1: Validate all parameters
+      for (const params of paramsArray) {
+        validateTransactionParams(params);
+      }
+
+      // Step 2: Batch insert all transactions to database
+      const transactions = await batchInsertTransactionsToDatabase(paramsArray);
+
+      // Step 3: Batch update keyword-bucket mappings
+      // Fire-and-forget to avoid blocking transaction creation
+      batchUpdateKeywordBucketMappings(
+        paramsArray.map((params) => ({
+          notes: params.notes ?? null,
+          from_bucket_id: params.from_bucket_id ?? null,
+          to_bucket_id: params.to_bucket_id ?? null,
+        })),
+      ).catch((error) => {
+        console.error('Error updating keyword mappings:', error);
+      });
+
+      // Step 4: Update bucket value histories for each transaction
+      for (let i = 0; i < transactions.length; i++) {
+        const transaction = transactions[i];
+        const params = paramsArray[i];
+
+        // Update from_bucket if specified
+        if (params.from_bucket_id) {
+          await bucketValueProcedureForAddingTransaction(
+            params.from_bucket_id,
+            params.transaction_date,
+            -params.amount, // Negative delta for source bucket
+            params.from_units ? -params.from_units : null,
+            transaction.id,
+            params.notes ?? null,
+          );
+        }
+
+        // Update to_bucket if specified
+        if (params.to_bucket_id) {
+          await bucketValueProcedureForAddingTransaction(
+            params.to_bucket_id,
+            params.transaction_date,
+            params.amount, // Positive delta for destination bucket
+            params.to_units ? params.to_units : null,
+            transaction.id,
+            params.notes ?? null,
+          );
+        }
+      }
+
+      return transactions;
+    },
+    {
+      transaction_count: paramsArray.length,
     },
   );
 }

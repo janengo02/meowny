@@ -19,7 +19,7 @@ import {
   Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useCreateTransactionMutation } from '../api/transactionApi';
+import { useBatchCreateTransactionsMutation } from '../api/transactionApi';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 import { TransactionRow } from './TransactionRow';
 import { type MappedTransaction } from '../schemas/transaction.schema';
@@ -35,7 +35,7 @@ export function TransactionPreviewDialog({
   initialMappedTransactions,
   onClose,
 }: TransactionPreviewDialogProps) {
-  const [createTransaction] = useCreateTransactionMutation();
+  const [batchCreateTransactions] = useBatchCreateTransactionsMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
   const [editedTransactions, setEditedTransactions] = useState<
     MappedTransaction[]
@@ -90,47 +90,38 @@ export function TransactionPreviewDialog({
   const handleImport = async () => {
     setBatchImportStatus('importing');
     setAlert(null); // Clear previous messages
-    let successCount = 0;
     let skipCount = 0;
-    let errorCount = 0;
 
     try {
-      // Import each transaction based on should_import flag
-      for (let index = 0; index < editedTransactions.length; index++) {
-        const transaction = editedTransactions[index];
+      // Prepare batch of transactions to import
+      const transactionsToImport: Array<{
+        index: number;
+        params: CreateTransactionParams;
+      }> = [];
 
+      editedTransactions.forEach((transaction, index) => {
         // Skip if should_import is false or status is not ready
         if (
           !transaction.should_import ||
           transaction.import_status !== 'ready'
         ) {
           skipCount++;
-          continue;
+          return;
         }
 
-        try {
-          // Update status to importing
-          setEditedTransactions((prev) => {
-            const updated = [...prev];
-            updated[index] = {
-              ...updated[index],
-              import_status: 'importing',
-            };
-            return updated;
-          });
+        const fromBucketId = transaction.from_bucket_id
+          ? parseInt(transaction.from_bucket_id)
+          : null;
+        const toBucketId = transaction.to_bucket_id
+          ? parseInt(transaction.to_bucket_id)
+          : null;
+        const notes = transaction.notes || null;
+        const fromUnits = transaction.from_units || null;
+        const toUnits = transaction.to_units || null;
 
-          const fromBucketId = transaction.from_bucket_id
-            ? parseInt(transaction.from_bucket_id)
-            : null;
-          const toBucketId = transaction.to_bucket_id
-            ? parseInt(transaction.to_bucket_id)
-            : null;
-          const notes = transaction.notes || null;
-          const fromUnits = transaction.from_units || null;
-          const toUnits = transaction.to_units || null;
-
-          // Create transaction
-          await createTransaction({
+        transactionsToImport.push({
+          index,
+          params: {
             from_bucket_id: fromBucketId,
             to_bucket_id: toBucketId,
             amount: transaction.amount,
@@ -138,51 +129,68 @@ export function TransactionPreviewDialog({
             notes: notes,
             from_units: fromUnits,
             to_units: toUnits,
-          }).unwrap();
+          },
+        });
+      });
 
-          setEditedTransactions((prev) => {
-            const updated = [...prev];
-            updated[index] = {
-              ...updated[index],
-              import_status: 'success',
-            };
-            return updated;
-          });
+      // Update all transactions to importing status
+      setEditedTransactions((prev) => {
+        const updated = [...prev];
+        transactionsToImport.forEach(({ index }) => {
+          updated[index] = {
+            ...updated[index],
+            import_status: 'importing',
+          };
+        });
+        return updated;
+      });
 
-          successCount++;
-        } catch (error) {
-          console.error('Error importing transaction:', error);
+      // Batch create all transactions
+      const paramsArray = transactionsToImport.map((t) => t.params);
+      await batchCreateTransactions(paramsArray).unwrap();
 
-          setEditedTransactions((prev) => {
-            const updated = [...prev];
-            updated[index] = {
-              ...updated[index],
-              import_status: 'error',
-            };
-            return updated;
-          });
-          errorCount++;
-        }
-      }
+      // Update all transactions to success status
+      setEditedTransactions((prev) => {
+        const updated = [...prev];
+        transactionsToImport.forEach(({ index }) => {
+          updated[index] = {
+            ...updated[index],
+            import_status: 'success',
+          };
+        });
+        return updated;
+      });
 
-      // Show success message or error
+      const successCount = transactionsToImport.length;
+
+      // Show success message
       const messageParts = [`${successCount} imported`];
       if (skipCount > 0) {
         messageParts.push(`${skipCount} skipped`);
       }
-      if (errorCount > 0) {
-        messageParts.push(`${errorCount} failed`);
-      }
 
       const message = `Import completed: ${messageParts.join(', ')}`;
-      if (errorCount > 0) {
-        setAlert({ message, severity: 'error' });
-      } else if (skipCount > 0) {
-        setAlert({ message, severity: 'info' });
-      } else {
-        setAlert({ message, severity: 'success' });
-      }
-    } catch {
+      setAlert({
+        message,
+        severity: skipCount > 0 ? 'info' : 'success',
+      });
+    } catch (error) {
+      console.error('Error importing transactions:', error);
+
+      // Update all importing transactions to error status
+      setEditedTransactions((prev) => {
+        const updated = [...prev];
+        updated.forEach((transaction, index) => {
+          if (transaction.import_status === 'importing') {
+            updated[index] = {
+              ...updated[index],
+              import_status: 'error',
+            };
+          }
+        });
+        return updated;
+      });
+
       setAlert({
         message: 'Failed to import transactions. Please try again.',
         severity: 'error',
@@ -280,7 +288,10 @@ export function TransactionPreviewDialog({
                       key={index}
                       initialTransaction={initialTransaction}
                       index={index}
-                      isBatchImporting={batchImportStatus === 'importing'}
+                      isBatchImporting={
+                        batchImportStatus === 'importing' ||
+                        batchImportStatus === 'complete'
+                      }
                       importResult={
                         editedTransaction?.import_status === 'importing' ||
                         editedTransaction?.import_status === 'success' ||

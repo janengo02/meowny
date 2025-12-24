@@ -127,6 +127,134 @@ export async function updateKeywordBucketMapping(
   }
 }
 
+/**
+ * Batch update keyword-bucket mappings for multiple transactions
+ * Groups updates by keyword for efficiency
+ */
+export async function batchUpdateKeywordBucketMappings(
+  paramsArray: Array<{
+    notes: string | null;
+    from_bucket_id: number | null;
+    to_bucket_id: number | null;
+  }>,
+): Promise<void> {
+  if (paramsArray.length === 0) return;
+
+  // Group transactions by keyword
+  const keywordGroups = new Map<
+    string,
+    Array<{ from_bucket_id: number | null; to_bucket_id: number | null }>
+  >();
+
+  for (const params of paramsArray) {
+    if (!params.notes || params.notes.trim() === '') continue;
+    if (!params.from_bucket_id && !params.to_bucket_id) continue;
+
+    const keyword = params.notes.replace(/\d/g, '').trim();
+    if (keyword === '') continue;
+
+    if (!keywordGroups.has(keyword)) {
+      keywordGroups.set(keyword, []);
+    }
+    keywordGroups.get(keyword)!.push({
+      from_bucket_id: params.from_bucket_id,
+      to_bucket_id: params.to_bucket_id,
+    });
+  }
+
+  // Update each keyword mapping
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  for (const [keyword, bucketPairs] of keywordGroups) {
+    try {
+      // Check if keyword already exists
+      const { data: existingMapping, error: fetchError } = await supabase
+        .from('keyword_bucket_mapping')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('keyword', keyword)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching keyword mapping:', fetchError);
+        continue;
+      }
+
+      // Count bucket pairs
+      const pairCounts = new Map<string, number>();
+      for (const pair of bucketPairs) {
+        const key = `${pair.from_bucket_id}-${pair.to_bucket_id}`;
+        pairCounts.set(key, (pairCounts.get(key) || 0) + 1);
+      }
+
+      if (existingMapping) {
+        // Update existing keyword mapping
+        const bucketAssignCount =
+          existingMapping.bucket_assign_count as BucketAssignCount[];
+
+        const updatedCount = [...bucketAssignCount];
+
+        // Add counts from new transactions
+        for (const [key, count] of pairCounts) {
+          const [fromBucketId, toBucketId] = key.split('-');
+          const from = fromBucketId === 'null' ? null : parseInt(fromBucketId);
+          const to = toBucketId === 'null' ? null : parseInt(toBucketId);
+
+          const existingIndex = updatedCount.findIndex(
+            (item) => item.from_bucket_id === from && item.to_bucket_id === to,
+          );
+
+          if (existingIndex >= 0) {
+            updatedCount[existingIndex].count += count;
+          } else {
+            updatedCount.push({
+              from_bucket_id: from,
+              to_bucket_id: to,
+              count: count,
+            });
+          }
+        }
+
+        const { error: updateError } = await supabase
+          .from('keyword_bucket_mapping')
+          .update({ bucket_assign_count: updatedCount })
+          .eq('id', existingMapping.id);
+
+        if (updateError) {
+          console.error('Error updating keyword mapping:', updateError);
+        }
+      } else {
+        // Insert new keyword mapping
+        const bucketAssignCount: BucketAssignCount[] = [];
+        for (const [key, count] of pairCounts) {
+          const [fromBucketId, toBucketId] = key.split('-');
+          bucketAssignCount.push({
+            from_bucket_id:
+              fromBucketId === 'null' ? null : parseInt(fromBucketId),
+            to_bucket_id: toBucketId === 'null' ? null : parseInt(toBucketId),
+            count: count,
+          });
+        }
+
+        const { error: insertError } = await supabase
+          .from('keyword_bucket_mapping')
+          .insert({
+            user_id: userId,
+            keyword: keyword,
+            bucket_assign_count: bucketAssignCount,
+          });
+
+        if (insertError) {
+          console.error('Error inserting keyword mapping:', insertError);
+        }
+      }
+    } catch (error) {
+      console.error(`Error processing keyword "${keyword}":`, error);
+    }
+  }
+}
+
 export interface BucketPair {
   from_bucket_id: number | null;
   to_bucket_id: number | null;

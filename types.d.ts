@@ -674,6 +674,7 @@ type EventPayloadMapping = {
   'db:getTransaction': Transaction;
   'db:getTransactionsByBucket': Transaction[];
   'db:createTransaction': Transaction;
+  'db:batchCreateTransactions': Transaction[];
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
   'db:checkDuplicateTransaction': boolean;
@@ -756,6 +757,9 @@ interface Window {
     createTransaction: (
       params: CreateTransactionParams,
     ) => Promise<Transaction>;
+    batchCreateTransactions: (
+      paramsArray: CreateTransactionParams[],
+    ) => Promise<Transaction[]>;
     updateTransaction: (
       id: number,
       params: UpdateTransactionParams,

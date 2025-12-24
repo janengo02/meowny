@@ -33,6 +33,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:getTransactionsByBucket', bucketId),
   createTransaction: (params: CreateTransactionParams) =>
     ipcInvoke('db:createTransaction', params),
+  batchCreateTransactions: (paramsArray: CreateTransactionParams[]) =>
+    ipcInvoke('db:batchCreateTransactions', paramsArray),
   updateTransaction: (id: number, params: UpdateTransactionParams) =>
     ipcInvoke('db:updateTransaction', { id, params }),
   deleteTransaction: (id: number) => ipcInvoke('db:deleteTransaction', id),

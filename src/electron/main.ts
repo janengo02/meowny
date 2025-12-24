@@ -103,6 +103,9 @@ app.on('ready', async () => {
   ipcMainHandle('db:createTransaction', async (args) => {
     return db.createTransaction(args as CreateTransactionParams);
   });
+  ipcMainHandle('db:batchCreateTransactions', async (args) => {
+    return db.batchCreateTransactions(args as CreateTransactionParams[]);
+  });
   ipcMainHandle('db:updateTransaction', async (args) => {
     const { id, params } = args as {
       id: number;
