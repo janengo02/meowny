@@ -68,6 +68,21 @@ export async function getBuckets(): Promise<Bucket[]> {
   return data;
 }
 
+export async function getHiddenBuckets(): Promise<Bucket[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  const { data, error } = await supabase
+    .from('bucket')
+    .select()
+    .eq('user_id', userId)
+    .eq('is_hidden', true)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 export async function getBucket(id: number): Promise<Bucket> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();

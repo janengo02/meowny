@@ -76,6 +76,7 @@ app.on('ready', async () => {
 
   // Database handlers
   ipcMainHandle('db:getBuckets', db.getBuckets);
+  ipcMainHandle('db:getHiddenBuckets', db.getHiddenBuckets);
   ipcMainHandle('db:getBucket', async (args) => {
     return db.getBucket(args as number);
   });

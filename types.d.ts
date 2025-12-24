@@ -685,6 +685,7 @@ type EventPayloadMapping = {
 
   // Database events
   'db:getBuckets': Bucket[];
+  'db:getHiddenBuckets': Bucket[];
   'db:getBucket': Bucket;
   'db:createBucket': Bucket;
   'db:updateBucket': Bucket;
@@ -765,6 +766,7 @@ interface Window {
 
     // Database methods
     getBuckets: () => Promise<Bucket[]>;
+    getHiddenBuckets: () => Promise<Bucket[]>;
     getBucket: (id: number) => Promise<Bucket>;
     createBucket: (params: CreateBucketParams) => Promise<Bucket>;
     updateBucket: (id: number, params: UpdateBucketParams) => Promise<Bucket>;

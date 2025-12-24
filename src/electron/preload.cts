@@ -25,8 +25,7 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getAccounts: () => ipcInvoke('db:getAccounts'),
   createAccount: (params: CreateAccountParams) =>
     ipcInvoke('db:createAccount', params),
-  getAccountsWithBuckets: () =>
-    ipcInvoke('db:getAccountsWithBuckets'),
+  getAccountsWithBuckets: () => ipcInvoke('db:getAccountsWithBuckets'),
   getTransactions: () => ipcInvoke('db:getTransactions'),
   getTransaction: (id: number) => ipcInvoke('db:getTransaction', id),
   getTransactionsByBucket: (bucketId: number) =>
@@ -59,8 +58,10 @@ electron.contextBridge.exposeInMainWorld('electron', {
   ) => ipcInvoke('db:getBucketValueHistoriesByBucket', params),
   createBucketValueHistory: (params: CreateBucketValueHistoryParams) =>
     ipcInvoke('db:createBucketValueHistory', params),
-  updateBucketValueHistory: (id: number, params: UpdateBucketValueHistoryParams) =>
-    ipcInvoke('db:updateBucketValueHistory', { id, params }),
+  updateBucketValueHistory: (
+    id: number,
+    params: UpdateBucketValueHistoryParams,
+  ) => ipcInvoke('db:updateBucketValueHistory', { id, params }),
   deleteBucketValueHistory: (id: number) =>
     ipcInvoke('db:deleteBucketValueHistory', id),
   getAssetsValueHistory: (params: GetAssetsValueHistoryParams) =>
@@ -91,7 +92,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:createIncomeCategory', params),
   updateIncomeCategory: (id: number, params: UpdateIncomeCategoryParams) =>
     ipcInvoke('db:updateIncomeCategory', { id, params }),
-  deleteIncomeCategory: (id: number) => ipcInvoke('db:deleteIncomeCategory', id),
+  deleteIncomeCategory: (id: number) =>
+    ipcInvoke('db:deleteIncomeCategory', id),
 
   // Income History methods
   getIncomeHistories: () => ipcInvoke('db:getIncomeHistories'),
@@ -132,11 +134,17 @@ electron.contextBridge.exposeInMainWorld('electron', {
   upsertUserPreference: (params: UpsertUserPreferenceParams) =>
     ipcInvoke('db:upsertUserPreference', params),
 
+  // Settings
+  getHiddenBuckets: () => ipcInvoke('db:getHiddenBuckets'),
+
   // Event listeners
   onBatchCreateTransactionsProgress: (
     callback: (progress: BatchCreateTransactionsProgress) => void,
   ) => {
-    const listener = (_event: unknown, progress: BatchCreateTransactionsProgress) => {
+    const listener = (
+      _event: unknown,
+      progress: BatchCreateTransactionsProgress,
+    ) => {
       callback(progress);
     };
     electron.ipcRenderer.on('db:batchCreateTransactions:progress', listener);
