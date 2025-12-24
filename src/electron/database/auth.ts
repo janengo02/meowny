@@ -32,6 +32,34 @@ export async function signUp(params: SignUpParams): Promise<AuthUser> {
     email: data.user.email,
   });
 
+  // Create default expense account
+  try {
+    const { error: accountError } = await supabase
+      .from('account')
+      .insert({
+        user_id: data.user.id,
+        name: 'Expense',
+        type: 'expense',
+        color: 'default',
+      });
+
+    if (accountError) {
+      logger.error('auth', 'signUp', accountError, {
+        userId: data.user.id,
+        message: 'Failed to create default expense account',
+      });
+    } else {
+      logger.info('auth', 'signUp', 'Default expense account created', {
+        userId: data.user.id,
+      });
+    }
+  } catch (accountErr) {
+    logger.error('auth', 'signUp', accountErr as Error, {
+      userId: data.user.id,
+      message: 'Error creating default expense account',
+    });
+  }
+
   return {
     id: data.user.id,
     email: data.user.email!,

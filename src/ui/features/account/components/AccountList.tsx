@@ -1,6 +1,7 @@
 import { Grid, Typography } from '@mui/material';
 import { useAppSelector } from '../../../store/hooks';
 import { AccountCard } from './AccountCard';
+import { ExpenseAccountCard } from './ExpenseAccountCard';
 import { AddAccountCard } from './AddAccountCard';
 import { selectAccountIdsByType } from '../selectors/accountSelectors';
 
@@ -23,13 +24,19 @@ export function AccountList({ type }: AccountListProps) {
       <Grid container>
         {accountIds.map((accountId) => (
           <Grid key={accountId} size={{ xs: 12 }}>
-            <AccountCard accountId={accountId} />
+            {type === 'expense' ? (
+              <ExpenseAccountCard accountId={accountId} />
+            ) : (
+              <AccountCard accountId={accountId} />
+            )}
           </Grid>
         ))}
 
-        <Grid size={{ xs: 12 }}>
-          <AddAccountCard type={type} />
-        </Grid>
+        {type !== 'expense' && (
+          <Grid size={{ xs: 12 }}>
+            <AddAccountCard type={type} />
+          </Grid>
+        )}
       </Grid>
     </>
   );
