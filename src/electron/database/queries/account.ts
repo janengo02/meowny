@@ -125,11 +125,12 @@ export async function getAccountsWithBuckets(): Promise<NormalizedAccountsRespon
     };
   }
 
-  // Get all buckets
+  // Get all buckets (exclude hidden ones)
   const { data: buckets, error: bucketsError } = await supabase
     .from('bucket')
     .select('*')
     .eq('user_id', userId)
+    .eq('is_hidden', false)
     .order('created_at', { ascending: true });
 
   if (bucketsError) throw new Error(bucketsError.message);

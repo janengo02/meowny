@@ -7,13 +7,15 @@ import {
   Typography,
   Stack,
   Chip,
+  FormControlLabel,
+  Switch,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
 import dayjs from 'dayjs';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetBucketQuery } from '../api/bucketApi';
+import { useGetBucketQuery, useUpdateBucketMutation } from '../api/bucketApi';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { useAppSelector } from '../../../store/hooks';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
@@ -41,6 +43,8 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
     skip: !bucketId,
   });
 
+  const [updateBucket] = useUpdateBucketMutation();
+
   // Get the account for this bucket
   const account = useAppSelector((state) =>
     bucket?.account_id ? selectAccountById(state, bucket.account_id) : null,
@@ -61,6 +65,18 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   const mode = useWatch({ control, name: 'mode' });
   const periodFrom = useWatch({ control, name: 'periodFrom' });
   const periodTo = useWatch({ control, name: 'periodTo' });
+
+  const handleToggleHidden = async () => {
+    if (!bucket) return;
+    try {
+      await updateBucket({
+        id: bucket.id,
+        params: { is_hidden: !bucket.is_hidden },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to toggle bucket visibility:', error);
+    }
+  };
 
   if (!bucketId) return null;
 
@@ -112,7 +128,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
       sx={{
         '& .MuiDrawer-paper': {
           width: { xs: '100%', md: '60%' },
-          bgcolor: 'background.default',
+          bgcolor: 'background.paper',
           borderLeft: '1px solid',
           borderColor: 'divider',
         },
@@ -133,7 +149,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
           </IconButton>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
           <Chip
             label={bucket.type}
             size="medium"
@@ -142,7 +158,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             }}
             variant="outlined"
           />
-          {account && (
+          {bucket.type !== 'expense' && account && (
             <Chip
               label={account.name}
               size="medium"
@@ -157,6 +173,19 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             bucketId={bucket.id}
             value={bucket.bucket_category_id}
           />
+          <Box sx={{ ml: 'auto' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!bucket.is_hidden}
+                  onChange={handleToggleHidden}
+                  size="small"
+                />
+              }
+              label="Show on Dashboard"
+              labelPlacement="start"
+            />
+          </Box>
         </Box>
       </Box>
 

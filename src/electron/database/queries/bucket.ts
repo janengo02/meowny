@@ -61,6 +61,7 @@ export async function getBuckets(): Promise<Bucket[]> {
     .from('bucket')
     .select()
     .eq('user_id', userId)
+    .eq('is_hidden', false)
     .order('created_at', { ascending: true });
 
   if (error) throw new Error(error.message);
