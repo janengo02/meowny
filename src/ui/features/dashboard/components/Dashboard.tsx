@@ -166,7 +166,7 @@ function DashboardContent() {
 
         {/* Render rows with fixed layout */}
         {sortedRows.map((row) => (
-          <Grid container spacing={3} key={row.id}>
+          <Grid container spacing={2} key={row.id}>
             {row.columns.map((column) => (
               <Grid key={column.id} size={{ xs: 12, md: column.width }}>
                 <Box>

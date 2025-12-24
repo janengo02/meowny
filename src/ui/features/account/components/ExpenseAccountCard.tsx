@@ -55,8 +55,15 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
   return (
     <>
       <Grid container>
-        {allGroups.map((group) => (
-          <Grid key={group.category?.id ?? 'uncategorized'} size={6}>
+        {allGroups.map((group, index) => (
+          <Grid
+            key={group.category?.id ?? 'uncategorized'}
+            size={6}
+            sx={{
+              pl: index % 2 === 0 ? 0 : 1,
+              pr: index % 2 !== 0 ? 0 : 1,
+            }}
+          >
             <Card
               sx={{
                 p: 1.5,
@@ -93,7 +100,13 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
         ))}
 
         {/* Add Category Card */}
-        <Grid size={6}>
+        <Grid
+          size={6}
+          sx={{
+            pl: allGroups.length % 2 === 0 ? 0 : 1,
+            pr: allGroups.length % 2 !== 0 ? 0 : 1,
+          }}
+        >
           <AddCategoryCard account={account} />
         </Grid>
       </Grid>
