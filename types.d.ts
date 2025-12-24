@@ -653,6 +653,25 @@ type BatchCreateTransactionsProgress = {
   total: number;
 };
 
+// CSV Import Template Types
+type CsvImportTemplate = {
+  template_name: string;
+  csv_headers: string[]; // Array of CSV column headers to match against
+  strategy: 'single_transaction' | 'deposit_withdrawal' | 'transaction_with_category';
+  column_mapping: {
+    transactionDate: string;
+    transactionAmount?: string;
+    depositAmount?: string;
+    withdrawalAmount?: string;
+    categoryColumn?: string;
+    depositValue?: string;
+    withdrawalValue?: string;
+    notes?: string;
+    units?: string;
+  };
+  created_at: string;
+};
+
 type EventPayloadMapping = {
   frameMinimize: void;
   frameMaximize: void;

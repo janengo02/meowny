@@ -8,6 +8,11 @@ import {
   Box,
   Typography,
   IconButton,
+  Link,
+  Card,
+  CardContent,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
@@ -43,6 +48,7 @@ export function ColumnMappingDialog({
   onComplete,
 }: ColumnMappingDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
 
   const methods = useForm<ColumnMappingFormData>({
     resolver: zodResolver(columnMappingSchema),
@@ -104,6 +110,64 @@ export function ColumnMappingDialog({
   const onSubmit = async (data: ColumnMappingFormData) => {
     setIsProcessing(true);
     try {
+      // Save template if checkbox is checked
+      if (saveAsTemplate) {
+        // Auto-generate template name based on headers and strategy
+        const strategyName =
+          strategy === 'single_transaction'
+            ? 'Single Amount'
+            : strategy === 'deposit_withdrawal'
+              ? 'Deposit/Withdrawal'
+              : 'With Category';
+        const generatedName = `CSV Template (${strategyName}) - ${new Date().toLocaleDateString()}`;
+
+        const newTemplate: CsvImportTemplate = {
+          template_name: generatedName,
+          csv_headers: headers,
+          strategy,
+          column_mapping: {
+            transactionDate: data.transactionDate,
+            transactionAmount:
+              'transactionAmount' in data ? data.transactionAmount : undefined,
+            depositAmount:
+              'depositAmount' in data ? data.depositAmount : undefined,
+            withdrawalAmount:
+              'withdrawalAmount' in data ? data.withdrawalAmount : undefined,
+            categoryColumn:
+              'categoryColumn' in data ? data.categoryColumn : undefined,
+            depositValue:
+              'depositValue' in data ? data.depositValue : undefined,
+            withdrawalValue:
+              'withdrawalValue' in data ? data.withdrawalValue : undefined,
+            notes: 'notes' in data ? data.notes : undefined,
+            units: 'units' in data ? data.units : undefined,
+          },
+          created_at: new Date().toISOString(),
+        };
+
+        // Get existing templates
+        try {
+          const templatesPref = await window.electron.getUserPreference({
+            preference_key: 'csv_templates',
+          });
+
+          const templates = templatesPref
+            ? (templatesPref.preference_value as CsvImportTemplate[])
+            : [];
+
+          // Add new template to the array
+          templates.push(newTemplate);
+
+          // Save updated templates array
+          await window.electron.upsertUserPreference({
+            preference_key: 'csv_templates',
+            preference_value: templates,
+          });
+        } catch (error) {
+          console.error('Error saving template:', error);
+        }
+      }
+
       // Use setTimeout to allow UI to update before heavy processing
       await new Promise((resolve) => setTimeout(resolve, 100));
       await onComplete(data);
@@ -154,6 +218,30 @@ export function ColumnMappingDialog({
         })),
     ];
   }, [strategy, categoryColumnWatch, csvData]);
+
+  // Get strategy information for display
+  const getStrategyInfo = () => {
+    switch (strategy) {
+      case 'single_transaction':
+        return {
+          title: 'Single Transaction Amount',
+          description:
+            'Use one column containing transaction amounts. Supports both signed (±) and unsigned values.',
+        };
+      case 'deposit_withdrawal':
+        return {
+          title: 'Separate Deposit & Withdrawal Columns',
+          description:
+            'Use two columns: one for deposits, one for withdrawals. Each row has a value in only one column.',
+        };
+      case 'transaction_with_category':
+        return {
+          title: 'Transaction Amount with Category',
+          description:
+            'Use one amount column and one category column. You\'ll specify which category values mean "Deposit" vs "Withdrawal".',
+        };
+    }
+  };
 
   const renderStrategyFields = () => {
     switch (strategy) {
@@ -318,6 +406,54 @@ export function ColumnMappingDialog({
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogContent sx={{ pt: 2 }}>
+            <Card
+              variant="outlined"
+              sx={{
+                mb: 3,
+                bgcolor: 'action.selected',
+                border: '1px solid',
+                borderColor: 'primary.main',
+              }}
+            >
+              <CardContent sx={{ '&:last-child': { pb: 2 } }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
+                  <Box sx={{ flex: 1 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontWeight: 600, mb: 0.5 }}
+                    >
+                      Mapping Strategy: {getStrategyInfo().title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {getStrategyInfo().description}
+                    </Typography>
+                  </Box>
+                  <Link
+                    component="button"
+                    variant="body2"
+                    onClick={(e: React.MouseEvent) => {
+                      e.preventDefault();
+                      onBack();
+                    }}
+                    sx={{
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      ml: 2,
+                    }}
+                  >
+                    Change
+                  </Link>
+                </Box>
+              </CardContent>
+            </Card>
+
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Map your CSV columns to the following fields. Buckets will be
               automatically assigned based on your transaction notes.
@@ -325,6 +461,20 @@ export function ColumnMappingDialog({
 
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {renderStrategyFields()}
+            </Box>
+
+            {/* Save as Template Section */}
+            <Box sx={{ mt: 3 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={saveAsTemplate}
+                    onChange={(e) => setSaveAsTemplate(e.target.checked)}
+                    disabled={isProcessing}
+                  />
+                }
+                label="Remember this template"
+              />
             </Box>
           </DialogContent>
 

@@ -1,5 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@mui/material';
+import { useState, useRef, useCallback } from 'react';
+import {
+  Button,
+  Backdrop,
+  CircularProgress,
+  Typography,
+  Box,
+} from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Papa from 'papaparse';
 import dayjs from 'dayjs';
@@ -29,45 +35,90 @@ export function CsvImportFlow() {
   const [mappedTransactions, setMappedTransactions] = useState<
     MappedTransaction[]
   >([]);
+  const [isLoadingCsv, setIsLoadingCsv] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Preload keyword-bucket mappings in the background
   const [keywordMappingsCache, setKeywordMappingsCache] = useState<
     Map<string, { from_bucket_id: number | null; to_bucket_id: number | null }>
   >(new Map());
 
-  // Load all keyword mappings in the background when component mounts
-  useEffect(() => {
-    const loadKeywordMappings = async () => {
-      try {
-        const mappings = await window.electron.getKeywordBucketMappings();
-        const cache = new Map<
-          string,
-          { from_bucket_id: number | null; to_bucket_id: number | null }
-        >();
+  // Load keyword mappings function - returns the cache for immediate use
+  const loadKeywordMappings = useCallback(async () => {
+    try {
+      const mappings = await window.electron.getKeywordBucketMappings();
+      const cache = new Map<
+        string,
+        { from_bucket_id: number | null; to_bucket_id: number | null }
+      >();
 
-        // Build a cache of keyword -> best bucket pair
-        mappings.forEach((mapping) => {
-          // Find the bucket pair with the highest count for each keyword
-          const bestAssignment = mapping.bucket_assign_count.reduce(
-            (best, current) => (current.count > best.count ? current : best),
-          );
-          cache.set(mapping.keyword, {
-            from_bucket_id: bestAssignment.from_bucket_id,
-            to_bucket_id: bestAssignment.to_bucket_id,
-          });
+      // Build a cache of keyword -> best bucket pair
+      mappings.forEach((mapping) => {
+        // Find the bucket pair with the highest count for each keyword
+        const bestAssignment = mapping.bucket_assign_count.reduce(
+          (best, current) => (current.count > best.count ? current : best),
+        );
+        cache.set(mapping.keyword, {
+          from_bucket_id: bestAssignment.from_bucket_id,
+          to_bucket_id: bestAssignment.to_bucket_id,
         });
-        setKeywordMappingsCache(cache);
-      } catch (error) {
-        console.error('Error preloading keyword mappings:', error);
-      }
-    };
-    if (showMappingDialog) {
-      loadKeywordMappings();
+      });
+      setKeywordMappingsCache(cache);
+      return cache;
+    } catch (error) {
+      console.error('Error preloading keyword mappings:', error);
+      return new Map();
     }
-  }, [showMappingDialog]);
+  }, []);
+
+  // Find matching CSV template based on headers
+  const findMatchingTemplate = async (
+    headers: string[],
+  ): Promise<CsvImportTemplate | null> => {
+    try {
+      // Get all saved templates from user preferences
+      const templatesPref = await window.electron.getUserPreference({
+        preference_key: 'csv_templates',
+      });
+
+      if (!templatesPref) {
+        return null;
+      }
+
+      const templates = templatesPref.preference_value as CsvImportTemplate[];
+
+      if (!templates || templates.length === 0) {
+        return null;
+      }
+
+      // Find templates that match the CSV headers
+      const matchingTemplates = templates.filter((template) => {
+        // Check if all template headers exist in CSV headers
+        return template.csv_headers.every((header) => headers.includes(header));
+      });
+
+      if (matchingTemplates.length === 0) {
+        return null;
+      }
+
+      // Return the most recently created template
+      const sortedTemplates = matchingTemplates.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+
+      return sortedTemplates[0];
+    } catch (error) {
+      console.error('Error finding matching template:', error);
+      return null;
+    }
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Show loading indicator
+    setIsLoadingCsv(true);
 
     // Read the file as ArrayBuffer to detect encoding
     const reader = new FileReader();
@@ -111,16 +162,72 @@ export function CsvImportFlow() {
       Papa.parse<CsvRow>(text, {
         header: true,
         skipEmptyLines: true,
-        complete: (results) => {
+        complete: async (results) => {
           if (results.data.length > 0) {
             const headers = Object.keys(results.data[0]);
             setCsvHeaders(headers);
             setCsvData(results.data);
-            setShowStrategyDialog(true);
+
+            // Load keyword mappings and find template in parallel
+            const [matchingTemplate, loadedCache] = await Promise.all([
+              findMatchingTemplate(headers),
+              loadKeywordMappings(),
+            ]);
+
+            if (matchingTemplate) {
+              // Auto-apply the matching template
+              setSelectedStrategy(matchingTemplate.strategy);
+
+              // Create column mapping from template
+              const mapping: ColumnMappingFormData = {
+                strategy: matchingTemplate.strategy,
+                transactionDate:
+                  matchingTemplate.column_mapping.transactionDate,
+                ...(matchingTemplate.column_mapping.transactionAmount && {
+                  transactionAmount:
+                    matchingTemplate.column_mapping.transactionAmount,
+                }),
+                ...(matchingTemplate.column_mapping.depositAmount && {
+                  depositAmount: matchingTemplate.column_mapping.depositAmount,
+                }),
+                ...(matchingTemplate.column_mapping.withdrawalAmount && {
+                  withdrawalAmount:
+                    matchingTemplate.column_mapping.withdrawalAmount,
+                }),
+                ...(matchingTemplate.column_mapping.categoryColumn && {
+                  categoryColumn:
+                    matchingTemplate.column_mapping.categoryColumn,
+                }),
+                ...(matchingTemplate.column_mapping.depositValue && {
+                  depositValue: matchingTemplate.column_mapping.depositValue,
+                }),
+                ...(matchingTemplate.column_mapping.withdrawalValue && {
+                  withdrawalValue:
+                    matchingTemplate.column_mapping.withdrawalValue,
+                }),
+                ...(matchingTemplate.column_mapping.notes && {
+                  notes: matchingTemplate.column_mapping.notes,
+                }),
+                ...(matchingTemplate.column_mapping.units && {
+                  units: matchingTemplate.column_mapping.units,
+                }),
+              } as ColumnMappingFormData;
+
+              // Skip to preview directly - pass the data and cache directly to avoid state timing issues
+              await handleMappingComplete(mapping, results.data, loadedCache);
+              setIsLoadingCsv(false);
+            } else {
+              // No matching template, show strategy dialog
+              setShowStrategyDialog(true);
+              setIsLoadingCsv(false);
+            }
+          } else {
+            setIsLoadingCsv(false);
           }
         },
         error: (error: Error) => {
           console.error('Error parsing CSV:', error);
+          setIsLoadingCsv(false);
         },
       });
     };
@@ -148,9 +255,21 @@ export function CsvImportFlow() {
     fileInputRef.current?.click();
   };
 
-  const handleMappingComplete = async (mapping: ColumnMappingFormData) => {
+  const handleMappingComplete = async (
+    mapping: ColumnMappingFormData,
+    data?: CsvRow[],
+    cache?: Map<
+      string,
+      { from_bucket_id: number | null; to_bucket_id: number | null }
+    >,
+  ) => {
+    // Use provided data or fall back to state
+    const dataToProcess = data || csvData;
+    // Use provided cache or fall back to state
+    const cacheToUse = cache || keywordMappingsCache;
+
     // Map CSV data to transactions based on column mapping and strategy
-    const mapped = csvData.map((row) => {
+    const mapped = dataToProcess.map((row) => {
       const notes =
         'notes' in mapping && mapping.notes ? row[mapping.notes] || '' : '';
 
@@ -219,7 +338,7 @@ export function CsvImportFlow() {
         const keyword = notes.replace(/\d/g, '').trim();
         if (keyword) {
           // Check preloaded cache for bucket pair
-          const cachedBucketPair = keywordMappingsCache.get(keyword);
+          const cachedBucketPair = cacheToUse.get(keyword);
           if (cachedBucketPair) {
             fromBucketId = cachedBucketPair.from_bucket_id;
             toBucketId = cachedBucketPair.to_bucket_id;
@@ -264,6 +383,11 @@ export function CsvImportFlow() {
     setMappedTransactions([]);
   };
 
+  const handlePreviewBack = () => {
+    setShowPreviewDialog(false);
+    setShowMappingDialog(true);
+  };
+
   return (
     <>
       <input
@@ -301,7 +425,27 @@ export function CsvImportFlow() {
         open={showPreviewDialog}
         initialMappedTransactions={mappedTransactions}
         onClose={handlePreviewClose}
+        onBack={handlePreviewBack}
       />
+
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.modal + 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+        open={isLoadingCsv}
+      >
+        <CircularProgress color="inherit" />
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography variant="h6">Processing CSV file...</Typography>
+          <Typography variant="body2">
+            Reading file and looking up templates
+          </Typography>
+        </Box>
+      </Backdrop>
     </>
   );
 }

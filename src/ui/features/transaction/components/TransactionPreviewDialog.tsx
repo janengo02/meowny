@@ -28,12 +28,14 @@ interface TransactionPreviewDialogProps {
   open: boolean;
   initialMappedTransactions: MappedTransaction[];
   onClose: () => void;
+  onBack: () => void;
 }
 
 export function TransactionPreviewDialog({
   open,
   initialMappedTransactions,
   onClose,
+  onBack,
 }: TransactionPreviewDialogProps) {
   const [batchCreateTransactions] = useBatchCreateTransactionsMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
@@ -77,9 +79,16 @@ export function TransactionPreviewDialog({
           );
 
           // Mark completed transactions as success
-          for (let i = 0; i < Math.min(progress.completed, transactionsToImport.length); i++) {
+          for (
+            let i = 0;
+            i < Math.min(progress.completed, transactionsToImport.length);
+            i++
+          ) {
             const originalIndex = prev.indexOf(transactionsToImport[i]);
-            if (originalIndex !== -1 && updated[originalIndex].import_status === 'importing') {
+            if (
+              originalIndex !== -1 &&
+              updated[originalIndex].import_status === 'importing'
+            ) {
               updated[originalIndex] = {
                 ...updated[originalIndex],
                 import_status: 'success',
@@ -100,7 +109,7 @@ export function TransactionPreviewDialog({
   // Count transactions that will be imported
   const importCount = useMemo(() => {
     return editedTransactions.filter(
-      (t) => t.should_import && t.import_status === 'ready',
+      (t) => t?.should_import && t?.import_status === 'ready',
     ).length;
   }, [editedTransactions]);
 
@@ -353,38 +362,53 @@ export function TransactionPreviewDialog({
             flex: 1,
           }}
         >
-          {alert && <Alert severity={alert.severity}>{alert.message}</Alert>}
-          {batchImportStatus === 'complete' ? (
-            <Button onClick={handleClose} variant="contained">
-              Done
-            </Button>
-          ) : (
-            <>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {batchImportStatus !== 'complete' && (
               <Button
-                onClick={handleClose}
+                onClick={onBack}
                 variant="outlined"
                 disabled={batchImportStatus === 'importing'}
               >
-                Cancel
+                Change Column Mapping
               </Button>
-              <Button
-                onClick={handleImport}
-                variant="contained"
-                disabled={
-                  batchImportStatus === 'importing' || importCount === 0
-                }
-                startIcon={
-                  batchImportStatus === 'importing' ? (
-                    <CircularProgress size={16} />
-                  ) : null
-                }
-              >
-                {batchImportStatus === 'importing'
-                  ? 'Importing...'
-                  : `Import Transactions (${importCount})`}
+            )}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flex: 1 }}>
+            {alert && <Alert severity={alert.severity}>{alert.message}</Alert>}
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {batchImportStatus === 'complete' ? (
+              <Button onClick={handleClose} variant="contained">
+                Done
               </Button>
-            </>
-          )}
+            ) : (
+              <>
+                <Button
+                  onClick={handleClose}
+                  variant="outlined"
+                  disabled={batchImportStatus === 'importing'}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  variant="contained"
+                  disabled={
+                    batchImportStatus === 'importing' || importCount === 0
+                  }
+                  startIcon={
+                    batchImportStatus === 'importing' ? (
+                      <CircularProgress size={16} />
+                    ) : null
+                  }
+                >
+                  {batchImportStatus === 'importing'
+                    ? 'Importing...'
+                    : `Import Transactions (${importCount})`}
+                </Button>
+              </>
+            )}
+          </Box>
         </Box>
       </DialogActions>
     </Dialog>
