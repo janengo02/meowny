@@ -128,13 +128,20 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
       sx={{
         '& .MuiDrawer-paper': {
           width: { xs: '100%', md: '60%' },
-          bgcolor: 'background.paper',
+          bgcolor: 'background.default',
           borderLeft: '1px solid',
           borderColor: 'divider',
         },
       }}
     >
-      <Box sx={{ p: 3, borderBottom: '1px solid', borderColor: 'divider' }}>
+      <Box
+        sx={{
+          p: 3,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+        }}
+      >
         <Box
           sx={{
             display: 'flex',
@@ -149,15 +156,14 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
           </IconButton>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip
-            label={bucket.type}
-            size="medium"
-            sx={{
-              textTransform: 'capitalize',
-            }}
-            variant="outlined"
-          />
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1.5,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
           {bucket.type !== 'expense' && account && (
             <Chip
               label={account.name}
@@ -169,6 +175,22 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
               variant="outlined"
             />
           )}
+          <Chip
+            label={bucket.type}
+            size="medium"
+            variant="outlined"
+            color={
+              bucket.type === 'saving'
+                ? 'info'
+                : bucket.type === 'investment'
+                  ? 'warning'
+                  : 'default'
+            }
+            sx={{
+              textTransform: 'capitalize',
+            }}
+          />
+
           <BucketCategorySelect
             bucketId={bucket.id}
             value={bucket.bucket_category_id}

@@ -17,7 +17,9 @@ export function BucketCategorySelect({
   value,
   disabled = false,
 }: BucketCategorySelectProps) {
-  const categories = useSelector((state: RootState) => selectAllBucketCategories(state));
+  const categories = useSelector((state: RootState) =>
+    selectAllBucketCategories(state),
+  );
   const [updateBucket, { isLoading: isUpdating }] = useUpdateBucketMutation();
   const [
     createCategory,
@@ -59,7 +61,9 @@ export function BucketCategorySelect({
     // If we just created a category and it's not in the list yet, add it temporarily
     if (
       newlyCreatedCategory &&
-      !categories.find((cat: BucketCategory) => cat.id === newlyCreatedCategory.id)
+      !categories.find(
+        (cat: BucketCategory) => cat.id === newlyCreatedCategory.id,
+      )
     ) {
       categoryOptions.push({
         value: newlyCreatedCategory.id.toString(),
