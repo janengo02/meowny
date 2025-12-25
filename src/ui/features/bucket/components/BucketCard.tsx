@@ -63,7 +63,7 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
                 }
                 size="small"
                 variant="outlined"
-                color={bucket.type === 'saving' ? 'info' : 'warning'}
+                color={bucket.type === 'saving' ? 'primary' : 'warning'}
                 sx={{
                   textTransform: 'capitalize',
                   ml: -1,

@@ -26,7 +26,10 @@ import {
 } from '../api/transactionApi';
 import { getTokyoDateTime } from '../../../shared/utils';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
-import { formatDateForDB, formatToTokyoDateTime } from '../../../shared/utils/dateTime';
+import {
+  formatDateForDB,
+  formatToTokyoDateTime,
+} from '../../../shared/utils/dateTime';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 
 interface TransactionModalProps {
@@ -42,8 +45,10 @@ export function TransactionModal({
   onClose,
   transactionToEdit,
 }: TransactionModalProps) {
-  const [createTransaction, { isLoading: isCreating }] = useCreateTransactionMutation();
-  const [updateTransaction, { isLoading: isUpdating }] = useUpdateTransactionMutation();
+  const [createTransaction, { isLoading: isCreating }] =
+    useCreateTransactionMutation();
+  const [updateTransaction, { isLoading: isUpdating }] =
+    useUpdateTransactionMutation();
   const { data: buckets = [] } = useGetBucketsQuery();
 
   const isLoading = isCreating || isUpdating;
@@ -66,10 +71,16 @@ export function TransactionModal({
       if (transactionToEdit) {
         // Editing mode - populate form with transaction data
         form.reset({
-          from_bucket_id: transactionToEdit.from_bucket_id ? String(transactionToEdit.from_bucket_id) : '',
-          to_bucket_id: transactionToEdit.to_bucket_id ? String(transactionToEdit.to_bucket_id) : '',
+          from_bucket_id: transactionToEdit.from_bucket_id
+            ? String(transactionToEdit.from_bucket_id)
+            : '',
+          to_bucket_id: transactionToEdit.to_bucket_id
+            ? String(transactionToEdit.to_bucket_id)
+            : '',
           amount: transactionToEdit.amount,
-          transaction_date: formatToTokyoDateTime(transactionToEdit.transaction_date),
+          transaction_date: formatToTokyoDateTime(
+            transactionToEdit.transaction_date,
+          ),
           notes: transactionToEdit.notes || '',
           from_units: transactionToEdit.from_units || undefined,
           to_units: transactionToEdit.to_units || undefined,
@@ -115,7 +126,10 @@ export function TransactionModal({
       form.reset();
       onClose();
     } catch (error) {
-      console.error(`Failed to ${transactionToEdit ? 'update' : 'create'} transaction:`, error);
+      console.error(
+        `Failed to ${transactionToEdit ? 'update' : 'create'} transaction:`,
+        error,
+      );
     }
   };
 
@@ -125,19 +139,30 @@ export function TransactionModal({
   };
 
   // Watch selected buckets to determine if unit fields should be shown
-  const fromBucketId = useWatch({ control: form.control, name: 'from_bucket_id' });
+  const fromBucketId = useWatch({
+    control: form.control,
+    name: 'from_bucket_id',
+  });
   const toBucketId = useWatch({ control: form.control, name: 'to_bucket_id' });
 
   // Find selected buckets and check if they are investment type
-  const fromBucket = fromBucketId ? buckets.find(b => b.id === parseInt(fromBucketId)) : undefined;
-  const toBucket = toBucketId ? buckets.find(b => b.id === parseInt(toBucketId)) : undefined;
+  const fromBucket = fromBucketId
+    ? buckets.find((b) => b.id === parseInt(fromBucketId))
+    : undefined;
+  const toBucket = toBucketId
+    ? buckets.find((b) => b.id === parseInt(toBucketId))
+    : undefined;
 
   const showFromUnits = fromBucket?.type === 'investment';
   const showToUnits = toBucket?.type === 'investment';
 
   // Generate dynamic labels with bucket names
-  const fromUnitsLabel = fromBucket ? `Sell Units for ${fromBucket.name}` : 'Sell Units';
-  const toUnitsLabel = toBucket ? `Buy Units for ${toBucket.name}` : 'Buy Units';
+  const fromUnitsLabel = fromBucket
+    ? `Sell Units for ${fromBucket.name}`
+    : 'Sell Units';
+  const toUnitsLabel = toBucket
+    ? `Buy Units for ${toBucket.name}`
+    : 'Buy Units';
 
   return (
     <Dialog
@@ -176,24 +201,29 @@ export function TransactionModal({
               {/* From Bucket and To Bucket - Same Row */}
               <Grid container spacing={2}>
                 <Grid size={6}>
-                    <Box sx={{ mt: 'auto' }}>
-                      <FormBucketSelectField
-                        name="from_bucket_id"
-                        label="From Bucket"
+                  <Box sx={{ mt: 'auto' }}>
+                    <FormBucketSelectField
+                      name="from_bucket_id"
+                      label="From Bucket"
+                    />
+                    {fromBucket && (
+                      <Chip
+                        label={
+                          fromBucket.type.charAt(0).toUpperCase() +
+                          fromBucket.type.slice(1)
+                        }
+                        size="small"
+                        variant="outlined"
+                        color={
+                          fromBucket.type === 'saving'
+                            ? 'primary'
+                            : fromBucket.type === 'investment'
+                              ? 'warning'
+                              : 'default'
+                        }
                       />
-                      {fromBucket && (
-                        <Chip
-                          label={fromBucket.type.charAt(0).toUpperCase() + fromBucket.type.slice(1)}
-                          size="small"
-                          variant="outlined"
-                          color={
-                            fromBucket.type === 'saving' ? 'info' :
-                            fromBucket.type === 'investment' ? 'warning' :
-                            'default'
-                          }
-                        />
                     )}
-                    </Box>
+                  </Box>
                 </Grid>
                 <Grid size={6}>
                   <Box sx={{ mt: 'auto' }}>
@@ -203,13 +233,18 @@ export function TransactionModal({
                     />
                     {toBucket && (
                       <Chip
-                        label={toBucket.type.charAt(0).toUpperCase() + toBucket.type.slice(1)}
+                        label={
+                          toBucket.type.charAt(0).toUpperCase() +
+                          toBucket.type.slice(1)
+                        }
                         size="small"
                         variant="outlined"
                         color={
-                          toBucket.type === 'saving' ? 'info' :
-                          toBucket.type === 'investment' ? 'warning' :
-                          'default'
+                          toBucket.type === 'saving'
+                            ? 'primary'
+                            : toBucket.type === 'investment'
+                              ? 'warning'
+                              : 'default'
                         }
                       />
                     )}
@@ -275,8 +310,12 @@ export function TransactionModal({
               disabled={isLoading || !form.formState.isValid}
             >
               {isLoading
-                ? (transactionToEdit ? 'Updating...' : 'Adding...')
-                : (transactionToEdit ? 'Update Transaction' : 'Add Transaction')}
+                ? transactionToEdit
+                  ? 'Updating...'
+                  : 'Adding...'
+                : transactionToEdit
+                  ? 'Update Transaction'
+                  : 'Add Transaction'}
             </Button>
           </DialogActions>
         </Box>

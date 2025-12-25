@@ -1,7 +1,7 @@
-import { Box, Grid, IconButton, Typography } from '@mui/material';
+import { Box, Grid, IconButton, Tooltip, Typography } from '@mui/material';
 import { formatMoney, formatPercent, formatUnits } from '../../../shared/utils';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
-import EditIcon from '@mui/icons-material/Edit';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ImportExportIcon from '@mui/icons-material/ImportExport';
 import { useState } from 'react';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
 import { MarketValueModal } from './MarketValueModal';
@@ -28,30 +28,7 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
         {/* Investment-only fields */}
         {bucket.type === 'investment' && (
           <>
-            {/* Total Units */}
-            <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex' }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 1,
-                  bgcolor: 'background.paper',
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  flex: 1,
-                  display: 'flex',
-                  flexDirection: 'column',
-                }}
-              >
-                <Typography variant="caption" color="text.secondary">
-                  Total Units
-                </Typography>
-                <Typography variant="h4" sx={{ mt: 0.5 }}>
-                  {formatUnits(totalUnits)}
-                </Typography>
-              </Box>
-            </Grid>
-
-            {/* Contributed with Avg Cost/Unit */}
+            {/* Contributed */}
             <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex' }}>
               <Box
                 sx={{
@@ -80,32 +57,37 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     <Typography variant="h4" sx={{ mt: 0.5 }}>
                       {formatMoney(bucket.contributed_amount)}
                     </Typography>
-                    {bucket.type === 'investment' && totalUnits > 0 && (
-                      <Typography variant="caption" color="text.secondary">
-                        {formatMoney(bucket.contributed_amount / totalUnits)}{' '}
-                        per unit
-                      </Typography>
-                    )}
                   </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setTransactionModalOpen(true)}
-                    sx={{
-                      ml: 1,
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
+                  <Tooltip
+                    title="Create new transaction"
+                    slotProps={{
+                      tooltip: {
+                        sx: {
+                          fontSize: '0.75rem',
+                        },
                       },
                     }}
                   >
-                    <SyncAltIcon fontSize="small" />
-                  </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => setTransactionModalOpen(true)}
+                      sx={{
+                        ml: 1,
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                      }}
+                    >
+                      <ImportExportIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </Box>
             </Grid>
 
-            {/* Market Value with Current Price/Unit */}
+            {/* Market Value */}
             <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex' }}>
               <Box
                 sx={{
@@ -134,26 +116,32 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     <Typography variant="h4" sx={{ mt: 0.5 }}>
                       {formatMoney(bucket.market_value)}
                     </Typography>
-                    {bucket.type === 'investment' && totalUnits > 0 && (
-                      <Typography variant="caption" color="text.secondary">
-                        {formatMoney(bucket.market_value / totalUnits)} per unit
-                      </Typography>
-                    )}
                   </Box>
-                  <IconButton
-                    size="small"
-                    onClick={() => setMarketValueModalOpen(true)}
-                    sx={{
-                      ml: 1,
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
-                      '&:hover': {
-                        bgcolor: 'primary.dark',
+                  <Tooltip
+                    title="Report market value"
+                    slotProps={{
+                      tooltip: {
+                        sx: {
+                          fontSize: '0.75rem',
+                        },
                       },
                     }}
                   >
-                    <EditIcon fontSize="small" />
-                  </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() => setMarketValueModalOpen(true)}
+                      sx={{
+                        ml: 1,
+                        bgcolor: 'warning.main',
+                        color: 'warning.contrastText',
+                        '&:hover': {
+                          bgcolor: 'warning.dark',
+                        },
+                      }}
+                    >
+                      <TrendingUpIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 </Box>
               </Box>
             </Grid>
@@ -172,27 +160,55 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                   flexDirection: 'column',
                 }}
               >
-                <Typography variant="caption" color="text.secondary">
-                  Gain/Loss
-                </Typography>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    mt: 0.5,
-                    color: isPositive ? 'success.main' : 'error.main',
-                  }}
-                >
-                  {formatMoney(gainLoss, { showSign: true })}
-                </Typography>
                 <Typography
                   variant="caption"
+                  color="text.secondary"
                   sx={{
-                    mt: 1,
-                    display: 'block',
-                    color: isPositive ? 'success.main' : 'error.main',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  Return: {formatPercent(gainLossPercent, 2, true)}
+                  Gain/Loss
+                  <Typography
+                    variant="caption"
+                    color={isPositive ? 'success.main' : 'error.main'}
+                  >
+                    {`(${formatPercent(gainLossPercent, 2, true)})`}
+                  </Typography>
+                </Typography>
+
+                <Typography
+                  variant="h4"
+                  color={isPositive ? 'success.main' : 'error.main'}
+                  sx={{
+                    mt: 0.5,
+                  }}
+                >
+                  {formatMoney(gainLoss, { showSign: true })}{' '}
+                </Typography>
+              </Box>
+            </Grid>
+
+            {/* Total Units */}
+            <Grid size={{ xs: 6, sm: 3 }} sx={{ display: 'flex' }}>
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 1,
+                  bgcolor: 'background.paper',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                <Typography variant="caption" color="text.secondary">
+                  Total Units
+                </Typography>
+                <Typography variant="h4" sx={{ mt: 0.5 }}>
+                  {formatUnits(totalUnits)}
                 </Typography>
               </Box>
             </Grid>
@@ -230,20 +246,31 @@ export function BucketSummary({ bucket }: BucketSummaryProps) {
                     {formatMoney(bucket.contributed_amount)}
                   </Typography>
                 </Box>
-                <IconButton
-                  size="small"
-                  onClick={() => setTransactionModalOpen(true)}
-                  sx={{
-                    ml: 1,
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      bgcolor: 'primary.dark',
+                <Tooltip
+                  title="Create new transaction"
+                  slotProps={{
+                    tooltip: {
+                      sx: {
+                        fontSize: '0.75rem',
+                      },
                     },
                   }}
                 >
-                  <SyncAltIcon fontSize="small" />
-                </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => setTransactionModalOpen(true)}
+                    sx={{
+                      ml: 1,
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      },
+                    }}
+                  >
+                    <ImportExportIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </Box>
             </Box>
           </Grid>

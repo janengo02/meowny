@@ -1,10 +1,4 @@
-import {
-  Box,
-  Drawer,
-  Divider,
-  IconButton,
-  Chip,
-} from '@mui/material';
+import { Box, Drawer, Divider, IconButton, Chip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
 import { BucketCategorySelect } from './BucketCategorySelect';
@@ -105,7 +99,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             variant="outlined"
             color={
               bucket.type === 'saving'
-                ? 'info'
+                ? 'primary'
                 : bucket.type === 'investment'
                   ? 'warning'
                   : 'default'

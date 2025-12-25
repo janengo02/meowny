@@ -81,7 +81,7 @@ export function FormBucketSelectField({
         const bucketType = selectedBucket?.type;
         const outlineColor =
           bucketType === 'saving'
-            ? 'info'
+            ? 'primary'
             : bucketType === 'investment'
               ? 'warning'
               : undefined;
