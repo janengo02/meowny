@@ -64,6 +64,11 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
               <ListItemText primary="Hidden Buckets" />
             </ListItemButton>
           </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleNavigate('/settings/hidden-income-sources')}>
+              <ListItemText primary="Hidden Income Sources" />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Box>
     </Drawer>

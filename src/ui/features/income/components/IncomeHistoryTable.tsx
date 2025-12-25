@@ -201,7 +201,7 @@ export function IncomeHistoryTable({
   if (!sortedIncomeHistories || sortedIncomeHistories.length === 0) {
     return (
       <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
           <Button
             variant="outlined"
             size="small"
@@ -231,18 +231,7 @@ export function IncomeHistoryTable({
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<AddIcon />}
-          onClick={handleAddIncomeHistory}
-          disabled={isCreating}
-        >
-          Add Income History
-        </Button>
-      </Box>
+    <Box display="flex" flexDirection="column" justifyContent="center" gap={1}>
       <TableContainer
         component={Paper}
         sx={{
@@ -254,14 +243,15 @@ export function IncomeHistoryTable({
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Received Date</TableCell>
-              <TableCell>Income Category</TableCell>
-              <TableCell align="right" width={150}>
+              <TableCell width={155}>Received Date</TableCell>
+              <TableCell width={170}>Income Category</TableCell>
+              <TableCell align="right" width={120}>
                 Gross Amount
               </TableCell>
-              <TableCell width={300}>Tax</TableCell>
-              <TableCell align="right">Net Amount</TableCell>
-              <TableCell>Notes</TableCell>
+              <TableCell width={350}>Tax</TableCell>
+              <TableCell align="right" width={120}>
+                Net Amount
+              </TableCell>
               <TableCell align="center" width={100}>
                 Actions
               </TableCell>
@@ -292,7 +282,7 @@ export function IncomeHistoryTable({
                     }
                   />
                 </TableCell>
-                <TableCell align="right" width={150}>
+                <TableCell align="right">
                   <IncomeGrossInput
                     value={history.gross_amount}
                     onSave={(newAmount) =>
@@ -312,11 +302,6 @@ export function IncomeHistoryTable({
                     grossAmount={history.gross_amount}
                   />
                 </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">
-                    {history.notes || '-'}
-                  </Typography>
-                </TableCell>
                 <TableCell align="center">
                   <IncomeHistoryRowActions
                     historyId={history.id}
@@ -331,6 +316,15 @@ export function IncomeHistoryTable({
           </TableBody>
         </Table>
       </TableContainer>
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<AddIcon />}
+        onClick={handleAddIncomeHistory}
+        disabled={isCreating}
+      >
+        Add Income History
+      </Button>
     </Box>
   );
 }

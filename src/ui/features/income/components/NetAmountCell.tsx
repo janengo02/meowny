@@ -7,17 +7,28 @@ interface NetAmountCellProps {
   grossAmount: number;
 }
 
-export function NetAmountCell({ incomeHistoryId, grossAmount }: NetAmountCellProps) {
-  const { data: incomeTaxes = [] } = useGetIncomeTaxesByIncomeHistoryQuery(incomeHistoryId);
+export function NetAmountCell({
+  incomeHistoryId,
+  grossAmount,
+}: NetAmountCellProps) {
+  const { data: incomeTaxes = [] } =
+    useGetIncomeTaxesByIncomeHistoryQuery(incomeHistoryId);
 
   // Calculate total tax amount
-  const totalTaxAmount = incomeTaxes.reduce((sum, tax) => sum + tax.tax_amount, 0);
+  const totalTaxAmount = incomeTaxes.reduce(
+    (sum, tax) => sum + tax.tax_amount,
+    0,
+  );
 
   // Calculate net amount
   const netAmount = grossAmount - totalTaxAmount;
 
   return (
-    <Typography variant="body2" fontWeight={600}>
+    <Typography
+      variant="body1"
+      fontWeight={600}
+      sx={{ paddingY: 1, color: 'text.secondary' }}
+    >
       {formatMoney(netAmount)}
     </Typography>
   );

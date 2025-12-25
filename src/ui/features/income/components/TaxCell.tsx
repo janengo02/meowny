@@ -87,29 +87,27 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
   return (
     <Box>
       {/* Tax Summary Row */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
+
+      <Stack
+        direction="row"
+        spacing={1}
+        justifyContent="space-between"
+        alignItems="center"
       >
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="body2" fontWeight={600}>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <Typography variant="body1" fontWeight={600}>
             Total Tax:
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body1" color="text.secondary">
             ({taxPercentage.toFixed(2)}%)
           </Typography>
-          <Typography variant="body2" fontWeight={600}>
+        </Stack>
+        <Stack direction="row" spacing={0.5} alignItems="center">
+          <Typography variant="body1" fontWeight={600} color="text.secondary">
             {formatMoney(totalTaxAmount)}
           </Typography>
 
-          <IconButton
-            size="small"
-            onClick={() => setIsExpanded(!isExpanded)}
-            sx={{ ml: -0.5 }}
-          >
+          <IconButton size="small" onClick={() => setIsExpanded(!isExpanded)}>
             {isExpanded ? (
               <ExpandLessIcon sx={{ fontSize: '1rem' }} />
             ) : (
@@ -117,7 +115,7 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
             )}
           </IconButton>
         </Stack>
-      </Box>
+      </Stack>
 
       {isExpanded && (
         <Stack spacing={1}>
@@ -126,8 +124,9 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
               key={tax.id}
               pb={1}
               direction="row"
-              spacing={1}
+              spacing={0.5}
               alignItems="center"
+              justifyContent="space-between"
               sx={{
                 borderBottom: '1px solid',
                 borderColor: 'divider',
@@ -136,28 +135,31 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
                 },
               }}
             >
-              <Box sx={{ minWidth: 120 }}>
-                <TaxCategorySelect
-                  value={tax.tax_category_id}
-                  onChange={(categoryId) =>
-                    handleTaxCategoryChange(tax.id, categoryId)
-                  }
-                />
-              </Box>
-              <Box sx={{ minWidth: 80 }}>
+              <TaxCategorySelect
+                value={tax.tax_category_id}
+                onChange={(categoryId) =>
+                  handleTaxCategoryChange(tax.id, categoryId)
+                }
+              />
+              <Stack
+                direction="row"
+                spacing={0.5}
+                alignItems="center"
+                minWidth={120}
+              >
                 <TaxAmountInput
                   value={tax.tax_amount}
                   onSave={(amount) => handleTaxAmountSave(tax.id, amount)}
                 />
-              </Box>
-              <IconButton
-                size="small"
-                onClick={() => handleDeleteTax(tax.id)}
-                color="error"
-                sx={{ ml: 'auto' }}
-              >
-                <DeleteIcon fontSize="small" sx={{ fontSize: '1rem' }} />
-              </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteTax(tax.id)}
+                  color="error"
+                  sx={{ ml: 0.5 }}
+                >
+                  <DeleteIcon fontSize="small" sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </Stack>
             </Stack>
           ))}
         </Stack>

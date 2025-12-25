@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { TextField, Typography } from '@mui/material';
-import { formatMoney } from '../../../shared/utils';
-import { sanitizeMoneyInput } from '../../../shared/utils/formatMoney';
+import { TextField } from '@mui/material';
+import { NumericFormat } from 'react-number-format';
 
 interface TaxAmountInputProps {
   value: number;
@@ -9,25 +8,13 @@ interface TaxAmountInputProps {
 }
 
 export function TaxAmountInput({ value, onSave }: TaxAmountInputProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [defaultValue, setDefaultValue] = useState('');
   const [displayValue, setDisplayValue] = useState<number>(value);
 
-  const handleClick = () => {
-    setIsEditing(true);
-    setDefaultValue(formatMoney(value));
-  };
-
-  const handleBlur = async (newValue: string) => {
-    // Remove all symbols and parse only the meaningful number
-    const newAmount = sanitizeMoneyInput(newValue);
+  const handleBlur = async (floatValue: number | undefined) => {
+    const newAmount = floatValue ?? 0;
 
     // Set optimistic value for immediate UI update
     setDisplayValue(newAmount);
-
-    // Clear editing state immediately for optimistic update
-    setIsEditing(false);
-    setDefaultValue('');
 
     // Save the value
     await onSave(newAmount);
@@ -37,51 +24,38 @@ export function TaxAmountInput({ value, onSave }: TaxAmountInputProps) {
     setDisplayValue(value);
   }, [value]);
 
-  if (isEditing) {
-    return (
-      <TextField
-        type="text"
-        defaultValue={defaultValue}
-        onBlur={(e) => {
-          handleBlur(e.target.value);
-        }}
-        autoFocus
-        size="small"
-        fullWidth
-        sx={{
-          input: { textAlign: 'right', fontWeight: 600 },
-          px: 1,
-
-          '& .MuiInputBase-root': {
-            fontSize: '0.875rem',
-          },
-          '& .MuiOutlinedInput-notchedOutline': {
-            border: 'none',
-          },
-          '& .MuiInputBase-input': {
-            padding: '4px 0',
-          },
-        }}
-      />
-    );
-  }
-
   return (
-    <Typography
-      variant="body2"
-      sx={{
-        fontWeight: 600,
-        cursor: 'pointer',
-        '&:hover': {
-          bgcolor: 'action.hover',
-        },
-        px: 1,
-        py: 0.5,
-        borderRadius: 0.5,
+    <NumericFormat
+      value={displayValue}
+      onBlur={(e) => {
+        const floatValue = parseFloat(e.target.value.replace(/[^0-9.-]/g, ''));
+        handleBlur(isNaN(floatValue) ? 0 : floatValue);
       }}
-      onClick={handleClick}
-    >
-      {formatMoney(displayValue)}
-    </Typography>
+      onValueChange={(values) => {
+        setDisplayValue(values.floatValue ?? 0);
+      }}
+      customInput={TextField}
+      prefix="¥"
+      thousandSeparator=","
+      decimalScale={2}
+      size="small"
+      variant="standard"
+      fullWidth
+      slotProps={{
+        input: {
+          disableUnderline: true,
+          sx: {
+            fontWeight: 500,
+            outline: 'none',
+          },
+        },
+        htmlInput: {
+          style: {
+            textAlign: 'right',
+            paddingTop: 6,
+          },
+        },
+      }}
+    />
   );
 }

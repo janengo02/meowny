@@ -6,7 +6,10 @@ export const incomeSourceApi = baseApi.injectEndpoints({
       queryFn: async () => {
         try {
           const incomeSources = await window.electron.getIncomeSources();
-          return { data: incomeSources };
+          const activeIncomeSources = incomeSources.filter(
+            (source) => source.is_active,
+          );
+          return { data: activeIncomeSources };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }

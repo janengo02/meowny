@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardActionArea,
-  CardContent,
-  Chip,
-  Typography,
-} from '@mui/material';
+import { Card, CardActionArea, CardContent, Typography } from '@mui/material';
 
 interface IncomeCardProps {
   incomeSource: IncomeSource;
@@ -40,17 +34,6 @@ export function IncomeCard({ incomeSource, onClick }: IncomeCardProps) {
             mb: 1,
           }}
         >
-          <Chip
-            label={incomeSource.is_active ? 'Active' : 'Inactive'}
-            size="small"
-            color={incomeSource.is_active ? 'success' : 'default'}
-            variant="outlined"
-            sx={{
-              textTransform: 'capitalize',
-              ml: -1,
-              fontSize: '0.75rem',
-            }}
-          />
           <Typography variant="h4" gutterBottom>
             {incomeSource.name}
           </Typography>

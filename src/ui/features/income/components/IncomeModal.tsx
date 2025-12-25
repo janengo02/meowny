@@ -7,11 +7,12 @@ import {
   Divider,
   IconButton,
   Typography,
-  Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useGetIncomeSourceQuery } from '../api/incomeSourceApi';
 import { IncomeHistoryTable } from './IncomeHistoryTable';
+import { IncomeTitle } from './IncomeTitle';
+import { IncomeVisibilityToggle } from './IncomeVisibilityToggle';
 
 interface IncomeModalProps {
   incomeSourceId: number | null;
@@ -81,26 +82,20 @@ export function IncomeModal({
             flexWrap: 'wrap',
           }}
         >
-          <Typography variant="h2" component="span">
-            {incomeSource.name}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip
-              label={incomeSource.is_active ? 'Active' : 'Inactive'}
-              size="small"
-              color={incomeSource.is_active ? 'success' : 'default'}
-              variant="outlined"
-            />
-          </Box>
+          <IncomeTitle incomeSource={incomeSource} />
         </Box>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" sx={{ ml: 8 }}>
           <CloseIcon />
         </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 2 }}>
         {/* Income History Section */}
-        <Box sx={{ mb: 3 }}>
+        <Box display="flex" flexDirection="column" gap={2} sx={{ mb: 3 }}>
+          <IncomeVisibilityToggle
+            incomeSourceId={incomeSource.id}
+            isActive={incomeSource.is_active}
+          />
           <IncomeHistoryTable incomeSourceId={incomeSourceId} />
         </Box>
 

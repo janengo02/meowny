@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { TextField, Typography } from '@mui/material';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface ReceivedDateInputProps {
@@ -8,94 +11,53 @@ interface ReceivedDateInputProps {
 }
 
 export function ReceivedDateInput({ value, onSave }: ReceivedDateInputProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [displayValue, setDisplayValue] = useState<string>(value);
+  const [displayValue, setDisplayValue] = useState<Dayjs | null>(dayjs(value));
 
-  // Format date to YYYY-MM-DD for input field
-  const formatDateForInput = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toISOString().split('T')[0];
-  };
-
-  // Format date for display (e.g., "Jan 15, 2024")
-  const formatDateForDisplay = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const handleClick = () => {
-    setIsEditing(true);
-  };
-
-  const handleBlur = async (newValue: string) => {
+  const handleChange = async (newValue: Dayjs | null) => {
     if (!newValue) {
-      setIsEditing(false);
       return;
     }
 
-    // Convert date to ISO string (keeping only the date part)
-    const isoDate = formatDateForDB(newValue);
-
     // Set optimistic value for immediate UI update
-    setDisplayValue(isoDate);
+    setDisplayValue(newValue);
 
-    // Clear editing state immediately for optimistic update
-    setIsEditing(false);
-
-    // Save the value
+    // Convert to ISO string and save
+    const isoDate = formatDateForDB(newValue.format('YYYY-MM-DD'));
     await onSave(isoDate);
   };
 
   useEffect(() => {
-    setDisplayValue(value);
+    setDisplayValue(dayjs(value));
   }, [value]);
 
-  if (isEditing) {
-    return (
-      <TextField
-        type="date"
-        defaultValue={formatDateForInput(displayValue)}
-        onBlur={(e) => {
-          handleBlur(e.target.value);
-        }}
-        autoFocus
-        size="small"
-        fullWidth
-        sx={{
-          px: 1,
-          '& .MuiInputBase-root': {
-            fontSize: '0.875rem',
+  return (
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <DatePicker
+        value={displayValue}
+        onChange={handleChange}
+        sx={{ pt: 0.5, maxWidth: 120 }}
+        slotProps={{
+          textField: {
+            size: 'small',
+            variant: 'standard',
+            InputProps: {
+              disableUnderline: true,
+              sx: {
+                fontWeight: 500,
+                outline: 'none',
+              },
+            },
           },
-          '& .MuiOutlinedInput-notchedOutline': {
-            border: 'none',
-          },
-          '& .MuiInputBase-input': {
-            padding: '4px 0',
+          openPickerButton: {
+            size: 'small',
+            sx: {
+              '& .MuiSvgIcon-root': {
+                fontSize: '1rem',
+              },
+            },
           },
         }}
       />
-    );
-  }
-
-  return (
-    <Typography
-      variant="body2"
-      sx={{
-        cursor: 'pointer',
-        '&:hover': {
-          bgcolor: 'action.hover',
-        },
-        px: 1,
-        py: 0.5,
-        borderRadius: 0.5,
-      }}
-      onClick={handleClick}
-    >
-      {formatDateForDisplay(displayValue)}
-    </Typography>
+    </LocalizationProvider>
   );
 }

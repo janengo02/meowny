@@ -13,7 +13,22 @@ export const settingsApi = baseApi.injectEndpoints({
       },
       providesTags: ['Bucket'],
     }),
+    getHiddenIncomeSources: builder.query<IncomeSource[], void>({
+      queryFn: async () => {
+        try {
+          const incomeSources = await window.electron.getIncomeSources();
+          const hiddenIncomeSources = incomeSources.filter(
+            (source) => !source.is_active,
+          );
+          return { data: hiddenIncomeSources };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Income'],
+    }),
   }),
 });
 
-export const { useGetHiddenBucketsQuery } = settingsApi;
+export const { useGetHiddenBucketsQuery, useGetHiddenIncomeSourcesQuery } =
+  settingsApi;
