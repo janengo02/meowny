@@ -104,7 +104,12 @@ app.on('ready', async () => {
     return db.getTransaction(args as number);
   });
   ipcMainHandle('db:getTransactionsByBucket', async (args) => {
-    return db.getTransactionsByBucket(args as number);
+    const params = args as GetTransactionsByBucketParams;
+    return db.getTransactionsByBucket(
+      params.bucketId,
+      params.startDate,
+      params.endDate,
+    );
   });
   ipcMainHandle('db:createTransaction', async (args) => {
     return db.createTransaction(args as CreateTransactionParams);

@@ -24,18 +24,21 @@ export const transactionApi = baseApi.injectEndpoints({
       },
       providesTags: (_result, _error, id) => [{ type: 'Transaction', id }],
     }),
-    getTransactionsByBucket: builder.query<Transaction[], number>({
-      queryFn: async (bucketId) => {
+    getTransactionsByBucket: builder.query<
+      Transaction[],
+      GetTransactionsByBucketParams
+    >({
+      queryFn: async (params) => {
         try {
           const transactions =
-            await window.electron.getTransactionsByBucket(bucketId);
+            await window.electron.getTransactionsByBucket(params);
           return { data: transactions };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: (_result, _error, bucketId) => [
-        { type: 'Transaction', id: `bucket-${bucketId}` },
+      providesTags: (_result, _error, params) => [
+        { type: 'Transaction', id: `bucket-${params.bucketId}` },
       ],
     }),
     createTransaction: builder.mutation<Transaction, CreateTransactionParams>({

@@ -21,6 +21,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { BucketValueHistoryTable } from './BucketValueHistoryTable';
 import { BucketGoal } from './BucketGoal';
 import { BucketValueHistoryChart } from './BucketValueHistoryChart';
+import { BucketTransactionHistoryChart } from './BucketTransactionHistoryChart';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import {
@@ -278,12 +279,21 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             />
           </Stack>
 
-          <BucketValueHistoryChart
-            bucketId={bucketId}
-            mode={mode}
-            periodFrom={periodFrom}
-            periodTo={periodTo}
-          />
+          {bucket.type === 'expense' ? (
+            <BucketTransactionHistoryChart
+              bucketId={bucketId}
+              mode={mode}
+              periodFrom={periodFrom}
+              periodTo={periodTo}
+            />
+          ) : (
+            <BucketValueHistoryChart
+              bucketId={bucketId}
+              mode={mode}
+              periodFrom={periodFrom}
+              periodTo={periodTo}
+            />
+          )}
 
           <Typography variant="h4" sx={{ mb: 2 }}>
             Logs

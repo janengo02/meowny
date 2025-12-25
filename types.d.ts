@@ -477,6 +477,12 @@ type GetExpenseTransactionsByPeriodParams = {
   endDate: string;
 };
 
+type GetTransactionsByBucketParams = {
+  bucketId: number;
+  startDate?: string;
+  endDate?: string;
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -780,7 +786,9 @@ interface Window {
     getAccountsWithBuckets: () => Promise<NormalizedAccountsResponse>;
     getTransactions: () => Promise<Transaction[]>;
     getTransaction: (id: number) => Promise<Transaction>;
-    getTransactionsByBucket: (bucketId: number) => Promise<Transaction[]>;
+    getTransactionsByBucket: (
+      params: GetTransactionsByBucketParams,
+    ) => Promise<Transaction[]>;
     createTransaction: (
       params: CreateTransactionParams,
     ) => Promise<Transaction>;

@@ -48,16 +48,29 @@ export async function getTransaction(id: number): Promise<Transaction> {
 
 export async function getTransactionsByBucket(
   bucketId: number,
+  startDate?: string,
+  endDate?: string,
 ): Promise<Transaction[]> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('transaction')
     .select()
     .eq('user_id', userId)
-    .or(`from_bucket_id.eq.${bucketId},to_bucket_id.eq.${bucketId}`)
-    .order('transaction_date', { ascending: false });
+    .or(`from_bucket_id.eq.${bucketId},to_bucket_id.eq.${bucketId}`);
+
+  // Add date filters if provided
+  if (startDate) {
+    query = query.gte('transaction_date', startDate);
+  }
+  if (endDate) {
+    query = query.lte('transaction_date', endDate);
+  }
+
+  query = query.order('transaction_date', { ascending: false });
+
+  const { data, error } = await query;
 
   if (error) throw new Error(error.message);
   return data;
