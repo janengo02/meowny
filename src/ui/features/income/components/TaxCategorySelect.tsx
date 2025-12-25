@@ -1,7 +1,9 @@
+import { useMemo } from 'react';
 import { ChipAutocomplete } from '../../../shared/components/form/ChipAutocomplete';
 import {
   useGetTaxCategoriesQuery,
   useCreateTaxCategoryMutation,
+  useUpdateTaxCategoryMutation,
 } from '../api/taxCategoryApi';
 
 interface TaxCategorySelectProps {
@@ -11,12 +13,34 @@ interface TaxCategorySelectProps {
 
 export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
   const { data: taxCategories = [] } = useGetTaxCategoriesQuery();
-  const [createTaxCategory] = useCreateTaxCategoryMutation();
+  const [
+    createTaxCategory,
+    { isLoading: isCreating, data: newlyCreatedCategory },
+  ] = useCreateTaxCategoryMutation();
+  const [updateCategory, { isLoading: isUpdatingCategory }] =
+    useUpdateTaxCategoryMutation();
 
-  const options = taxCategories.map((category) => ({
-    value: String(category.id),
-    label: category.name,
-  }));
+  const options = useMemo(() => {
+    const categoryOptions = taxCategories.map((category) => ({
+      value: String(category.id),
+      label: category.name,
+      color: category.color,
+    }));
+
+    // If we just created a category and it's not in the list yet, add it temporarily
+    if (
+      newlyCreatedCategory &&
+      !taxCategories.find((cat) => cat.id === newlyCreatedCategory.id)
+    ) {
+      categoryOptions.push({
+        value: newlyCreatedCategory.id.toString(),
+        label: newlyCreatedCategory.name,
+        color: newlyCreatedCategory.color,
+      });
+    }
+
+    return categoryOptions;
+  }, [taxCategories, newlyCreatedCategory]);
 
   const handleChange = (newValue: string | null) => {
     onChange(newValue ? Number(newValue) : null);
@@ -34,16 +58,41 @@ export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
     }
   };
 
+  const handleColorChange = async (categoryId: string, color: ColorEnum) => {
+    try {
+      await updateCategory({
+        id: Number(categoryId),
+        params: { color },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update tax category color:', error);
+    }
+  };
+
+  const handleNameChange = async (categoryId: string, newName: string) => {
+    try {
+      await updateCategory({
+        id: Number(categoryId),
+        params: { name: newName },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update tax category name:', error);
+    }
+  };
+
   return (
     <ChipAutocomplete
       value={value ? String(value) : null}
       options={options}
       onChange={handleChange}
       onCreate={handleCreate}
+      onColorChange={handleColorChange}
+      onOptionNameChange={handleNameChange}
       size="small"
       variant="outlined"
       placeholder="Search tax categories..."
       label="Tax Category"
+      disabled={isCreating || isUpdatingCategory}
     />
   );
 }

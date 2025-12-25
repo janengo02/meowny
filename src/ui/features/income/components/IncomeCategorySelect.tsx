@@ -3,6 +3,7 @@ import { ChipAutocomplete } from '../../../shared/components/form/ChipAutocomple
 import {
   useGetIncomeCategoriesQuery,
   useCreateIncomeCategoryMutation,
+  useUpdateIncomeCategoryMutation,
 } from '../api/incomeCategoryApi';
 
 interface IncomeCategorySelectProps {
@@ -21,6 +22,8 @@ export function IncomeCategorySelect({
     createCategory,
     { isLoading: isCreating, data: newlyCreatedCategory },
   ] = useCreateIncomeCategoryMutation();
+  const [updateCategory, { isLoading: isUpdatingCategory }] =
+    useUpdateIncomeCategoryMutation();
 
   const handleCategoryChange = async (categoryId: string | null) => {
     onChange(categoryId ? Number(categoryId) : null);
@@ -37,11 +40,34 @@ export function IncomeCategorySelect({
     }
   };
 
+  const handleColorChange = async (categoryId: string, color: ColorEnum) => {
+    try {
+      await updateCategory({
+        id: Number(categoryId),
+        params: { color },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update category color:', error);
+    }
+  };
+
+  const handleNameChange = async (categoryId: string, newName: string) => {
+    try {
+      await updateCategory({
+        id: Number(categoryId),
+        params: { name: newName },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update category name:', error);
+    }
+  };
+
   // Include the newly created category in options if it's not yet in the cached list
   const options = useMemo(() => {
     const categoryOptions = categories.map((cat) => ({
       value: cat.id.toString(),
       label: cat.name,
+      color: cat.color,
     }));
 
     // If we just created a category and it's not in the list yet, add it temporarily
@@ -52,6 +78,7 @@ export function IncomeCategorySelect({
       categoryOptions.push({
         value: newlyCreatedCategory.id.toString(),
         label: newlyCreatedCategory.name,
+        color: newlyCreatedCategory.color,
       });
     }
 
@@ -64,10 +91,12 @@ export function IncomeCategorySelect({
       options={options}
       onChange={handleCategoryChange}
       onCreate={handleCreateCategory}
+      onColorChange={handleColorChange}
+      onOptionNameChange={handleNameChange}
       label="Category"
       placeholder="Search categories..."
       variant="outlined"
-      disabled={disabled || isCreating}
+      disabled={disabled || isCreating || isUpdatingCategory}
     />
   );
 }

@@ -88,7 +88,7 @@ function IncomeHistoryRowActions({
         color="primary"
         title="Duplicate"
       >
-        <ContentCopyIcon fontSize="small" />
+        <ContentCopyIcon fontSize="small" sx={{ fontSize: '1rem' }} />
       </IconButton>
       <IconButton
         size="small"
@@ -96,7 +96,7 @@ function IncomeHistoryRowActions({
         color="error"
         title="Delete"
       >
-        <DeleteIcon fontSize="small" />
+        <DeleteIcon fontSize="small" sx={{ fontSize: '1rem' }} />
       </IconButton>
     </>
   );

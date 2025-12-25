@@ -89,7 +89,6 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
       {/* Tax Summary Row */}
       <Box
         sx={{
-          mb: 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -112,9 +111,9 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
             sx={{ ml: -0.5 }}
           >
             {isExpanded ? (
-              <ExpandLessIcon fontSize="small" />
+              <ExpandLessIcon sx={{ fontSize: '1rem' }} />
             ) : (
-              <ExpandMoreIcon fontSize="small" />
+              <ExpandMoreIcon sx={{ fontSize: '1rem' }} />
             )}
           </IconButton>
         </Stack>
@@ -125,11 +124,11 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
           {sortedIncomeTaxes.map((tax) => (
             <Stack
               key={tax.id}
+              pb={1}
               direction="row"
               spacing={1}
               alignItems="center"
               sx={{
-                py: 0.5,
                 borderBottom: '1px solid',
                 borderColor: 'divider',
                 '&:last-child': {
@@ -157,7 +156,7 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
                 color="error"
                 sx={{ ml: 'auto' }}
               >
-                <DeleteIcon fontSize="small" />
+                <DeleteIcon fontSize="small" sx={{ fontSize: '1rem' }} />
               </IconButton>
             </Stack>
           ))}
@@ -170,7 +169,20 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
           size="small"
           startIcon={<AddIcon />}
           onClick={handleAddTax}
-          sx={{ mt: incomeTaxes.length > 0 ? 1 : 0 }}
+          sx={{
+            fontSize: '0.75rem',
+            border: 'none',
+            boxShadow: 'none',
+            '&:hover': {
+              // bgcolor: 'transparent',
+              boxShadow: 'none',
+              transform: 'none',
+            },
+            pl: 1,
+            pr: 1.5,
+            py: 0,
+            mt: 0.5,
+          }}
         >
           Add Tax
         </Button>
