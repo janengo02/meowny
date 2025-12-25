@@ -136,20 +136,6 @@ export function IncomeHistoryTable({
     }
   };
 
-  const handleCategoryChange = async (
-    historyId: number,
-    categoryId: number | null,
-  ) => {
-    try {
-      await updateIncomeHistory({
-        id: historyId,
-        params: { income_category_id: categoryId },
-      }).unwrap();
-    } catch (error) {
-      console.error('Failed to update income category:', error);
-    }
-  };
-
   const handleDeleteHistory = async (historyId: number) => {
     try {
       await deleteIncomeHistory(historyId).unwrap();
@@ -277,9 +263,7 @@ export function IncomeHistoryTable({
                 <TableCell>
                   <IncomeCategorySelect
                     value={history.income_category_id}
-                    onChange={(categoryId) =>
-                      handleCategoryChange(history.id, categoryId)
-                    }
+                    historyId={history.id}
                   />
                 </TableCell>
                 <TableCell align="right">

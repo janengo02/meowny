@@ -5,16 +5,17 @@ import {
   useCreateIncomeCategoryMutation,
   useUpdateIncomeCategoryMutation,
 } from '../api/incomeCategoryApi';
+import { useUpdateIncomeHistoryMutation } from '../api/incomeHistoryApi';
 
 interface IncomeCategorySelectProps {
   value: number | null;
-  onChange: (categoryId: number | null) => void;
+  historyId: number;
   disabled?: boolean;
 }
 
 export function IncomeCategorySelect({
   value,
-  onChange,
+  historyId,
   disabled = false,
 }: IncomeCategorySelectProps) {
   const { data: categories = [] } = useGetIncomeCategoriesQuery();
@@ -24,16 +25,28 @@ export function IncomeCategorySelect({
   ] = useCreateIncomeCategoryMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] =
     useUpdateIncomeCategoryMutation();
+  const [updateIncomeHistory, { isLoading: isUpdating }] =
+    useUpdateIncomeHistoryMutation();
 
   const handleCategoryChange = async (categoryId: string | null) => {
-    onChange(categoryId ? Number(categoryId) : null);
+    try {
+      await updateIncomeHistory({
+        id: historyId,
+        params: { income_category_id: categoryId ? Number(categoryId) : null },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update income category:', error);
+    }
   };
 
   const handleCreateCategory = async (name: string) => {
     try {
       const newCategory = await createCategory({ name }).unwrap();
       if (newCategory) {
-        onChange(newCategory.id);
+        await updateIncomeHistory({
+          id: historyId,
+          params: { income_category_id: newCategory.id },
+        }).unwrap();
       }
     } catch (error) {
       console.error('Failed to create income category:', error);
@@ -96,7 +109,7 @@ export function IncomeCategorySelect({
       label="Category"
       placeholder="Search categories..."
       variant="outlined"
-      disabled={disabled || isCreating || isUpdatingCategory}
+      disabled={disabled || isCreating || isUpdating || isUpdatingCategory}
     />
   );
 }

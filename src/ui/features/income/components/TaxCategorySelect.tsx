@@ -82,7 +82,7 @@ export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
 
   return (
     <ChipAutocomplete
-      value={value ? String(value) : null}
+      value={value?.toString() ?? null}
       options={options}
       onChange={handleChange}
       onCreate={handleCreate}
