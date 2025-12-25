@@ -67,6 +67,17 @@ export function BucketCategorySelect({
     }
   };
 
+  const handleNameChange = async (categoryId: string, newName: string) => {
+    try {
+      await updateCategory({
+        id: Number(categoryId),
+        params: { name: newName },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update category name:', error);
+    }
+  };
+
   // Include the newly created category in options if it's not yet in the cached list
   const options = useMemo(() => {
     const categoryOptions = categories.map((cat: BucketCategory) => ({
@@ -99,6 +110,7 @@ export function BucketCategorySelect({
       onChange={handleCategoryChange}
       onCreate={handleCreateCategory}
       onColorChange={handleColorChange}
+      onOptionNameChange={handleNameChange}
       label="Category"
       placeholder="Search categories..."
       variant="outlined"

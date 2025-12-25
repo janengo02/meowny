@@ -10,6 +10,7 @@ import {
   Divider,
   IconButton,
   Popover,
+  Button,
 } from '@mui/material';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AddIcon from '@mui/icons-material/Add';
@@ -29,6 +30,7 @@ interface ChipAutocompleteProps<T extends string> {
   onChange?: (value: T | null) => void;
   onCreate?: (value: string) => void;
   onColorChange?: (value: T, color: ColorEnum) => void;
+  onOptionNameChange?: (value: T, newName: string) => void;
   size?: 'small' | 'medium';
   variant?: 'filled' | 'outlined';
   disabled?: boolean;
@@ -43,6 +45,7 @@ export function ChipAutocomplete<T extends string>({
   onChange,
   onCreate,
   onColorChange,
+  onOptionNameChange,
   size = 'medium',
   variant = 'outlined',
   disabled = false,
@@ -58,6 +61,7 @@ export function ChipAutocomplete<T extends string>({
   const [selectedItemForColor, setSelectedItemForColor] = useState<T | null>(
     null,
   );
+  const [editedName, setEditedName] = useState('');
 
   const normalizedOptions: ChipAutocompleteOption<T>[] = options.map((opt) =>
     typeof opt === 'string' ? { value: opt, label: opt } : opt,
@@ -116,6 +120,12 @@ export function ChipAutocomplete<T extends string>({
     event.preventDefault();
     setSelectedItemForColor(itemValue);
     setColorPickerAnchor(event.currentTarget);
+
+    // Initialize the edited name with the current option's label
+    const selectedOption = normalizedOptions.find(
+      (opt) => opt.value === itemValue,
+    );
+    setEditedName(selectedOption?.label ?? selectedOption?.value ?? '');
   };
 
   const handleColorPickerClose = () => {
@@ -126,6 +136,13 @@ export function ChipAutocomplete<T extends string>({
   const handleColorSelect = (newColor: ColorEnum) => {
     if (selectedItemForColor && onColorChange) {
       onColorChange(selectedItemForColor, newColor);
+    }
+    handleColorPickerClose();
+  };
+
+  const handleNameSave = () => {
+    if (selectedItemForColor && onOptionNameChange && editedName.trim()) {
+      onOptionNameChange(selectedItemForColor, editedName.trim());
     }
     handleColorPickerClose();
   };
@@ -289,6 +306,34 @@ export function ChipAutocomplete<T extends string>({
         }}
       >
         <Box sx={{ p: 2 }}>
+          {onOptionNameChange && (
+            <Box sx={{ mb: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                <TextField
+                  size="small"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  placeholder="Option name"
+                  autoFocus
+                  sx={{ width: 150 }}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleNameSave}
+                  disabled={!editedName.trim()}
+                  sx={{
+                    minWidth: 'auto',
+                    fontSize: '0.75rem',
+                    py: 0.75,
+                    px: 1.25,
+                  }}
+                >
+                  Save
+                </Button>
+              </Box>
+            </Box>
+          )}
           <Box
             sx={{
               display: 'grid',
