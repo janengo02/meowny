@@ -136,11 +136,11 @@ export const barStackedChartForGainLossDefaultOptions: ChartOptions<'bar'> = {
               ((marketValue - contributedAmount) / contributedAmount) * 100;
             return [
               '',
-              `Total: ${formatMoney(marketValue)}`,
+              `Market Value: ${formatMoney(marketValue)}`,
               `Return: ${returnRate >= 0 ? '+' : ''}${returnRate.toFixed(2)}%`,
             ];
           }
-          return [``, `Total: ${formatMoney(marketValue)}`];
+          return [``, `Market Value: ${formatMoney(marketValue)}`];
         },
       },
     },
@@ -676,7 +676,10 @@ export const getNetIncomeByCategory = (
 
 // Get total gross income at checkpoint
 export const getGrossIncomeAtCheckpoint = (
-  incomeHistories: Pick<IncomeHistoryWithTaxes, 'received_date' | 'gross_amount'>[],
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'gross_amount'
+  >[],
   checkpoint: Date,
   mode: 'month' | 'year',
 ): number => {
@@ -697,7 +700,10 @@ export const getGrossIncomeAtCheckpoint = (
 // Get transaction sum at a specific checkpoint for a bucket
 // Calculates net transaction amount (incoming - outgoing) for the checkpoint period
 export const getTransactionSumAtCheckpoint = (
-  transactions: Pick<Transaction, 'transaction_date' | 'amount' | 'from_bucket_id' | 'to_bucket_id'>[],
+  transactions: Pick<
+    Transaction,
+    'transaction_date' | 'amount' | 'from_bucket_id' | 'to_bucket_id'
+  >[],
   checkpoint: Date,
   bucketId: number,
   mode: 'month' | 'year',

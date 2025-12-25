@@ -21,6 +21,8 @@ import {
   getHistoryAtCheckpoint,
   barTotalWithReturnPlugin,
   barStackedChartForGainLossDefaultOptions,
+  barTotalLabelPlugin,
+  barChartOptions,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
@@ -37,6 +39,7 @@ ChartJS.register(
 
 interface BucketValueHistoryChartProps {
   bucketId: number;
+  bucketType: BucketTypeEnum;
   mode: 'month' | 'year';
   periodFrom: Dayjs;
   periodTo: Dayjs;
@@ -44,6 +47,7 @@ interface BucketValueHistoryChartProps {
 
 export function BucketValueHistoryChart({
   bucketId,
+  bucketType,
   mode,
   periodFrom,
   periodTo,
@@ -99,35 +103,42 @@ export function BucketValueHistoryChart({
       }
     });
 
+    // Build datasets - only show Gains/Losses for investment buckets
     const datasets = [
       {
-        label: 'Contributed Amount',
+        label: 'Contributed Balance',
         data: contributedAmounts,
         backgroundColor: CHART_COLORS[0].replace('0.8', '0.7'),
         borderColor: CHART_COLORS[0],
         borderWidth: 1,
       },
-      {
-        label: 'Gains',
-        data: gains,
-        backgroundColor: 'rgba(76, 175, 80, 0.7)', // Green
-        borderColor: 'rgba(76, 175, 80, 0.8)',
-        borderWidth: 1,
-      },
-      {
-        label: 'Losses',
-        data: losses,
-        backgroundColor: 'rgba(244, 67, 54, 0.7)', // Red
-        borderColor: 'rgba(244, 67, 54, 0.8)',
-        borderWidth: 1,
-      },
     ];
+
+    // Only add Gains and Losses datasets for investment buckets
+    if (bucketType === 'investment') {
+      datasets.push(
+        {
+          label: 'Gains',
+          data: gains,
+          backgroundColor: 'rgba(76, 175, 80, 0.7)', // Green
+          borderColor: 'rgba(76, 175, 80, 0.8)',
+          borderWidth: 1,
+        },
+        {
+          label: 'Losses',
+          data: losses,
+          backgroundColor: 'rgba(244, 67, 54, 0.7)', // Red
+          borderColor: 'rgba(244, 67, 54, 0.8)',
+          borderWidth: 1,
+        },
+      );
+    }
 
     return {
       labels,
       datasets,
     };
-  }, [data, mode, periodFrom, periodTo]);
+  }, [data, mode, periodFrom, periodTo, bucketType]);
 
   if (isLoading) {
     return (
@@ -154,8 +165,16 @@ export function BucketValueHistoryChart({
       ) : chartData ? (
         <Bar
           data={chartData}
-          options={barStackedChartForGainLossDefaultOptions}
-          plugins={[barTotalWithReturnPlugin]}
+          options={
+            bucketType === 'saving'
+              ? barChartOptions
+              : barStackedChartForGainLossDefaultOptions
+          }
+          plugins={[
+            bucketType === 'saving'
+              ? barTotalLabelPlugin
+              : barTotalWithReturnPlugin,
+          ]}
         />
       ) : (
         <EmptyState

@@ -106,13 +106,20 @@ export function BucketPerformance({ bucket }: BucketPerformanceProps) {
         sx={{ mb: 2 }}
       >
         {bucket.type !== 'expense' && <Tab label="Value History" />}
-        <Tab label="Transaction History" />
+        <Tab
+          label={
+            bucket.type === 'expense'
+              ? 'Spending History'
+              : 'Contribution History'
+          }
+        />
       </Tabs>
 
       {/* Chart rendering based on bucket type and selected tab */}
       {bucket.type === 'expense' || selectedTab === 1 ? (
         <BucketTransactionHistoryChart
           bucketId={bucket.id}
+          bucketType={bucket.type}
           mode={mode}
           periodFrom={periodFrom}
           periodTo={periodTo}
@@ -120,6 +127,7 @@ export function BucketPerformance({ bucket }: BucketPerformanceProps) {
       ) : (
         <BucketValueHistoryChart
           bucketId={bucket.id}
+          bucketType={bucket.type}
           mode={mode}
           periodFrom={periodFrom}
           periodTo={periodTo}

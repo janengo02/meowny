@@ -19,7 +19,8 @@ import {
   getCheckpointLabels,
   getCheckpoints,
   getTransactionSumAtCheckpoint,
-  barStackedChartForGainLossDefaultOptions,
+  barChartOptions,
+  barTotalLabelPlugin,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
@@ -36,6 +37,7 @@ ChartJS.register(
 
 interface BucketTransactionHistoryChartProps {
   bucketId: number;
+  bucketType: BucketTypeEnum;
   mode: 'month' | 'year';
   periodFrom: Dayjs;
   periodTo: Dayjs;
@@ -43,6 +45,7 @@ interface BucketTransactionHistoryChartProps {
 
 export function BucketTransactionHistoryChart({
   bucketId,
+  bucketType,
   mode,
   periodFrom,
   periodTo,
@@ -80,7 +83,7 @@ export function BucketTransactionHistoryChart({
 
     const datasets = [
       {
-        label: 'Transaction Sum',
+        label: bucketType === 'expense' ? 'Spent Amount' : 'Contributed Amount',
         data: transactionSums,
         backgroundColor: CHART_COLORS[0].replace('0.8', '0.7'),
         borderColor: CHART_COLORS[0],
@@ -92,7 +95,7 @@ export function BucketTransactionHistoryChart({
       labels,
       datasets,
     };
-  }, [transactions, mode, periodFrom, periodTo, bucketId]);
+  }, [transactions, mode, periodFrom, periodTo, bucketId, bucketType]);
 
   if (isLoading) {
     return (
@@ -119,7 +122,8 @@ export function BucketTransactionHistoryChart({
       ) : chartData ? (
         <Bar
           data={chartData}
-          options={barStackedChartForGainLossDefaultOptions}
+          options={barChartOptions}
+          plugins={[barTotalLabelPlugin]}
         />
       ) : (
         <EmptyState

@@ -142,10 +142,8 @@ export const theme = createTheme({
         },
         outlined: {
           borderWidth: '3px',
-          backgroundColor: 'transparent',
           '&:hover': {
             borderWidth: '3px',
-            backgroundColor: 'rgba(63, 163, 77, 0.1)',
           },
         },
       },
@@ -171,7 +169,6 @@ export const theme = createTheme({
             },
             '&:hover fieldset': {
               borderWidth: '3px',
-              borderColor: '#3fa34d',
             },
             '&.Mui-focused': {
               transform: 'translate(-1px, -1px)',
@@ -179,7 +176,6 @@ export const theme = createTheme({
             },
             '&.Mui-focused fieldset': {
               borderWidth: '3px',
-              borderColor: '#3fa34d',
             },
           },
         },
@@ -246,7 +242,6 @@ export const theme = createTheme({
           fontWeight: 700,
           letterSpacing: '0.03em',
           borderBottomWidth: '3px',
-          backgroundColor: 'rgba(63, 163, 77, 0.1)',
         },
       },
     },
@@ -256,7 +251,6 @@ export const theme = createTheme({
           border: '2px solid transparent',
           transition: 'all 0.15s ease',
           '&:hover': {
-            backgroundColor: 'rgba(63, 163, 77, 0.2)',
             border: '2px solid #000000',
             transform: 'scale(1.05)',
           },

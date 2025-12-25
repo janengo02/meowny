@@ -178,21 +178,23 @@ export function BucketValueHistoryTable({
           />
           Transaction
         </Typography>
-        <Typography
-          variant="caption"
-          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
-        >
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              bgcolor: 'rgba(228, 195, 61, 0.21)',
-              border: '1px solid',
-              borderColor: 'warning.main',
-            }}
-          />
-          Market Value Update
-        </Typography>
+        {bucketType === 'investment' && (
+          <Typography
+            variant="caption"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
+            <Box
+              sx={{
+                width: 12,
+                height: 12,
+                bgcolor: 'rgba(228, 195, 61, 0.21)',
+                border: '1px solid',
+                borderColor: 'warning.main',
+              }}
+            />
+            Market Value Update
+          </Typography>
+        )}
       </Box>
       <TableContainer
         component={Paper}
@@ -218,7 +220,7 @@ export function BucketValueHistoryTable({
               >
                 Balance
               </TableCell>
-              <TableCell rowSpan={2} align="center">
+              <TableCell rowSpan={2} align="center" width={90}>
                 Actions
               </TableCell>
             </TableRow>
@@ -348,14 +350,14 @@ export function BucketValueHistoryTable({
                   </>
                 )}
 
-                <TableCell align="center">
+                <TableCell align="center" width={90}>
                   <IconButton
                     size="small"
                     onClick={() => handleEdit(history)}
                     aria-label="edit"
                     color="primary"
                   >
-                    <EditIcon fontSize="small" />
+                    <EditIcon sx={{ fontSize: '0.75rem' }} />
                   </IconButton>
                   <IconButton
                     size="small"
@@ -363,7 +365,7 @@ export function BucketValueHistoryTable({
                     aria-label="delete"
                     color="error"
                   >
-                    <DeleteIcon fontSize="small" />
+                    <DeleteIcon sx={{ fontSize: '0.75rem' }} />
                   </IconButton>
                 </TableCell>
               </TableRow>
