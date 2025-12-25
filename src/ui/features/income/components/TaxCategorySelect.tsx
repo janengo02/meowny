@@ -40,7 +40,6 @@ export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
       options={options}
       onChange={handleChange}
       onCreate={handleCreate}
-      color="secondary"
       size="small"
       variant="outlined"
       placeholder="Search tax categories..."

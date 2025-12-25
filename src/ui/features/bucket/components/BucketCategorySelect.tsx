@@ -2,7 +2,10 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { ChipAutocomplete } from '../../../shared/components/form/ChipAutocomplete';
 import { useUpdateBucketMutation } from '../api/bucketApi';
-import { useCreateBucketCategoryMutation } from '../api/bucketCategoryApi';
+import {
+  useCreateBucketCategoryMutation,
+  useUpdateBucketCategoryMutation,
+} from '../api/bucketCategoryApi';
 import { selectAllBucketCategories } from '../../account/selectors/accountSelectors';
 import type { RootState } from '../../../store/store';
 
@@ -25,6 +28,8 @@ export function BucketCategorySelect({
     createCategory,
     { isLoading: isCreating, data: newlyCreatedCategory },
   ] = useCreateBucketCategoryMutation();
+  const [updateCategory, { isLoading: isUpdatingCategory }] =
+    useUpdateBucketCategoryMutation();
 
   const handleCategoryChange = async (categoryId: string | null) => {
     try {
@@ -51,11 +56,23 @@ export function BucketCategorySelect({
     }
   };
 
+  const handleColorChange = async (categoryId: string, color: ColorEnum) => {
+    try {
+      await updateCategory({
+        id: Number(categoryId),
+        params: { color },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update category color:', error);
+    }
+  };
+
   // Include the newly created category in options if it's not yet in the cached list
   const options = useMemo(() => {
     const categoryOptions = categories.map((cat: BucketCategory) => ({
       value: cat.id.toString(),
       label: cat.name,
+      color: cat.color,
     }));
 
     // If we just created a category and it's not in the list yet, add it temporarily
@@ -68,6 +85,7 @@ export function BucketCategorySelect({
       categoryOptions.push({
         value: newlyCreatedCategory.id.toString(),
         label: newlyCreatedCategory.name,
+        color: newlyCreatedCategory.color,
       });
     }
 
@@ -80,10 +98,11 @@ export function BucketCategorySelect({
       options={options}
       onChange={handleCategoryChange}
       onCreate={handleCreateCategory}
+      onColorChange={handleColorChange}
       label="Category"
       placeholder="Search categories..."
       variant="outlined"
-      disabled={disabled || isUpdating || isCreating}
+      disabled={disabled || isUpdating || isCreating || isUpdatingCategory}
     />
   );
 }

@@ -27,8 +27,28 @@ export const bucketCategoryApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['BucketCategory'],
     }),
+    updateBucketCategory: builder.mutation<
+      BucketCategory,
+      { id: number; params: UpdateBucketCategoryParams }
+    >({
+      queryFn: async ({ id, params }) => {
+        try {
+          const category = await window.electron.updateBucketCategory(
+            id,
+            params,
+          );
+          return { data: category };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['BucketCategory'],
+    }),
   }),
 });
 
-export const { useGetBucketCategoriesQuery, useCreateBucketCategoryMutation } =
-  bucketCategoryApi;
+export const {
+  useGetBucketCategoriesQuery,
+  useCreateBucketCategoryMutation,
+  useUpdateBucketCategoryMutation,
+} = bucketCategoryApi;

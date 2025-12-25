@@ -94,6 +94,10 @@ app.on('ready', async () => {
   ipcMainHandle('db:createBucketCategory', async (args) => {
     return db.createBucketCategory(args as CreateBucketCategoryParams);
   });
+  ipcMainHandle('db:updateBucketCategory', async (args) => {
+    const { id, params } = args as { id: number; params: UpdateBucketCategoryParams };
+    return db.updateBucketCategory(id, params);
+  });
   ipcMainHandle('db:getAccounts', db.getAccounts);
   ipcMainHandle('db:createAccount', async (args) => {
     return db.createAccount(args as CreateAccountParams);

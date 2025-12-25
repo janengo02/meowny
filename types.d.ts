@@ -698,6 +698,7 @@ type EventPayloadMapping = {
   'db:deleteBucket': void;
   'db:getBucketCategories': BucketCategory[];
   'db:createBucketCategory': BucketCategory;
+  'db:updateBucketCategory': BucketCategory;
   'db:getAccounts': Account[];
   'db:createAccount': Account;
   'db:getAccountsWithBuckets': NormalizedAccountsResponse;
@@ -780,6 +781,10 @@ interface Window {
     getBucketCategories: () => Promise<BucketCategory[]>;
     createBucketCategory: (
       params: CreateBucketCategoryParams,
+    ) => Promise<BucketCategory>;
+    updateBucketCategory: (
+      id: number,
+      params: UpdateBucketCategoryParams,
     ) => Promise<BucketCategory>;
     getAccounts: () => Promise<Account[]>;
     createAccount: (params: CreateAccountParams) => Promise<Account>;

@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { accountApi } from '../api/accountApi';
 import { bucketApi } from '../../bucket/api/bucketApi';
+import { bucketCategoryApi } from '../../bucket/api/bucketCategoryApi';
 
 interface AccountState {
   accounts: {
@@ -165,6 +166,22 @@ const accountSlice = createSlice({
             // Remove from byId
             delete state.buckets.byId[bucketId];
           }
+        },
+      )
+      // When a bucket category is created
+      .addMatcher(
+        bucketCategoryApi.endpoints.createBucketCategory.matchFulfilled,
+        (state, action) => {
+          const category = action.payload;
+          state.categories.byId[category.id] = category;
+        },
+      )
+      // When a bucket category is updated
+      .addMatcher(
+        bucketCategoryApi.endpoints.updateBucketCategory.matchFulfilled,
+        (state, action) => {
+          const category = action.payload;
+          state.categories.byId[category.id] = category;
         },
       );
   },
