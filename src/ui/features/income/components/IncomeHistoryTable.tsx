@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  IconButton,
   Paper,
   Table,
   TableBody,
@@ -13,18 +12,12 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+
 import {
   useGetIncomeHistoriesBySourceQuery,
   useCreateIncomeHistoryMutation,
-  useUpdateIncomeHistoryMutation,
-  useDeleteIncomeHistoryMutation,
 } from '../api/incomeHistoryApi';
-import {
-  useGetIncomeTaxesByIncomeHistoryQuery,
-  useCreateIncomeTaxMutation,
-} from '../api/incomeTaxApi';
+
 import { IncomeCategorySelect } from './IncomeCategorySelect';
 import { IncomeGrossInput } from './IncomeGrossInput';
 import { ReceivedDateInput } from './ReceivedDateInput';
@@ -32,74 +25,10 @@ import { TaxCell } from './TaxCell';
 import { NetAmountCell } from './NetAmountCell';
 import dayjs from 'dayjs';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
+import { IncomeHistoryRowActions } from './IncomeHistoryRowActions';
 
 interface IncomeHistoryTableProps {
   incomeSourceId: number;
-}
-
-interface IncomeHistoryRowActionsProps {
-  historyId: number;
-  incomeId: number;
-  incomeCategoryId: number | null;
-  grossAmount: number;
-  onDelete: (historyId: number) => void;
-}
-
-function IncomeHistoryRowActions({
-  historyId,
-  incomeId,
-  incomeCategoryId,
-  grossAmount,
-  onDelete,
-}: IncomeHistoryRowActionsProps) {
-  const { data: incomeTaxes = [] } =
-    useGetIncomeTaxesByIncomeHistoryQuery(historyId);
-  const [createIncomeHistory] = useCreateIncomeHistoryMutation();
-  const [createIncomeTax] = useCreateIncomeTaxMutation();
-
-  const handleDuplicate = async () => {
-    try {
-      // Create new income history with same values
-      const newHistory = await createIncomeHistory({
-        income_id: incomeId,
-        income_category_id: incomeCategoryId,
-        gross_amount: grossAmount,
-        received_date: formatDateForDB(dayjs()),
-      }).unwrap();
-
-      // Duplicate all taxes associated with the original income history
-      for (const tax of incomeTaxes) {
-        await createIncomeTax({
-          income_history_id: newHistory.id,
-          tax_category_id: tax.tax_category_id,
-          tax_amount: tax.tax_amount,
-        }).unwrap();
-      }
-    } catch (error) {
-      console.error('Failed to duplicate income history:', error);
-    }
-  };
-
-  return (
-    <>
-      <IconButton
-        size="small"
-        onClick={handleDuplicate}
-        color="primary"
-        title="Duplicate"
-      >
-        <ContentCopyIcon fontSize="small" sx={{ fontSize: '1rem' }} />
-      </IconButton>
-      <IconButton
-        size="small"
-        onClick={() => onDelete(historyId)}
-        color="error"
-        title="Delete"
-      >
-        <DeleteIcon fontSize="small" sx={{ fontSize: '1rem' }} />
-      </IconButton>
-    </>
-  );
 }
 
 export function IncomeHistoryTable({
@@ -109,8 +38,6 @@ export function IncomeHistoryTable({
     useGetIncomeHistoriesBySourceQuery(incomeSourceId);
   const [createIncomeHistory, { isLoading: isCreating }] =
     useCreateIncomeHistoryMutation();
-  const [updateIncomeHistory] = useUpdateIncomeHistoryMutation();
-  const [deleteIncomeHistory] = useDeleteIncomeHistoryMutation();
 
   // Sort income histories by received_date desc, then by id asc
   const sortedIncomeHistories = [...incomeHistories].sort((a, b) => {
@@ -136,38 +63,7 @@ export function IncomeHistoryTable({
     }
   };
 
-  const handleDeleteHistory = async (historyId: number) => {
-    try {
-      await deleteIncomeHistory(historyId).unwrap();
-    } catch (error) {
-      console.error('Failed to delete income history:', error);
-    }
-  };
 
-  const handleGrossAmountSave = async (
-    historyId: number,
-    newAmount: number,
-  ) => {
-    try {
-      await updateIncomeHistory({
-        id: historyId,
-        params: { gross_amount: newAmount },
-      }).unwrap();
-    } catch (error) {
-      console.error('Failed to update gross amount:', error);
-    }
-  };
-
-  const handleReceivedDateSave = async (historyId: number, newDate: string) => {
-    try {
-      await updateIncomeHistory({
-        id: historyId,
-        params: { received_date: newDate },
-      }).unwrap();
-    } catch (error) {
-      console.error('Failed to update received date:', error);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -254,10 +150,8 @@ export function IncomeHistoryTable({
               >
                 <TableCell sx={{ verticalAlign: 'top' }}>
                   <ReceivedDateInput
+                    historyId={history.id}
                     value={history.received_date}
-                    onSave={(newDate) =>
-                      handleReceivedDateSave(history.id, newDate)
-                    }
                   />
                 </TableCell>
                 <TableCell>
@@ -268,10 +162,9 @@ export function IncomeHistoryTable({
                 </TableCell>
                 <TableCell align="right">
                   <IncomeGrossInput
+                    historyId={history.id}
                     value={history.gross_amount}
-                    onSave={(newAmount) =>
-                      handleGrossAmountSave(history.id, newAmount)
-                    }
+
                   />
                 </TableCell>
                 <TableCell>
@@ -292,7 +185,6 @@ export function IncomeHistoryTable({
                     incomeId={incomeSourceId}
                     incomeCategoryId={history.income_category_id}
                     grossAmount={history.gross_amount}
-                    onDelete={handleDeleteHistory}
                   />
                 </TableCell>
               </TableRow>

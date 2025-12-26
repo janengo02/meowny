@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { TextField } from '@mui/material';
 import { NumericFormat } from 'react-number-format';
+import { useUpdateIncomeHistoryMutation } from '../api/incomeHistoryApi';
 
 interface IncomeGrossInputProps {
   value: number;
-  onSave: (value: number) => Promise<void>;
+  historyId: number;
 }
 
-export function IncomeGrossInput({ value, onSave }: IncomeGrossInputProps) {
+export function IncomeGrossInput({ value, historyId }: IncomeGrossInputProps) {
+  const [updateIncomeHistory] = useUpdateIncomeHistoryMutation();
   const [displayValue, setDisplayValue] = useState<number>(value);
 
   const handleBlur = async (floatValue: number | undefined) => {
@@ -17,7 +19,14 @@ export function IncomeGrossInput({ value, onSave }: IncomeGrossInputProps) {
     setDisplayValue(newAmount);
 
     // Save the value
-    await onSave(newAmount);
+    try {
+      await updateIncomeHistory({
+        id: historyId,
+        params: { gross_amount: newAmount },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update gross amount:', error);
+    }
   };
 
   useEffect(() => {

@@ -4,13 +4,15 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { type Dayjs } from 'dayjs';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
+import { useUpdateIncomeHistoryMutation } from '../api/incomeHistoryApi';
 
 interface ReceivedDateInputProps {
   value: string; // ISO date string
-  onSave: (value: string) => Promise<void>;
+  historyId: number;
 }
 
-export function ReceivedDateInput({ value, onSave }: ReceivedDateInputProps) {
+export function ReceivedDateInput({ value, historyId }: ReceivedDateInputProps) {
+  const [updateIncomeHistory] = useUpdateIncomeHistoryMutation();
   const [displayValue, setDisplayValue] = useState<Dayjs | null>(dayjs(value));
 
   const handleChange = async (newValue: Dayjs | null) => {
@@ -23,7 +25,15 @@ export function ReceivedDateInput({ value, onSave }: ReceivedDateInputProps) {
 
     // Convert to ISO string and save
     const isoDate = formatDateForDB(newValue.format('YYYY-MM-DD'));
-    await onSave(isoDate);
+
+    try {
+      await updateIncomeHistory({
+        id: historyId,
+        params: { received_date: isoDate },
+      }).unwrap();
+    } catch (error) {
+      console.error('Failed to update received date:', error);
+    }
   };
 
   useEffect(() => {
