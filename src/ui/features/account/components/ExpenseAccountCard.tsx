@@ -10,6 +10,7 @@ import {
   selectBucketsByAccount,
   selectAllBucketCategories,
 } from '../selectors/accountSelectors';
+import { getColorConfig } from '../../../shared/theme/colors';
 
 interface ExpenseAccountCardProps {
   accountId: number;
@@ -66,34 +67,46 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
           >
             <Card
               sx={{
-                p: 1.5,
-                height: '100%',
+              p: 1.5,
+              height: '100%',
+              ...(group.category && {
+                backgroundColor: getColorConfig(group.category.color).bgColor + '30',
+              }),
               }}
             >
               <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 1,
+              }}
+              >
+              <Typography
+                variant="body1"
+                fontWeight="bold"
                 sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 1,
+                color: group.category
+                  ? getColorConfig(group.category.color).color
+                  : 'white',
                 }}
               >
-                <Typography variant="body1" fontWeight="bold" color="primary">
-                  {group.category?.name ?? 'Uncategorized'}
-                </Typography>
+                {group.category?.name ?? 'Uncategorized'}
+              </Typography>
 
-                {group.buckets.map((bucket) => (
-                  <ExpenseBucketCard
-                    key={bucket.id}
-                    bucket={bucket}
-                    onClick={() => setSelectedBucketId(bucket.id)}
-                  />
-                ))}
-                <AddExpenseBucketCard
-                  account={account}
-                  categoryId={group.category?.id ?? null}
+              {group.buckets.map((bucket) => (
+                <ExpenseBucketCard
+                key={bucket.id}
+                bucket={bucket}
+                onClick={() => setSelectedBucketId(bucket.id)}
+                category={group.category}
                 />
+              ))}
+              <AddExpenseBucketCard
+                account={account}
+                categoryId={group.category?.id ?? null}
+              />
               </Box>
             </Card>
           </Grid>
