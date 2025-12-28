@@ -360,6 +360,51 @@ export const pieChartOptions: ChartOptions<'pie'> = {
     },
   },
 };
+// Donut chart options with center text
+interface DonutChartOptions extends ChartOptions<'doughnut'> {
+  cutout: string;
+}
+
+export const donutChartOptions: DonutChartOptions = {
+  responsive: true,
+  maintainAspectRatio: true,
+  aspectRatio: 1,
+  cutout: '70%', // This makes it a donut instead of a pie
+  layout: {
+    padding: {
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+  },
+  plugins: {
+    legend: {
+      position: 'bottom' as const,
+      labels: {
+        boxWidth: 12,
+        padding: 10,
+        font: {
+          size: 11,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          const label = context.label || '';
+          const value = context.parsed || 0;
+          const total = context.dataset.data.reduce(
+            (acc: number, val) => acc + (val as number),
+            0,
+          );
+          const percentage = ((value / total) * 100).toFixed(1);
+          return `${label}: ${formatMoney(value)} (${percentage}%)`;
+        },
+      },
+    },
+  },
+};
 
 // Custom dataset type with metadata for horizontal bar charts
 export interface DatasetWithMetadata {
@@ -742,5 +787,25 @@ export const getTransactionSumAtCheckpoint = (
     }
 
     return sum;
+  }, 0);
+};
+
+// Get total expense amount at checkpoint from expense transactions
+export const getExpenseAtCheckpoint = (
+  expenseTransactions: Pick<Transaction, 'transaction_date' | 'amount'>[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): number => {
+  const checkpointDayjs = dayjs(checkpoint);
+
+  return expenseTransactions.reduce((total, transaction) => {
+    const transactionDate = dayjs(transaction.transaction_date);
+
+    // Check if the transaction_date falls within the same period as checkpoint
+    if (transactionDate.isSame(checkpointDayjs, mode)) {
+      return total + transaction.amount;
+    }
+
+    return total;
   }, 0);
 };

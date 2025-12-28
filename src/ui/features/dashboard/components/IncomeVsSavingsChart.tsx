@@ -29,6 +29,7 @@ import {
   getCheckpoints,
   getNetIncomeAtCheckpoint,
   getAssetContributionAtCheckpoint,
+  getExpenseAtCheckpoint,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
@@ -36,6 +37,7 @@ import { FormSelectField } from '../../../shared/components/form/FormSelectField
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
 import { useGetIncomeHistoriesByPeriodQuery } from '../../income/api/incomeHistoryApi';
 import { useGetAssetsValueHistoryQuery } from '../../bucket/api/bucketValueHistoryApi';
+import { useGetExpenseTransactionsWithDatesByPeriodQuery } from '../../transaction/api/transactionApi';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import {
@@ -101,10 +103,23 @@ export function IncomeVsSavingsChart() {
     skip: !queryParams,
   });
 
+  const {
+    data: expenseTransactions,
+    isLoading: isLoadingExpenses,
+    error: expenseError,
+  } = useGetExpenseTransactionsWithDatesByPeriodQuery(queryParams!, {
+    skip: !queryParams,
+  });
+
   const chartData = useMemo(() => {
     if (Object.keys(errors).length > 0) return null;
 
-    if (!incomeHistories || !assetsData || !assetsData.buckets) {
+    if (
+      !incomeHistories ||
+      !assetsData ||
+      !assetsData.buckets ||
+      !expenseTransactions
+    ) {
       return null;
     }
 
@@ -118,6 +133,11 @@ export function IncomeVsSavingsChart() {
     // Calculate income by checkpoint using utility function
     const incomeData = checkpoints.map((checkpoint) =>
       getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
+    );
+
+    // Calculate expense totals by checkpoint using utility function
+    const expenseDataByCheckpoint = checkpoints.map((checkpoint) =>
+      getExpenseAtCheckpoint(expenseTransactions, checkpoint, mode),
     );
 
     // Group all bucket histories by bucket
@@ -156,6 +176,15 @@ export function IncomeVsSavingsChart() {
         categoryPercentage: 0.8,
       },
       {
+        label: 'Expense',
+        data: expenseDataByCheckpoint,
+        backgroundColor: CHART_COLORS[3],
+        borderColor: CHART_COLORS[3],
+        borderWidth: 1,
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
+      },
+      {
         label: 'Asset Contribution',
         data: assetContributionData,
         backgroundColor: CHART_COLORS[0],
@@ -167,10 +196,18 @@ export function IncomeVsSavingsChart() {
     ];
 
     return { labels, datasets };
-  }, [incomeHistories, assetsData, periodFrom, periodTo, mode, errors]);
+  }, [
+    incomeHistories,
+    assetsData,
+    expenseTransactions,
+    periodFrom,
+    periodTo,
+    mode,
+    errors,
+  ]);
 
-  const isLoading = isLoadingIncome || isLoadingAssets;
-  const error = incomeError || assetsError;
+  const isLoading = isLoadingIncome || isLoadingAssets || isLoadingExpenses;
+  const error = incomeError || assetsError || expenseError;
 
   if (isLoading) {
     return (
@@ -192,7 +229,7 @@ export function IncomeVsSavingsChart() {
   return (
     <FormProvider {...methods}>
       <Typography variant="h2" sx={{ p: 1 }}>
-        Income vs Savings
+        Income, Expenses & Savings
       </Typography>
       <Card sx={{ height: 500, pt: 1 }}>
         <CardContent
@@ -241,7 +278,7 @@ export function IncomeVsSavingsChart() {
                   />
                 }
                 title="No data available"
-                description="Add income and asset transactions to see your income vs savings"
+                description="Add income, expense, and asset transactions to see your financial overview"
               />
             )}
           </Box>

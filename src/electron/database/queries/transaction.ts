@@ -354,7 +354,12 @@ export async function getExpenseTransactionsByPeriod(params: {
       to_bucket:bucket!transaction_to_bucket_id_fkey(
         id,
         name,
-        type
+        type,
+        bucket_category_id,
+        category:bucket_category_id(
+          id,
+          name
+        )
       )
     `,
     )
@@ -374,6 +379,10 @@ export async function getExpenseTransactionsByPeriod(params: {
       id: number;
       name: string;
       type: string;
+      category: {
+        id: number;
+        name: string;
+      } | null;
     } | null;
 
     // Only include transactions where to_bucket.type === 'expense'
@@ -383,6 +392,8 @@ export async function getExpenseTransactionsByPeriod(params: {
           bucket_id: toBucket.id,
           bucket_name: toBucket.name,
           total_amount: 0,
+          category_id: toBucket.category?.id ?? null,
+          category_name: toBucket.category?.name ?? null,
         });
       }
 
@@ -392,4 +403,48 @@ export async function getExpenseTransactionsByPeriod(params: {
   });
 
   return Array.from(expenseBuckets.values());
+}
+
+export async function getExpenseTransactionsWithDatesByPeriod(params: {
+  startDate: string;
+  endDate: string;
+}): Promise<Transaction[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Query all transactions within the target period
+  // Left join with bucket table on to_bucket_id
+  // Filter transactions with to_bucket_id of bucket with type 'expense' only
+  const { data: transactions, error } = await supabase
+    .from('transaction')
+    .select(
+      `
+      *,
+      to_bucket:bucket!transaction_to_bucket_id_fkey(
+        id,
+        name,
+        type
+      )
+    `,
+    )
+    .eq('user_id', userId)
+    .gte('transaction_date', params.startDate)
+    .lte('transaction_date', params.endDate)
+    .not('to_bucket_id', 'is', null)
+    .order('transaction_date', { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  // Filter and return only expense transactions
+  const expenseTransactions = transactions?.filter((transaction) => {
+    const toBucket = transaction.to_bucket as unknown as {
+      id: number;
+      name: string;
+      type: string;
+    } | null;
+
+    return toBucket && toBucket.type === 'expense';
+  });
+
+  return expenseTransactions || [];
 }
