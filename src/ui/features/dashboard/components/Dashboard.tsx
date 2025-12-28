@@ -48,7 +48,7 @@ const FIXED_LAYOUT: DashboardLayout = {
         {
           id: 'col-3-2',
           width: 6,
-          sections: [{ type: 'bucketGoalsChart' }],
+          sections: [{ type: 'expenseAccounts' }],
         },
       ],
     },
@@ -58,8 +58,13 @@ const FIXED_LAYOUT: DashboardLayout = {
       columns: [
         {
           id: 'col-4-1',
-          width: 12,
-          sections: [{ type: 'expenseAccounts' }],
+          width: 6,
+          sections: [{ type: 'bucketGoalsChart' }],
+        },
+        {
+          id: 'col-4-2',
+          width: 6,
+          sections: [{ type: 'incomeVsSavingsChart' }],
         },
       ],
     },
@@ -75,17 +80,6 @@ const FIXED_LAYOUT: DashboardLayout = {
         {
           id: 'col-5-2',
           width: 6,
-          sections: [{ type: 'incomeVsSavingsChart' }],
-        },
-      ],
-    },
-    {
-      id: 'row-6',
-      order: 5,
-      columns: [
-        {
-          id: 'col-6-1',
-          width: 12,
           sections: [{ type: 'income' }],
         },
       ],
@@ -166,21 +160,36 @@ function DashboardContent() {
 
         {/* Render rows with fixed layout */}
         {sortedRows.map((row) => (
-          <Grid container spacing={2} key={row.id}>
+          <Grid
+            container
+            spacing={2}
+            key={row.id}
+            sx={{
+              mb: 3,
+              height: '100%',
+            }}
+          >
             {row.columns.map((column) => (
-              <Grid key={column.id} size={{ xs: 12, md: column.width }}>
-                <Box>
-                  {column.sections.map((section, sectionIndex) => (
-                    <Box
-                      key={sectionIndex}
-                      sx={{
-                        mb: 3,
-                      }}
-                    >
-                      <DashboardSection section={section} />
-                    </Box>
-                  ))}
-                </Box>
+              <Grid
+                key={column.id}
+                size={{ xs: 12, md: column.width }}
+                sx={{
+                  height: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                }}
+              >
+                {column.sections.map((section, sectionIndex) => (
+                  <Box
+                    key={sectionIndex}
+                    sx={{
+                      height: '100%',
+                      flex: 1,
+                    }}
+                  >
+                    <DashboardSection section={section} />
+                  </Box>
+                ))}
               </Grid>
             ))}
           </Grid>

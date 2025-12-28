@@ -321,7 +321,16 @@ export const barTotalWithReturnPlugin = {
 
 export const pieChartOptions: ChartOptions<'pie'> = {
   responsive: true,
-  maintainAspectRatio: false,
+  maintainAspectRatio: true,
+  aspectRatio: 1,
+  layout: {
+    padding: {
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+  },
   plugins: {
     legend: {
       position: 'right' as const,
@@ -332,6 +341,8 @@ export const pieChartOptions: ChartOptions<'pie'> = {
           size: 11,
         },
       },
+      maxHeight: undefined,
+      maxWidth: undefined,
     },
     tooltip: {
       callbacks: {

@@ -8,7 +8,10 @@ interface AddExpenseBucketCardProps {
   categoryId?: number | null;
 }
 
-export function AddExpenseBucketCard({ account, categoryId }: AddExpenseBucketCardProps) {
+export function AddExpenseBucketCard({
+  account,
+  categoryId,
+}: AddExpenseBucketCardProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -21,6 +24,7 @@ export function AddExpenseBucketCard({ account, categoryId }: AddExpenseBucketCa
           border: '2px dashed',
           borderColor: 'divider',
           bgcolor: 'transparent',
+          boxShadow: 'none',
         }}
       >
         <CardActionArea onClick={() => setOpen(true)}>
@@ -31,12 +35,13 @@ export function AddExpenseBucketCard({ account, categoryId }: AddExpenseBucketCa
               alignItems: 'center',
               justifyContent: 'center',
               gap: 0.5,
-              px: 1.5,
-              py: 1,
+              pl: 1,
+              pr: 1.5,
+              py: 0,
             }}
           >
-            <AddIcon sx={{ color: 'text.secondary', fontSize: '1rem' }} />
-            <Typography color="text.secondary" variant="body2">
+            <AddIcon sx={{ color: 'text.secondary', fontSize: '0.75rem' }} />
+            <Typography color="text.secondary" variant="caption">
               Add
             </Typography>
           </CardContent>

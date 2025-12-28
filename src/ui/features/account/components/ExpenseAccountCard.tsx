@@ -56,70 +56,55 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
   return (
     <>
       <Grid container>
-        {allGroups.map((group, index) => (
-          <Grid
-            key={group.category?.id ?? 'uncategorized'}
-            size={6}
-            sx={{
-              pl: index % 2 === 0 ? 0 : 1,
-              pr: index % 2 !== 0 ? 0 : 1,
-            }}
-          >
+        {allGroups.map((group) => (
+          <Grid key={group.category?.id ?? 'uncategorized'} size={12}>
             <Card
               sx={{
-              p: 1.5,
-              height: '100%',
-              ...(group.category && {
-                backgroundColor: getColorConfig(group.category.color).bgColor + '30',
-              }),
+                px: 1.5,
+                py: 1,
+                height: '100%',
               }}
             >
               <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: 1,
-              }}
-              >
-              <Typography
-                variant="body1"
-                fontWeight="bold"
                 sx={{
-                color: group.category
-                  ? getColorConfig(group.category.color).color
-                  : 'white',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 1,
                 }}
               >
-                {group.category?.name ?? 'Uncategorized'}
-              </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{
+                    color: group.category
+                      ? getColorConfig(group.category.color).color
+                      : 'white',
+                  }}
+                >
+                  {group.category?.name ?? 'Uncategorized'}
+                </Typography>
 
-              {group.buckets.map((bucket) => (
-                <ExpenseBucketCard
-                key={bucket.id}
-                bucket={bucket}
-                onClick={() => setSelectedBucketId(bucket.id)}
-                category={group.category}
+                {group.buckets.map((bucket) => (
+                  <ExpenseBucketCard
+                    key={bucket.id}
+                    bucket={bucket}
+                    onClick={() => setSelectedBucketId(bucket.id)}
+                    category={group.category}
+                  />
+                ))}
+                <AddExpenseBucketCard
+                  account={account}
+                  categoryId={group.category?.id ?? null}
                 />
-              ))}
-              <AddExpenseBucketCard
-                account={account}
-                categoryId={group.category?.id ?? null}
-              />
               </Box>
             </Card>
           </Grid>
         ))}
 
         {/* Add Category Card */}
-        <Grid
-          size={6}
-          sx={{
-            pl: allGroups.length % 2 === 0 ? 0 : 1,
-            pr: allGroups.length % 2 !== 0 ? 0 : 1,
-          }}
-        >
+        <Grid size={12}>
           <AddCategoryCard account={account} />
         </Grid>
       </Grid>

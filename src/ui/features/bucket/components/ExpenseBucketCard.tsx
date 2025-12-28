@@ -7,7 +7,11 @@ interface ExpenseBucketCardProps {
   category?: BucketCategory | null;
 }
 
-export function ExpenseBucketCard({ bucket, onClick, category }: ExpenseBucketCardProps) {
+export function ExpenseBucketCard({
+  bucket,
+  onClick,
+  category,
+}: ExpenseBucketCardProps) {
   const colorConfig = category ? getColorConfig(category.color) : null;
 
   return (
@@ -21,11 +25,12 @@ export function ExpenseBucketCard({ bucket, onClick, category }: ExpenseBucketCa
           borderColor: colorConfig.bgColor,
           outlineColor: colorConfig.bgColor,
         }),
+        boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
         '&:hover': {
-          transform: 'translate(-2px, -2px)',
+          transform: 'translate(-1px, -1px)',
           boxShadow: colorConfig
-            ? `4px 4px 0px ${colorConfig.bgColor}`
-            : '4px 4px 0px rgba(0, 0, 0, 0.6)',
+            ? `2px 2px 0px ${colorConfig.bgColor}`
+            : '2px 2px 0px rgba(0, 0, 0, 0.6)',
         },
       }}
     >
@@ -41,12 +46,12 @@ export function ExpenseBucketCard({ bucket, onClick, category }: ExpenseBucketCa
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            px: 1.5,
-            py: 1,
+            px: 1,
+            py: 0,
           }}
         >
           <Typography
-            variant="body2"
+            variant="caption"
             sx={{
               fontWeight: 500,
               whiteSpace: 'nowrap',

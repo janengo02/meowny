@@ -122,79 +122,94 @@ export function ExpensePieChart() {
 
   return (
     <FormProvider {...methods}>
-      <Typography variant="h2" sx={{ p: 1 }}>
-        Expenses
-      </Typography>
-      <Card sx={{ height: 500 }}>
-        <CardContent
-          sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
-        >
-          {/* Month Navigation */}
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            justifyContent="center"
+      <Box display="flex" flexDirection="column" height="100%">
+        <Typography variant="h2" sx={{ p: 1 }}>
+          Expenses
+        </Typography>
+        <Card sx={{ height: '100%', minHeight: 500 }}>
+          <CardContent
+            sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
           >
-            <IconButton onClick={handlePrevMonth} size="small">
-              <ChevronLeftIcon />
-            </IconButton>
-            <DatePickerField
-              name="targetMonth"
-              views={['year', 'month']}
-              format="YYYY/MM"
-              onChange={handleMonthChange}
-              size="small"
-              sx={{ width: 140 }}
-            />
-            <IconButton
-              onClick={handleNextMonth}
-              size="small"
-              disabled={targetMonth.isSame(dayjs(), 'month')}
+            {/* Month Navigation */}
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              justifyContent="center"
             >
-              <ChevronRightIcon />
-            </IconButton>
-          </Stack>
+              <IconButton onClick={handlePrevMonth} size="small">
+                <ChevronLeftIcon />
+              </IconButton>
+              <DatePickerField
+                name="targetMonth"
+                views={['year', 'month']}
+                format="YYYY/MM"
+                onChange={handleMonthChange}
+                size="small"
+                sx={{ width: 140 }}
+              />
+              <IconButton
+                onClick={handleNextMonth}
+                size="small"
+                disabled={targetMonth.isSame(dayjs(), 'month')}
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </Stack>
 
-          {/* Chart */}
-          <Box
-            sx={{
-              flex: 1,
-              width: '100%',
-              height: '100%',
-              maxHeight: 250,
-              margin: 'auto 0',
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            {error ? (
-              <ErrorState
-                title="Failed to load expense data"
-                description="Please try refreshing the page"
-              />
-            ) : chartData ? (
-              <Pie
-                key={`pie-chart-${targetMonth.format('YYYY-MM')}`}
-                data={chartData}
-                options={pieChartOptions}
-              />
-            ) : (
-              <EmptyState
-                icon={
-                  <AccountBalanceWalletIcon
-                    sx={{ fontSize: 48, color: 'text.disabled', opacity: 0.5 }}
+            {/* Chart */}
+            <Box
+              sx={{
+                flex: 1,
+                width: '100%',
+                height: '100%',
+                margin: 'auto 0',
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {error ? (
+                <ErrorState
+                  title="Failed to load expense data"
+                  description="Please try refreshing the page"
+                />
+              ) : chartData ? (
+                <Box
+                  sx={{
+                    maxHeight: 400,
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Pie
+                    key={`pie-chart-${targetMonth.format('YYYY-MM')}`}
+                    data={chartData}
+                    options={pieChartOptions}
                   />
-                }
-                title="No expense data"
-                description="Add expense transactions to see your spending breakdown"
-              />
-            )}
-          </Box>
-        </CardContent>
-      </Card>
+                </Box>
+              ) : (
+                <EmptyState
+                  icon={
+                    <AccountBalanceWalletIcon
+                      sx={{
+                        fontSize: 48,
+                        color: 'text.disabled',
+                        opacity: 0.5,
+                      }}
+                    />
+                  }
+                  title="No expense data"
+                  description="Add expense transactions to see your spending breakdown"
+                />
+              )}
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
     </FormProvider>
   );
 }
