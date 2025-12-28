@@ -52,6 +52,9 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getExpenseTransactionsWithDatesByPeriod: (
     params: GetExpenseTransactionsByPeriodParams,
   ) => ipcInvoke('db:getExpenseTransactionsWithDatesByPeriod', params),
+  getExpenseTransactionsByCategoryAndPeriod: (
+    params: GetExpenseTransactionsByCategoryAndPeriodParams,
+  ) => ipcInvoke('db:getExpenseTransactionsByCategoryAndPeriod', params),
   getBucketFromKeywords: (notes: string | null) =>
     ipcInvoke('db:getBucketFromKeywords', notes),
   getKeywordBucketMappings: () => ipcInvoke('db:getKeywordBucketMappings'),

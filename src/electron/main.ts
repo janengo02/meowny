@@ -156,6 +156,14 @@ app.on('ready', async () => {
       args as GetExpenseTransactionsByPeriodParams,
     );
   });
+  ipcMainHandle(
+    'db:getExpenseTransactionsByCategoryAndPeriod',
+    async (args) => {
+      return db.getExpenseTransactionsByCategoryAndPeriod(
+        args as GetExpenseTransactionsByCategoryAndPeriodParams,
+      );
+    },
+  );
   ipcMainHandle('db:getBucketFromKeywords', async (args) => {
     return db.getBucketFromKeywords(args as string | null);
   });

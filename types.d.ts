@@ -479,6 +479,12 @@ type GetExpenseTransactionsByPeriodParams = {
   endDate: string;
 };
 
+type GetExpenseTransactionsByCategoryAndPeriodParams = {
+  categoryId: number;
+  startDate: string;
+  endDate: string;
+};
+
 type GetTransactionsByBucketParams = {
   bucketId: number;
   startDate?: string;
@@ -715,6 +721,7 @@ type EventPayloadMapping = {
   'db:checkDuplicateTransaction': boolean;
   'db:getExpenseTransactionsByPeriod': ExpenseTransactionSummary[];
   'db:getExpenseTransactionsWithDatesByPeriod': Transaction[];
+  'db:getExpenseTransactionsByCategoryAndPeriod': Transaction[];
   'db:getBucketFromKeywords': BucketPair | null;
   'db:getKeywordBucketMappings': KeywordBucketMapping[];
   'db:getValueHistoryWithTransactionsByBucket': ValueHistoryWithTransaction[];
@@ -822,6 +829,9 @@ interface Window {
     ) => Promise<ExpenseTransactionSummary[]>;
     getExpenseTransactionsWithDatesByPeriod: (
       params: GetExpenseTransactionsByPeriodParams,
+    ) => Promise<Transaction[]>;
+    getExpenseTransactionsByCategoryAndPeriod: (
+      params: GetExpenseTransactionsByCategoryAndPeriodParams,
     ) => Promise<Transaction[]>;
     getBucketFromKeywords: (notes: string | null) => Promise<BucketPair | null>;
     getKeywordBucketMappings: () => Promise<KeywordBucketMapping[]>;

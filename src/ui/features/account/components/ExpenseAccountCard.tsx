@@ -11,6 +11,7 @@ import {
   selectAllBucketCategories,
 } from '../selectors/accountSelectors';
 import { getColorConfig } from '../../../shared/theme/colors';
+import { ExpenseCategoryModal } from '../../bucket/components/ExpenseCategoryModal';
 
 interface ExpenseAccountCardProps {
   accountId: number;
@@ -28,6 +29,9 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
   const categories = useAppSelector(selectAllBucketCategories);
 
   const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null,
+  );
 
   if (!account) return null;
 
@@ -81,6 +85,17 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
                     color: group.category
                       ? getColorConfig(group.category.color).color
                       : 'white',
+                    cursor: group.category ? 'pointer' : 'default',
+                    '&:hover': group.category
+                      ? {
+                          textDecoration: 'underline',
+                        }
+                      : {},
+                  }}
+                  onClick={() => {
+                    if (group.category) {
+                      setSelectedCategoryId(group.category.id);
+                    }
                   }}
                 >
                   {group.category?.name ?? 'Uncategorized'}
@@ -114,6 +129,14 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
         open={selectedBucketId !== null}
         onClose={() => setSelectedBucketId(null)}
       />
+
+      {selectedCategoryId !== null && (
+        <ExpenseCategoryModal
+          categoryId={selectedCategoryId}
+          open={selectedCategoryId !== null}
+          onClose={() => setSelectedCategoryId(null)}
+        />
+      )}
     </>
   );
 }

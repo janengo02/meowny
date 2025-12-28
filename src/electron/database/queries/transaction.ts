@@ -448,3 +448,54 @@ export async function getExpenseTransactionsWithDatesByPeriod(params: {
 
   return expenseTransactions || [];
 }
+
+export async function getExpenseTransactionsByCategoryAndPeriod(params: {
+  categoryId: number;
+  startDate: string;
+  endDate: string;
+}): Promise<Transaction[]> {
+  const supabase = getSupabase();
+  const userId = await getCurrentUserId();
+
+  // Query all transactions within the target period
+  // Left join with bucket table on to_bucket_id
+  // Filter transactions with to_bucket_id of bucket with type 'expense' and matching category
+  const { data: transactions, error } = await supabase
+    .from('transaction')
+    .select(
+      `
+      *,
+      to_bucket:bucket!transaction_to_bucket_id_fkey(
+        id,
+        name,
+        type,
+        bucket_category_id
+      )
+    `,
+    )
+    .eq('user_id', userId)
+    .gte('transaction_date', params.startDate)
+    .lte('transaction_date', params.endDate)
+    .not('to_bucket_id', 'is', null)
+    .order('transaction_date', { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  // Filter transactions to only include those from expense buckets with matching category
+  const expenseTransactions = transactions?.filter((transaction) => {
+    const toBucket = transaction.to_bucket as unknown as {
+      id: number;
+      name: string;
+      type: string;
+      bucket_category_id: number | null;
+    } | null;
+
+    return (
+      toBucket &&
+      toBucket.type === 'expense' &&
+      toBucket.bucket_category_id === params.categoryId
+    );
+  });
+
+  return expenseTransactions || [];
+}
