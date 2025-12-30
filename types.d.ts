@@ -480,7 +480,7 @@ type GetExpenseTransactionsByPeriodParams = {
 };
 
 type GetExpenseTransactionsByCategoryAndPeriodParams = {
-  categoryId: number;
+  categoryId: number | null;
   startDate: string;
   endDate: string;
 };

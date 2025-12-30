@@ -32,6 +32,7 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   if (!account) return null;
 
@@ -85,17 +86,14 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
                     color: group.category
                       ? getColorConfig(group.category.color).color
                       : 'white',
-                    cursor: group.category ? 'pointer' : 'default',
-                    '&:hover': group.category
-                      ? {
-                          textDecoration: 'underline',
-                        }
-                      : {},
+                    cursor: 'pointer',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
                   }}
                   onClick={() => {
-                    if (group.category) {
-                      setSelectedCategoryId(group.category.id);
-                    }
+                    setSelectedCategoryId(group.category?.id ?? null);
+                    setIsCategoryModalOpen(true);
                   }}
                 >
                   {group.category?.name ?? 'Uncategorized'}
@@ -130,13 +128,11 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
         onClose={() => setSelectedBucketId(null)}
       />
 
-      {selectedCategoryId !== null && (
-        <ExpenseCategoryModal
-          categoryId={selectedCategoryId}
-          open={selectedCategoryId !== null}
-          onClose={() => setSelectedCategoryId(null)}
-        />
-      )}
+      <ExpenseCategoryModal
+        categoryId={selectedCategoryId}
+        open={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
     </>
   );
 }

@@ -450,7 +450,7 @@ export async function getExpenseTransactionsWithDatesByPeriod(params: {
 }
 
 export async function getExpenseTransactionsByCategoryAndPeriod(params: {
-  categoryId: number;
+  categoryId: number | null;
   startDate: string;
   endDate: string;
 }): Promise<Transaction[]> {
@@ -482,6 +482,7 @@ export async function getExpenseTransactionsByCategoryAndPeriod(params: {
   if (error) throw new Error(error.message);
 
   // Filter transactions to only include those from expense buckets with matching category
+  // If categoryId is null, match uncategorized buckets (bucket_category_id is null)
   const expenseTransactions = transactions?.filter((transaction) => {
     const toBucket = transaction.to_bucket as unknown as {
       id: number;
@@ -490,6 +491,16 @@ export async function getExpenseTransactionsByCategoryAndPeriod(params: {
       bucket_category_id: number | null;
     } | null;
 
+    if (params.categoryId === null) {
+      // Match uncategorized expense buckets
+      return (
+        toBucket &&
+        toBucket.type === 'expense' &&
+        toBucket.bucket_category_id === null
+      );
+    }
+
+    // Match categorized expense buckets
     return (
       toBucket &&
       toBucket.type === 'expense' &&

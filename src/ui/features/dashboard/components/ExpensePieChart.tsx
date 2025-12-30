@@ -12,10 +12,17 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import dayjs, { type Dayjs } from 'dayjs';
 import { Doughnut } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  type ChartEvent,
+  type ActiveElement,
+} from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useGetExpenseTransactionsByPeriodQuery } from '../../transaction/api/transactionApi';
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { CHART_COLORS, donutChartOptions } from '../../../shared/utils/chart';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import { formatMoney } from '../../../shared/utils/formatMoney';
@@ -25,6 +32,8 @@ import { DatePickerField } from '../../../shared/components/form/DatePickerField
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import type { ExpensePieChartFormData } from '../schemas/dashboard.schemas';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
+import { BucketModal } from '../../bucket/components/BucketModal';
+import { ExpenseCategoryModal } from '../../bucket/components/ExpenseCategoryModal';
 
 // Register Chart.js components (excluding ChartDataLabels - applied per-chart)
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -124,6 +133,13 @@ export function ExpensePieChart() {
   const groupBy = useWatch({ control, name: 'groupBy' });
   const targetMonth = useWatch({ control, name: 'targetMonth' });
 
+  // State for modals
+  const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
+    null,
+  );
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+
   // Calculate start and end dates for the query
   const queryParams =
     useMemo((): GetExpenseTransactionsByPeriodParams | null => {
@@ -155,20 +171,31 @@ export function ExpensePieChart() {
       return null;
     }
 
-    let groupedData: { name: string; total: number }[];
+    let groupedData: { name: string; total: number; id: number | null }[];
 
     if (groupBy === 'category') {
       // Group by category
-      const categoryMap = new Map<string, number>();
+      const categoryMap = new Map<
+        string,
+        { total: number; id: number | null }
+      >();
 
       filteredData.forEach((item) => {
-        const categoryName = item.category_name || 'No Category';
-        const currentTotal = categoryMap.get(categoryName) || 0;
-        categoryMap.set(categoryName, currentTotal + item.total_amount);
+        const categoryName = item.category_name || 'Uncategorized';
+        const existing = categoryMap.get(categoryName);
+
+        if (existing) {
+          existing.total += item.total_amount;
+        } else {
+          categoryMap.set(categoryName, {
+            total: item.total_amount,
+            id: item.category_id,
+          });
+        }
       });
 
       groupedData = Array.from(categoryMap.entries())
-        .map(([name, total]) => ({ name, total }))
+        .map(([name, { total, id }]) => ({ name, total, id }))
         .sort((a, b) => b.total - a.total);
     } else {
       // Group by bucket (default)
@@ -176,12 +203,14 @@ export function ExpensePieChart() {
         .map((item) => ({
           name: item.bucket_name,
           total: item.total_amount,
+          id: item.bucket_id,
         }))
         .sort((a, b) => b.total - a.total);
     }
 
     const labels = groupedData.map((item) => item.name);
     const values = groupedData.map((item) => item.total);
+    const ids = groupedData.map((item) => item.id);
 
     return {
       labels,
@@ -195,6 +224,8 @@ export function ExpensePieChart() {
           borderWidth: 1,
         },
       ],
+      // Store IDs for click handling
+      metadata: { ids, groupBy },
     };
   }, [data, groupBy]);
 
@@ -213,6 +244,37 @@ export function ExpensePieChart() {
       methods.setValue('targetMonth', newValue);
     }
   };
+
+  // Handle click on chart segments
+  const handleChartClick = useCallback(
+    (_event: ChartEvent, elements: ActiveElement[]) => {
+      if (elements.length > 0 && chartData) {
+        const elementIndex = elements[0].index;
+        const { ids, groupBy: currentGroupBy } = chartData.metadata as {
+          ids: (number | null)[];
+          groupBy: string;
+        };
+        const clickedId = ids[elementIndex];
+
+        if (currentGroupBy === 'category') {
+          setSelectedCategoryId(clickedId);
+          setIsCategoryModalOpen(true);
+        } else {
+          setSelectedBucketId(clickedId);
+        }
+      }
+    },
+    [chartData],
+  );
+
+  // Create chart options with click handler
+  const chartOptions = useMemo(
+    () => ({
+      ...expenseDonutChartOptions,
+      onClick: handleChartClick,
+    }),
+    [handleChartClick],
+  );
 
   if (isLoading) {
     return (
@@ -316,7 +378,7 @@ export function ExpensePieChart() {
                   <Doughnut
                     key={`donut-chart-${targetMonth.format('YYYY-MM')}`}
                     data={chartData}
-                    options={expenseDonutChartOptions}
+                    options={chartOptions}
                     plugins={[centerTextPlugin, ChartDataLabels]}
                   />
                 </Box>
@@ -339,6 +401,18 @@ export function ExpensePieChart() {
           </CardContent>
         </Card>
       </Box>
+
+      {/* Modals */}
+      <BucketModal
+        bucketId={selectedBucketId}
+        open={selectedBucketId !== null}
+        onClose={() => setSelectedBucketId(null)}
+      />
+      <ExpenseCategoryModal
+        categoryId={selectedCategoryId}
+        open={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
     </FormProvider>
   );
 }

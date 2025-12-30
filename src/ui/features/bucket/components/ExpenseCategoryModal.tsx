@@ -58,7 +58,7 @@ ChartJS.register(
 interface ExpenseCategoryModalProps {
   open: boolean;
   onClose: () => void;
-  categoryId: number;
+  categoryId: number | null;
 }
 
 export function ExpenseCategoryModal({
@@ -67,7 +67,7 @@ export function ExpenseCategoryModal({
   categoryId,
 }: ExpenseCategoryModalProps) {
   const category = useAppSelector((state) =>
-    selectCategoryById(state, categoryId),
+    categoryId ? selectCategoryById(state, categoryId) : null,
   );
 
   const methods = useForm<BucketChartFilterFormData>({
@@ -137,7 +137,7 @@ export function ExpenseCategoryModal({
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          {category?.name || 'Category'} - Transaction History
+          {category?.name || 'Uncategorized'} - Transaction History
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
           </IconButton>
