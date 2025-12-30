@@ -1,6 +1,7 @@
 import { Box, Container, Alert, Grid } from '@mui/material';
 import { Navbar } from './Navbar';
-import { AccountList } from '../../account/components/AccountList';
+import { AssetAccountList } from '../../account/components/AssetAccountList';
+import { ExpenseAccountList } from '../../account/components/ExpenseAccountList';
 import { DashboardErrorProvider } from '../context/DashboardErrorProvider';
 import { useDashboardError } from '../hooks/useDashboardError';
 import { IncomeList } from '../../income/components/IncomeList';
@@ -109,10 +110,10 @@ function DashboardSection({ section }: DashboardSectionProps) {
       return <IncomeVsSavingsChart />;
 
     case 'assetAccounts':
-      return <AccountList type="asset" />;
+      return <AssetAccountList />;
 
     case 'expenseAccounts':
-      return <AccountList type="expense" />;
+      return <ExpenseAccountList />;
 
     case 'income':
       return <IncomeList />;
