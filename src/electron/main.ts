@@ -102,6 +102,13 @@ app.on('ready', async () => {
   ipcMainHandle('db:createAccount', async (args) => {
     return db.createAccount(args as CreateAccountParams);
   });
+  ipcMainHandle('db:updateAccount', async (args) => {
+    const { id, params } = args as { id: number; params: UpdateAccountParams };
+    return db.updateAccount(id, params);
+  });
+  ipcMainHandle('db:deleteAccount', async (args) => {
+    return db.deleteAccount(args as number);
+  });
   ipcMainHandle('db:getAccountsWithBuckets', db.getAccountsWithBuckets);
   ipcMainHandle('db:getTransactions', db.getTransactions);
   ipcMainHandle('db:getTransaction', async (args) => {

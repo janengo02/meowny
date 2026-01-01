@@ -1,5 +1,19 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Grid,
+  IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { BucketCard } from '../../bucket/components/BucketCard';
 import { DraggableBucketCard } from '../../bucket/components/DraggableBucketCard';
 import { AddBucketCard } from '../../bucket/components/AddBucketCard';
@@ -9,6 +23,12 @@ import {
   selectAccountById,
   selectBucketsByAccount,
 } from '../selectors/accountSelectors';
+import {
+  useUpdateAccountMutation,
+  useDeleteAccountMutation,
+} from '../api/accountApi';
+import { RenameAccountDialog } from './RenameAccountDialog';
+import { DeleteAccountDialog } from './DeleteAccountDialog';
 import {
   DndContext,
   DragOverlay,
@@ -46,10 +66,15 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
 
   const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const [activeBucketId, setActiveBucketId] = useState<number | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Get bucket order preferences
   const { data: bucketOrderPreference } = useGetBucketOrderQuery();
   const [saveBucketOrder] = useSaveBucketOrderMutation();
+  const [updateAccount] = useUpdateAccountMutation();
+  const [deleteAccount] = useDeleteAccountMutation();
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -57,7 +82,7 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
       activationConstraint: {
         distance: 8, // 8px of movement required before drag starts
       },
-    })
+    }),
   );
 
   // Get ordered buckets based on saved preference or default order
@@ -70,9 +95,7 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
         .filter((b): b is Bucket => b !== undefined);
 
       // Add any new buckets that aren't in the saved order
-      const newBuckets = buckets.filter(
-        (b) => !savedOrder.includes(b.id)
-      );
+      const newBuckets = buckets.filter((b) => !savedOrder.includes(b.id));
 
       return [...orderedList, ...newBuckets];
     }
@@ -81,6 +104,46 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
   }, [buckets, bucketOrderPreference, accountId]);
 
   if (!account) return null;
+
+  // Menu handlers
+  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleRenameClick = () => {
+    handleMenuClose();
+    setIsRenameDialogOpen(true);
+  };
+
+  const handleDeleteClick = () => {
+    handleMenuClose();
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleRename = async (newName: string) => {
+    try {
+      await updateAccount({
+        id: accountId,
+        params: { name: newName },
+      }).unwrap();
+      setIsRenameDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to rename account:', error);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteAccount(accountId).unwrap();
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+    }
+  };
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -158,12 +221,35 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
               alignItems: 'center',
             }}
           >
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                {account.name}
-              </Typography>
-            </Box>
+            <Typography variant="h4" gutterBottom>
+              {account.name}
+            </Typography>
+            <IconButton
+              size="small"
+              onClick={handleMenuOpen}
+              aria-label="account options"
+            >
+              <MoreVertIcon sx={{ fontSize: '0.75rem' }} />
+            </IconButton>
           </Box>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            <MenuItem onClick={handleRenameClick}>
+              <ListItemIcon>
+                <EditIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Rename</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleDeleteClick}>
+              <ListItemIcon>
+                <DeleteIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Delete</ListItemText>
+            </MenuItem>
+          </Menu>
 
           <SortableContext
             items={orderedBuckets.map((b) => b.id)}
@@ -199,6 +285,20 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
           </Box>
         ) : null}
       </DragOverlay>
+
+      <RenameAccountDialog
+        open={isRenameDialogOpen}
+        currentName={account.name}
+        onClose={() => setIsRenameDialogOpen(false)}
+        onRename={handleRename}
+      />
+
+      <DeleteAccountDialog
+        open={isDeleteDialogOpen}
+        accountName={account.name}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onDelete={handleDelete}
+      />
     </DndContext>
   );
 }

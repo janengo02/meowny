@@ -89,6 +89,18 @@ export async function deleteAccount(id: number): Promise<void> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
+  // First, delete all buckets associated with this account
+  const { error: bucketsError } = await supabase
+    .from('bucket')
+    .delete()
+    .eq('account_id', id)
+    .eq('user_id', userId);
+
+  if (bucketsError) {
+    throw new Error(`Failed to delete buckets: ${bucketsError.message}`);
+  }
+
+  // Then delete the account
   const { error } = await supabase
     .from('account')
     .delete()

@@ -27,6 +27,9 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getAccounts: () => ipcInvoke('db:getAccounts'),
   createAccount: (params: CreateAccountParams) =>
     ipcInvoke('db:createAccount', params),
+  updateAccount: (id: number, params: UpdateAccountParams) =>
+    ipcInvoke('db:updateAccount', { id, params }),
+  deleteAccount: (id: number) => ipcInvoke('db:deleteAccount', id),
   getAccountsWithBuckets: () => ipcInvoke('db:getAccountsWithBuckets'),
   getTransactions: () => ipcInvoke('db:getTransactions'),
   getTransaction: (id: number) => ipcInvoke('db:getTransaction', id),

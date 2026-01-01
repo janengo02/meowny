@@ -13,14 +13,36 @@ export const accountApi = baseApi.injectEndpoints({
       },
       providesTags: ['Account'],
     }),
-    createAccount: builder.mutation<
-      Account,
-      CreateAccountParams
-    >({
+    createAccount: builder.mutation<Account, CreateAccountParams>({
       queryFn: async (params) => {
         try {
           const account = await window.electron.createAccount(params);
           return { data: account };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['Account', 'Bucket'],
+    }),
+    updateAccount: builder.mutation<
+      Account,
+      { id: number; params: UpdateAccountParams }
+    >({
+      queryFn: async ({ id, params }) => {
+        try {
+          const account = await window.electron.updateAccount(id, params);
+          return { data: account };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['Account', 'Bucket'],
+    }),
+    deleteAccount: builder.mutation<void, number>({
+      queryFn: async (id) => {
+        try {
+          await window.electron.deleteAccount(id);
+          return { data: undefined };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
@@ -44,5 +66,7 @@ export const accountApi = baseApi.injectEndpoints({
 export const {
   useGetAccountsQuery,
   useCreateAccountMutation,
+  useUpdateAccountMutation,
+  useDeleteAccountMutation,
   useGetAccountsWithBucketsQuery,
 } = accountApi;
