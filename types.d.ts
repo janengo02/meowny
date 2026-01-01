@@ -329,6 +329,11 @@ type DashboardLayoutPreference = {
   dashboard_layout: DashboardLayout;
 };
 
+type AssetAccountListLayoutPreference = {
+  columns: 1 | 2 | 3;
+  columnWidths: number[];
+};
+
 // ============================================
 // QUERY PARAMS
 // ============================================

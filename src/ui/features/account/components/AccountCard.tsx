@@ -11,9 +11,10 @@ import {
 
 interface AccountCardProps {
   accountId: number;
+  columnWidth?: number; // Grid units (out of 12) for the parent column
 }
 
-export function AccountCard({ accountId }: AccountCardProps) {
+export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
   // Select account data - only re-renders if THIS account changes
   const account = useAppSelector((state) =>
     selectAccountById(state, accountId),
@@ -27,6 +28,35 @@ export function AccountCard({ accountId }: AccountCardProps) {
   const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
 
   if (!account) return null;
+
+  // Calculate bucket card size based on column width
+  // For narrow columns (< 6 grid units), use full width
+  // For medium columns (6-8 grid units), use half width
+  // For wide columns (> 8 grid units), use smaller cards
+  const getBucketCardSize = () => {
+    switch (columnWidth) {
+      case 12:
+        return { xs: 6, sm: 4, md: 2 };
+      case 11:
+      case 10:
+      case 9:
+      case 8:
+        return { xs: 12, sm: 6, md: 3 };
+      case 7:
+      case 6:
+        return { xs: 12, sm: 6, md: 4 };
+      case 5:
+      case 4:
+        return { xs: 12, sm: 6 };
+      case 3:
+      case 2:
+      case 1:
+      default:
+        return { xs: 12 };
+    }
+  };
+
+  const bucketCardSize = getBucketCardSize();
 
   return (
     <Card>
@@ -47,14 +77,14 @@ export function AccountCard({ accountId }: AccountCardProps) {
 
         <Grid container spacing={2} sx={{ mt: 1 }}>
           {buckets.map((bucket) => (
-            <Grid key={bucket.id} size={{ xs: 6, sm: 3, md: 2 }}>
+            <Grid key={bucket.id} size={bucketCardSize}>
               <BucketCard
                 bucket={bucket}
                 onClick={() => setSelectedBucketId(bucket.id)}
               />
             </Grid>
           ))}
-          <Grid size={{ xs: 6, sm: 3, md: 2 }}>
+          <Grid size={bucketCardSize}>
             <AddBucketCard account={account} />
           </Grid>
         </Grid>

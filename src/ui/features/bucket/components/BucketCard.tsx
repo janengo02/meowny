@@ -76,8 +76,8 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
             </Typography>
           </Box>
           {bucket.type !== 'expense' && (
-            <Grid container spacing={2}>
-              <Grid size={6}>
+            <Grid container spacing={2} flexWrap="wrap">
+              <Grid size={{ xs: 12, sm: 6 }} sx={{ width: 'fit-content' }}>
                 <Typography variant="caption" color="text.secondary">
                   Contributed
                 </Typography>
@@ -86,8 +86,8 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
                 </Typography>
               </Grid>
               {bucket.type === 'investment' && (
-                <Grid size={6}>
-                  <Typography variant="caption" color="text.secondary">
+                <Grid size={{ xs: 12, sm: 6 }} sx={{ width: 'fit-content' }}>
+                  <Typography variant="caption" color="text.secondary" noWrap>
                     Market Value
                   </Typography>
                   <Typography variant="body1" fontWeight={600}>

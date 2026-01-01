@@ -39,10 +39,68 @@ export const userPreferencesApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['UserPreferences'],
     }),
+    getAssetAccountListLayout: builder.query<
+      AssetAccountListLayoutPreference | null,
+      void
+    >({
+      queryFn: async () => {
+        try {
+          const preference = await window.electron.getUserPreference({
+            preference_key: 'asset_account_list_layout',
+          });
+
+          if (!preference) {
+            return { data: null };
+          }
+
+          return {
+            data: preference.preference_value as AssetAccountListLayoutPreference,
+          };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['UserPreferences'],
+    }),
+    saveAssetAccountListLayout: builder.mutation<
+      UserPreference,
+      AssetAccountListLayoutPreference
+    >({
+      queryFn: async (layout) => {
+        try {
+          const preference = await window.electron.upsertUserPreference({
+            preference_key: 'asset_account_list_layout',
+            preference_value: layout,
+          });
+          return { data: preference };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      async onQueryStarted(layout, { dispatch, queryFulfilled }) {
+        // Optimistic update
+        const patchResult = dispatch(
+          userPreferencesApi.util.updateQueryData(
+            'getAssetAccountListLayout',
+            undefined,
+            () => layout
+          )
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          // Undo optimistic update on error
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ['UserPreferences'],
+    }),
   }),
 });
 
 export const {
   useGetDashboardLayoutQuery,
   useSaveDashboardLayoutMutation,
+  useGetAssetAccountListLayoutQuery,
+  useSaveAssetAccountListLayoutMutation,
 } = userPreferencesApi;
