@@ -80,7 +80,7 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             alignItems: 'center',
           }}
         >
-          {bucket.type !== 'expense' && account && (
+          {account && (
             <Chip
               label={account.name}
               size="medium"

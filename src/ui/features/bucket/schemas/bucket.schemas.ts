@@ -33,3 +33,10 @@ export const addAssetBucketSchema = z.object({
 });
 
 export type AddBucketFormData = z.infer<typeof addAssetBucketSchema>;
+
+export const addExpenseBucketSchema = z.object({
+  name: z.string().min(1, 'Bucket name is required').trim(),
+  account_id: z.number({ message: 'Account is required' }),
+});
+
+export type AddExpenseBucketFormData = z.infer<typeof addExpenseBucketSchema>;
