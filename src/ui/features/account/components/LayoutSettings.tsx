@@ -10,7 +10,7 @@ import {
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import ViewColumnIcon from '@mui/icons-material/ViewColumn';
 import ViewStreamIcon from '@mui/icons-material/ViewStream';
-import SettingsIcon from '@mui/icons-material/Settings';
+import AutoAwesomeMosaicIcon from '@mui/icons-material/AutoAwesomeMosaic';
 
 interface LayoutSettingsProps {
   currentColumns: 1 | 2 | 3;
@@ -41,13 +41,13 @@ export function LayoutSettings({
     <>
       <IconButton
         onClick={handleClick}
-        size="small"
+        size="medium"
         aria-label="layout settings"
         aria-controls={open ? 'layout-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
       >
-        <SettingsIcon />
+        <AutoAwesomeMosaicIcon fontSize="small" />
       </IconButton>
       <Menu
         id="layout-menu"

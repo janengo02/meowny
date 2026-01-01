@@ -1,8 +1,9 @@
-import { Typography, Box } from '@mui/material';
+import { Typography, Box, Button, Menu, MenuItem } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useCallback, useState, useMemo } from 'react';
 import { useAppSelector } from '../../../store/hooks';
 import { AccountCard } from './AccountCard';
-import { AddAccountCard } from './AddAccountCard';
 import { selectAccountIdsByType } from '../selectors/accountSelectors';
 import { LayoutSettings } from './LayoutSettings';
 import { ColumnResizer } from './ColumnResizer';
@@ -18,8 +19,14 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import type {
+  DragEndEvent,
+  DragOverEvent,
+  DragStartEvent,
+} from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
+import { AddBucketDialog } from '../../bucket/components/AddBucketDialog';
+import { AddAssetAccountDialog } from './AddAssetAccountDialog';
 
 const DEFAULT_LAYOUT: AssetAccountListLayoutPreference = {
   columns: 1,
@@ -36,15 +43,43 @@ export function AssetAccountList() {
   const [saveLayout] = useSaveAssetAccountListLayoutMutation();
 
   // Local state for preview during drag
-  const [localColumnWidths, setLocalColumnWidths] = useState<number[] | null>(null);
+  const [localColumnWidths, setLocalColumnWidths] = useState<number[] | null>(
+    null,
+  );
   const [activeId, setActiveId] = useState<number | null>(null);
   const [activeColumnWidth, setActiveColumnWidth] = useState<number>(12);
   const [dragOverlayWidth, setDragOverlayWidth] = useState<number | null>(null);
 
+  // State for Add button dropdown menu
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
+  const [isBucketDialogOpen, setIsBucketDialogOpen] = useState(false);
+  const isMenuOpen = Boolean(anchorEl);
+
+  const handleAddClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleAssetAccountClick = () => {
+    handleMenuClose();
+    setIsAccountDialogOpen(true);
+  };
+
+  const handleAssetBucketClick = () => {
+    handleMenuClose();
+    setIsBucketDialogOpen(true);
+  };
+
   // Get current columns and widths (use local state during drag, otherwise from preference)
   const columns = layoutPreference?.columns ?? DEFAULT_LAYOUT.columns;
   const columnWidths =
-    localColumnWidths ?? layoutPreference?.columnWidths ?? DEFAULT_LAYOUT.columnWidths;
+    localColumnWidths ??
+    layoutPreference?.columnWidths ??
+    DEFAULT_LAYOUT.columnWidths;
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -52,7 +87,7 @@ export function AssetAccountList() {
       activationConstraint: {
         distance: 8, // 8px of movement required before drag starts
       },
-    })
+    }),
   );
 
   // Distribute accounts across columns based on saved order or default distribution
@@ -60,14 +95,14 @@ export function AssetAccountList() {
     if (layoutPreference?.accountOrder) {
       // Use saved order, filtering out any accounts that no longer exist
       return layoutPreference.accountOrder.map((columnIds) =>
-        columnIds.filter((id) => accountIds.includes(id))
+        columnIds.filter((id) => accountIds.includes(id)),
       );
     }
 
     // Default distribution: evenly distribute accounts
     const accountsPerColumn = Math.ceil(accountIds.length / columns);
     return Array.from({ length: columns }, (_, i) =>
-      accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn)
+      accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn),
     );
   }, [accountIds, columns, layoutPreference]);
 
@@ -82,7 +117,7 @@ export function AssetAccountList() {
     // Redistribute accounts evenly when changing column count
     const accountsPerColumn = Math.ceil(accountIds.length / newColumns);
     const newAccountOrder = Array.from({ length: newColumns }, (_, i) =>
-      accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn)
+      accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn),
     );
 
     // Save with optimistic update (handled by onQueryStarted)
@@ -134,7 +169,7 @@ export function AssetAccountList() {
 
     // Find which column the active item is in and save its width
     const activeColumnIndex = columnAccounts.findIndex((accounts) =>
-      accounts.includes(activeId)
+      accounts.includes(activeId),
     );
     if (activeColumnIndex !== -1) {
       setActiveColumnWidth(getGridSize(activeColumnIndex));
@@ -157,7 +192,7 @@ export function AssetAccountList() {
 
     // Find which column the active item is in
     const activeColumnIndex = columnAccounts.findIndex((accounts) =>
-      accounts.includes(activeId)
+      accounts.includes(activeId),
     );
 
     // Determine which column we're over
@@ -168,7 +203,7 @@ export function AssetAccountList() {
     } else {
       // Dropping over another account
       overColumnIndex = columnAccounts.findIndex((accounts) =>
-        accounts.includes(overId as number)
+        accounts.includes(overId as number),
       );
     }
 
@@ -178,14 +213,16 @@ export function AssetAccountList() {
     if (activeColumnIndex !== overColumnIndex || typeof overId === 'number') {
       const newColumnAccounts = [...columnAccounts];
       const activeAccounts = [...newColumnAccounts[activeColumnIndex]];
-      const overAccounts = activeColumnIndex === overColumnIndex
-        ? activeAccounts
-        : [...newColumnAccounts[overColumnIndex]];
+      const overAccounts =
+        activeColumnIndex === overColumnIndex
+          ? activeAccounts
+          : [...newColumnAccounts[overColumnIndex]];
 
       const activeIndex = activeAccounts.indexOf(activeId);
-      const overIndex = typeof overId === 'number'
-        ? overAccounts.indexOf(overId as number)
-        : overAccounts.length;
+      const overIndex =
+        typeof overId === 'number'
+          ? overAccounts.indexOf(overId as number)
+          : overAccounts.length;
 
       // Remove from source
       activeAccounts.splice(activeIndex, 1);
@@ -224,7 +261,7 @@ export function AssetAccountList() {
 
     // Find columns
     const activeColumnIndex = columnAccounts.findIndex((accounts) =>
-      accounts.includes(activeId)
+      accounts.includes(activeId),
     );
 
     let overColumnIndex: number;
@@ -232,7 +269,7 @@ export function AssetAccountList() {
       overColumnIndex = parseInt(overId.split('-')[1]);
     } else {
       overColumnIndex = columnAccounts.findIndex((accounts) =>
-        accounts.includes(overId as number)
+        accounts.includes(overId as number),
       );
     }
 
@@ -240,9 +277,10 @@ export function AssetAccountList() {
 
     const newColumnAccounts = [...columnAccounts];
     const activeAccounts = [...newColumnAccounts[activeColumnIndex]];
-    const overAccounts = activeColumnIndex === overColumnIndex
-      ? activeAccounts
-      : [...newColumnAccounts[overColumnIndex]];
+    const overAccounts =
+      activeColumnIndex === overColumnIndex
+        ? activeAccounts
+        : [...newColumnAccounts[overColumnIndex]];
 
     const activeIndex = activeAccounts.indexOf(activeId);
 
@@ -254,7 +292,7 @@ export function AssetAccountList() {
           newColumnAccounts[activeColumnIndex] = arrayMove(
             activeAccounts,
             activeIndex,
-            overIndex
+            overIndex,
           );
         }
       }
@@ -301,7 +339,7 @@ export function AssetAccountList() {
           accountIds={accounts}
           columnWidth={currentColumnWidth}
           flexBasis={flexBasis}
-        />
+        />,
       );
 
       // Add resizer between columns (except after the last column)
@@ -341,10 +379,36 @@ export function AssetAccountList() {
         }}
       >
         <Typography variant="h2">Asset Accounts</Typography>
-        <LayoutSettings
-          currentColumns={columns}
-          onColumnsChange={handleColumnsChange}
-        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleAddClick}
+            aria-controls={isMenuOpen ? 'add-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={isMenuOpen ? 'true' : undefined}
+            startIcon={<AddIcon />}
+            endIcon={<ArrowDropDownIcon />}
+          >
+            Add
+          </Button>
+          <Menu
+            id="add-menu"
+            anchorEl={anchorEl}
+            open={isMenuOpen}
+            onClose={handleMenuClose}
+            MenuListProps={{
+              'aria-labelledby': 'add-button',
+            }}
+          >
+            <MenuItem onClick={handleAssetAccountClick}>Asset Account</MenuItem>
+            <MenuItem onClick={handleAssetBucketClick}>Asset Bucket</MenuItem>
+          </Menu>
+          <LayoutSettings
+            currentColumns={columns}
+            onColumnsChange={handleColumnsChange}
+          />
+        </Box>
       </Box>
 
       <Box
@@ -367,10 +431,6 @@ export function AssetAccountList() {
         )}
       </Box>
 
-      <Box sx={{ mt: 2 }}>
-        <AddAccountCard type="asset" />
-      </Box>
-
       <DragOverlay dropAnimation={null}>
         {activeId && dragOverlayWidth ? (
           <Box sx={{ opacity: 0.95, width: dragOverlayWidth }}>
@@ -378,6 +438,16 @@ export function AssetAccountList() {
           </Box>
         ) : null}
       </DragOverlay>
+
+      <AddAssetAccountDialog
+        open={isAccountDialogOpen}
+        onClose={() => setIsAccountDialogOpen(false)}
+      />
+
+      <AddBucketDialog
+        open={isBucketDialogOpen}
+        onClose={() => setIsBucketDialogOpen(false)}
+      />
     </DndContext>
   );
 }

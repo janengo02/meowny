@@ -11,12 +11,14 @@ import { useState } from 'react';
 import { useCreateAccountMutation } from '../api/accountApi';
 
 interface AddAccountDialogProps {
-  type: AccountTypeEnum;
   open: boolean;
   onClose: () => void;
 }
 
-export function AddAccountDialog({ type, open, onClose }: AddAccountDialogProps) {
+export function AddAssetAccountDialog({
+  open,
+  onClose,
+}: AddAccountDialogProps) {
   const [name, setName] = useState('');
   const [createAccount, { isLoading }] = useCreateAccountMutation();
 
@@ -26,7 +28,7 @@ export function AddAccountDialog({ type, open, onClose }: AddAccountDialogProps)
     try {
       await createAccount({
         name: name.trim(),
-        type,
+        type: 'asset',
       }).unwrap();
       setName('');
       onClose();
@@ -42,9 +44,7 @@ export function AddAccountDialog({ type, open, onClose }: AddAccountDialogProps)
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        Add {type.charAt(0).toUpperCase() + type.slice(1)} Account
-      </DialogTitle>
+      <DialogTitle variant="h3">Add Asset Account</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 1 }}>
           <TextField
