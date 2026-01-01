@@ -1,7 +1,7 @@
 import { Typography, Box, Button, Menu, MenuItem } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import { useAppSelector } from '../../../store/hooks';
 import { AccountCard } from './AccountCard';
 import { selectAccountIdsByType } from '../selectors/accountSelectors';
@@ -94,9 +94,26 @@ export function AssetAccountList() {
   const columnAccounts = useMemo(() => {
     if (layoutPreference?.accountOrder) {
       // Use saved order, filtering out any accounts that no longer exist
-      return layoutPreference.accountOrder.map((columnIds) =>
+      const existingAccounts = layoutPreference.accountOrder.map((columnIds) =>
         columnIds.filter((id) => accountIds.includes(id)),
       );
+
+      // Find accounts that are in accountIds but not in any column
+      const accountsInOrder = new Set(existingAccounts.flat());
+      const newAccounts = accountIds.filter((id) => !accountsInOrder.has(id));
+
+      // If there are new accounts, add them to the last column
+      if (newAccounts.length > 0) {
+        const updatedAccounts = [...existingAccounts];
+        const lastColumnIndex = updatedAccounts.length - 1;
+        updatedAccounts[lastColumnIndex] = [
+          ...(updatedAccounts[lastColumnIndex] || []),
+          ...newAccounts,
+        ];
+        return updatedAccounts;
+      }
+
+      return existingAccounts;
     }
 
     // Default distribution: evenly distribute accounts
@@ -105,6 +122,30 @@ export function AssetAccountList() {
       accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn),
     );
   }, [accountIds, columns, layoutPreference]);
+
+  // Automatically save layout when new accounts are added
+  useEffect(() => {
+    if (!layoutPreference?.accountOrder) return;
+
+    // Check if there are new accounts not in the saved order
+    const accountsInOrder = new Set(layoutPreference.accountOrder.flat());
+    const newAccounts = accountIds.filter((id) => !accountsInOrder.has(id));
+
+    if (newAccounts.length > 0) {
+      // Save the updated layout with new accounts added to last column
+      const lastColumnIndex = layoutPreference.accountOrder.length - 1;
+      const updatedOrder = layoutPreference.accountOrder.map(
+        (columnIds, index) =>
+          index === lastColumnIndex ? [...columnIds, ...newAccounts] : columnIds,
+      );
+
+      saveLayout({
+        columns,
+        columnWidths,
+        accountOrder: updatedOrder,
+      });
+    }
+  }, [accountIds, layoutPreference, columns, columnWidths, saveLayout]);
 
   const handleColumnsChange = (newColumns: 1 | 2 | 3) => {
     // Set default widths based on column count
