@@ -126,7 +126,6 @@ export const theme = createTheme({
         root: {
           fontWeight: 700,
           border: '3px solid #000000',
-          padding: '12px 28px',
           transition: 'all 0.15s ease',
           boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
           '&:hover': {

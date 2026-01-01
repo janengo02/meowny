@@ -24,6 +24,12 @@ export const bucketChartFilterSchema = z
     },
   );
 
-export type BucketChartFilterFormData = z.infer<
-  typeof bucketChartFilterSchema
->;
+export type BucketChartFilterFormData = z.infer<typeof bucketChartFilterSchema>;
+
+export const addAssetBucketSchema = z.object({
+  name: z.string().min(1, 'Bucket name is required').trim(),
+  type: z.enum(['saving', 'investment']),
+  account_id: z.number({ message: 'Account is required' }),
+});
+
+export type AddBucketFormData = z.infer<typeof addAssetBucketSchema>;
