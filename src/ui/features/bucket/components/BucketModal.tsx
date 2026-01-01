@@ -2,15 +2,13 @@ import { Box, Drawer, Divider, IconButton, Chip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 
 import { BucketCategorySelect } from './BucketCategorySelect';
+import { useGetBucketQuery } from '../api/bucketApi';
 import { useAppSelector } from '../../../store/hooks';
+import { selectAccountById } from '../../account/selectors/accountSelectors';
 import { BucketGoal } from './BucketGoal';
 import { BucketSummary } from './BucketSummary';
 import { BucketTitle } from './BucketTitle';
 import { BucketModalFooter } from './BucketModalFooter';
-import {
-  selectAccountById,
-  selectBucketById,
-} from '../../account/selectors/accountSelectors';
 import { BucketPerformance } from './BucketPerformance';
 import { BucketVisibilityToggle } from './BucketVisibilityToggle';
 
@@ -21,10 +19,10 @@ interface BucketModalProps {
 }
 
 export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
-  // Get bucket from Redux store
-  const bucket = useAppSelector((state) =>
-    bucketId ? selectBucketById(state, bucketId) : null,
-  );
+  // Get bucket from API
+  const { data: bucket } = useGetBucketQuery(bucketId ?? 0, {
+    skip: !bucketId,
+  });
 
   // Get the account for this bucket
   const account = useAppSelector((state) =>

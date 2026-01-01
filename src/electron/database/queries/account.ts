@@ -1,5 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
+import { clearKeywordMappingsForBucket } from './keywordBucketMapping.js';
 
 export async function createAccount(
   params: CreateAccountParams,
@@ -89,7 +90,25 @@ export async function deleteAccount(id: number): Promise<void> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // First, delete all buckets associated with this account
+  // First, get all buckets associated with this account
+  const { data: buckets, error: fetchError } = await supabase
+    .from('bucket')
+    .select('id')
+    .eq('account_id', id)
+    .eq('user_id', userId);
+
+  if (fetchError) {
+    throw new Error(`Failed to fetch buckets: ${fetchError.message}`);
+  }
+
+  // Clear keyword mappings for each bucket
+  if (buckets && buckets.length > 0) {
+    for (const bucket of buckets) {
+      await clearKeywordMappingsForBucket(bucket.id);
+    }
+  }
+
+  // Delete all buckets associated with this account
   const { error: bucketsError } = await supabase
     .from('bucket')
     .delete()
@@ -100,7 +119,7 @@ export async function deleteAccount(id: number): Promise<void> {
     throw new Error(`Failed to delete buckets: ${bucketsError.message}`);
   }
 
-  // Then delete the account
+  // Finally, delete the account
   const { error } = await supabase
     .from('account')
     .delete()
