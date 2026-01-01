@@ -1,15 +1,25 @@
 import { Typography, Box } from '@mui/material';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { useAppSelector } from '../../../store/hooks';
 import { AccountCard } from './AccountCard';
 import { AddAccountCard } from './AddAccountCard';
 import { selectAccountIdsByType } from '../selectors/accountSelectors';
 import { LayoutSettings } from './LayoutSettings';
 import { ColumnResizer } from './ColumnResizer';
+import { DroppableColumn } from './DroppableColumn';
 import {
   useGetAssetAccountListLayoutQuery,
   useSaveAssetAccountListLayoutMutation,
 } from '../../dashboard/api/userPreferencesApi';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 
 const DEFAULT_LAYOUT: AssetAccountListLayoutPreference = {
   columns: 1,
@@ -27,11 +37,39 @@ export function AssetAccountList() {
 
   // Local state for preview during drag
   const [localColumnWidths, setLocalColumnWidths] = useState<number[] | null>(null);
+  const [activeId, setActiveId] = useState<number | null>(null);
+  const [activeColumnWidth, setActiveColumnWidth] = useState<number>(12);
+  const [dragOverlayWidth, setDragOverlayWidth] = useState<number | null>(null);
 
   // Get current columns and widths (use local state during drag, otherwise from preference)
   const columns = layoutPreference?.columns ?? DEFAULT_LAYOUT.columns;
   const columnWidths =
     localColumnWidths ?? layoutPreference?.columnWidths ?? DEFAULT_LAYOUT.columnWidths;
+
+  // Configure drag sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px of movement required before drag starts
+      },
+    })
+  );
+
+  // Distribute accounts across columns based on saved order or default distribution
+  const columnAccounts = useMemo(() => {
+    if (layoutPreference?.accountOrder) {
+      // Use saved order, filtering out any accounts that no longer exist
+      return layoutPreference.accountOrder.map((columnIds) =>
+        columnIds.filter((id) => accountIds.includes(id))
+      );
+    }
+
+    // Default distribution: evenly distribute accounts
+    const accountsPerColumn = Math.ceil(accountIds.length / columns);
+    return Array.from({ length: columns }, (_, i) =>
+      accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn)
+    );
+  }, [accountIds, columns, layoutPreference]);
 
   const handleColumnsChange = (newColumns: 1 | 2 | 3) => {
     // Set default widths based on column count
@@ -41,10 +79,17 @@ export function AssetAccountList() {
     // Clear local state
     setLocalColumnWidths(null);
 
+    // Redistribute accounts evenly when changing column count
+    const accountsPerColumn = Math.ceil(accountIds.length / newColumns);
+    const newAccountOrder = Array.from({ length: newColumns }, (_, i) =>
+      accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn)
+    );
+
     // Save with optimistic update (handled by onQueryStarted)
     saveLayout({
       columns: newColumns,
       columnWidths: defaultWidths,
+      accountOrder: newAccountOrder,
     });
   };
 
@@ -72,24 +117,173 @@ export function AssetAccountList() {
       setLocalColumnWidths(null);
 
       // Save to database with optimistic update (handled by onQueryStarted)
+      // Preserve accountOrder when resizing
       saveLayout({
         columns,
         columnWidths: newWidths,
+        accountOrder: layoutPreference?.accountOrder,
       });
     },
-    [columns, columnWidths, saveLayout],
+    [columns, columnWidths, saveLayout, layoutPreference?.accountOrder],
   );
+
+  // Drag and drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const activeId = event.active.id as number;
+    setActiveId(activeId);
+
+    // Find which column the active item is in and save its width
+    const activeColumnIndex = columnAccounts.findIndex((accounts) =>
+      accounts.includes(activeId)
+    );
+    if (activeColumnIndex !== -1) {
+      setActiveColumnWidth(getGridSize(activeColumnIndex));
+
+      // Get actual pixel width from the dragged element's rect
+      const rect = event.active.rect.current.translated;
+      if (rect) {
+        setDragOverlayWidth(rect.width);
+      }
+    }
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as number;
+    const overId = over.id;
+
+    // Find which column the active item is in
+    const activeColumnIndex = columnAccounts.findIndex((accounts) =>
+      accounts.includes(activeId)
+    );
+
+    // Determine which column we're over
+    let overColumnIndex: number;
+    if (typeof overId === 'string' && overId.startsWith('column-')) {
+      // Dropping over a column container
+      overColumnIndex = parseInt(overId.split('-')[1]);
+    } else {
+      // Dropping over another account
+      overColumnIndex = columnAccounts.findIndex((accounts) =>
+        accounts.includes(overId as number)
+      );
+    }
+
+    if (activeColumnIndex === -1 || overColumnIndex === -1) return;
+
+    // If moving between columns or reordering within a column
+    if (activeColumnIndex !== overColumnIndex || typeof overId === 'number') {
+      const newColumnAccounts = [...columnAccounts];
+      const activeAccounts = [...newColumnAccounts[activeColumnIndex]];
+      const overAccounts = activeColumnIndex === overColumnIndex
+        ? activeAccounts
+        : [...newColumnAccounts[overColumnIndex]];
+
+      const activeIndex = activeAccounts.indexOf(activeId);
+      const overIndex = typeof overId === 'number'
+        ? overAccounts.indexOf(overId as number)
+        : overAccounts.length;
+
+      // Remove from source
+      activeAccounts.splice(activeIndex, 1);
+
+      // Add to destination
+      if (activeColumnIndex === overColumnIndex) {
+        // Reordering within same column
+        activeAccounts.splice(overIndex, 0, activeId);
+        newColumnAccounts[activeColumnIndex] = activeAccounts;
+      } else {
+        // Moving between columns
+        newColumnAccounts[activeColumnIndex] = activeAccounts;
+        overAccounts.splice(overIndex, 0, activeId);
+        newColumnAccounts[overColumnIndex] = overAccounts;
+      }
+
+      // Save immediately for smooth UX
+      saveLayout({
+        columns,
+        columnWidths,
+        accountOrder: newColumnAccounts,
+      });
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
+    setDragOverlayWidth(null);
+
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const activeId = active.id as number;
+    const overId = over.id;
+
+    // Find columns
+    const activeColumnIndex = columnAccounts.findIndex((accounts) =>
+      accounts.includes(activeId)
+    );
+
+    let overColumnIndex: number;
+    if (typeof overId === 'string' && overId.startsWith('column-')) {
+      overColumnIndex = parseInt(overId.split('-')[1]);
+    } else {
+      overColumnIndex = columnAccounts.findIndex((accounts) =>
+        accounts.includes(overId as number)
+      );
+    }
+
+    if (activeColumnIndex === -1 || overColumnIndex === -1) return;
+
+    const newColumnAccounts = [...columnAccounts];
+    const activeAccounts = [...newColumnAccounts[activeColumnIndex]];
+    const overAccounts = activeColumnIndex === overColumnIndex
+      ? activeAccounts
+      : [...newColumnAccounts[overColumnIndex]];
+
+    const activeIndex = activeAccounts.indexOf(activeId);
+
+    if (activeColumnIndex === overColumnIndex) {
+      // Reordering within same column
+      if (typeof overId === 'number') {
+        const overIndex = activeAccounts.indexOf(overId as number);
+        if (activeIndex !== overIndex) {
+          newColumnAccounts[activeColumnIndex] = arrayMove(
+            activeAccounts,
+            activeIndex,
+            overIndex
+          );
+        }
+      }
+    } else {
+      // Moving between columns
+      activeAccounts.splice(activeIndex, 1);
+      newColumnAccounts[activeColumnIndex] = activeAccounts;
+
+      if (typeof overId === 'number') {
+        const overIndex = overAccounts.indexOf(overId as number);
+        overAccounts.splice(overIndex, 0, activeId);
+      } else {
+        overAccounts.push(activeId);
+      }
+      newColumnAccounts[overColumnIndex] = overAccounts;
+    }
+
+    // Save the new order
+    saveLayout({
+      columns,
+      columnWidths,
+      accountOrder: newColumnAccounts,
+    });
+  };
 
   // Calculate grid size for each column
   const getGridSize = (columnIndex: number) => {
     return columnWidths[columnIndex] ?? 12;
   };
-
-  // Distribute accounts across columns
-  const accountsPerColumn = Math.ceil(accountIds.length / columns);
-  const columnAccounts: number[][] = Array.from({ length: columns }, (_, i) =>
-    accountIds.slice(i * accountsPerColumn, (i + 1) * accountsPerColumn),
-  );
 
   // Render columns with resizers between them
   const renderColumnsWithResizers = () => {
@@ -99,26 +293,15 @@ export function AssetAccountList() {
       const flexBasis = `${(getGridSize(columnIndex) / 12) * 100}%`;
       const currentColumnWidth = getGridSize(columnIndex);
 
-      // Add column
+      // Add droppable column
       elements.push(
-        <Box
+        <DroppableColumn
           key={`col-${columnIndex}`}
-          sx={{
-            flex: `0 0 ${flexBasis}`,
-            minWidth: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0,
-          }}
-        >
-          {accounts.map((accountId) => (
-            <AccountCard
-              key={accountId}
-              accountId={accountId}
-              columnWidth={currentColumnWidth}
-            />
-          ))}
-        </Box>,
+          columnId={`column-${columnIndex}`}
+          accountIds={accounts}
+          columnWidth={currentColumnWidth}
+          flexBasis={flexBasis}
+        />
       );
 
       // Add resizer between columns (except after the last column)
@@ -143,7 +326,12 @@ export function AssetAccountList() {
   };
 
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
       <Box
         sx={{
           display: 'flex',
@@ -168,15 +356,12 @@ export function AssetAccountList() {
         }}
       >
         {columns === 1 ? (
-          <Box sx={{ flex: 1 }}>
-            {accountIds.map((accountId) => (
-              <AccountCard
-                key={accountId}
-                accountId={accountId}
-                columnWidth={12}
-              />
-            ))}
-          </Box>
+          <DroppableColumn
+            columnId="column-0"
+            accountIds={columnAccounts[0] || []}
+            columnWidth={12}
+            flexBasis="100%"
+          />
         ) : (
           renderColumnsWithResizers()
         )}
@@ -185,6 +370,14 @@ export function AssetAccountList() {
       <Box sx={{ mt: 2 }}>
         <AddAccountCard type="asset" />
       </Box>
-    </>
+
+      <DragOverlay dropAnimation={null}>
+        {activeId && dragOverlayWidth ? (
+          <Box sx={{ opacity: 0.95, width: dragOverlayWidth }}>
+            <AccountCard accountId={activeId} columnWidth={activeColumnWidth} />
+          </Box>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }

@@ -332,6 +332,7 @@ type DashboardLayoutPreference = {
 type AssetAccountListLayoutPreference = {
   columns: 1 | 2 | 3;
   columnWidths: number[];
+  accountOrder?: number[][]; // Array of account IDs for each column
 };
 
 // ============================================
