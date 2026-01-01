@@ -95,6 +95,56 @@ export const userPreferencesApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['UserPreferences'],
     }),
+    getBucketOrder: builder.query<BucketOrderPreference | null, void>({
+      queryFn: async () => {
+        try {
+          const preference = await window.electron.getUserPreference({
+            preference_key: 'bucket_order',
+          });
+
+          if (!preference) {
+            return { data: null };
+          }
+
+          return {
+            data: preference.preference_value as BucketOrderPreference,
+          };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['UserPreferences'],
+    }),
+    saveBucketOrder: builder.mutation<UserPreference, BucketOrderPreference>({
+      queryFn: async (order) => {
+        try {
+          const preference = await window.electron.upsertUserPreference({
+            preference_key: 'bucket_order',
+            preference_value: order,
+          });
+          return { data: preference };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      async onQueryStarted(order, { dispatch, queryFulfilled }) {
+        // Optimistic update
+        const patchResult = dispatch(
+          userPreferencesApi.util.updateQueryData(
+            'getBucketOrder',
+            undefined,
+            () => order
+          )
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          // Undo optimistic update on error
+          patchResult.undo();
+        }
+      },
+      invalidatesTags: ['UserPreferences'],
+    }),
   }),
 });
 
@@ -103,4 +153,6 @@ export const {
   useSaveDashboardLayoutMutation,
   useGetAssetAccountListLayoutQuery,
   useSaveAssetAccountListLayoutMutation,
+  useGetBucketOrderQuery,
+  useSaveBucketOrderMutation,
 } = userPreferencesApi;

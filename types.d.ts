@@ -335,6 +335,10 @@ type AssetAccountListLayoutPreference = {
   accountOrder?: number[][]; // Array of account IDs for each column
 };
 
+type BucketOrderPreference = {
+  [accountId: number]: number[]; // Map of account ID to ordered bucket IDs
+};
+
 // ============================================
 // QUERY PARAMS
 // ============================================
