@@ -126,9 +126,11 @@ export function BucketModalActions({ bucket }: BucketModalActionsProps) {
             }}
           >
             <MenuItem onClick={handleTransactionClick}>Transaction</MenuItem>
-            <MenuItem onClick={handleMarketValueClick}>
-              Market Value Report
-            </MenuItem>
+            {bucket.type !== 'expense' && (
+              <MenuItem onClick={handleMarketValueClick}>
+                Market Value Report
+              </MenuItem>
+            )}
           </Menu>
         </Box>
       </Box>

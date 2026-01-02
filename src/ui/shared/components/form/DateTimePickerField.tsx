@@ -34,6 +34,9 @@ export function DateTimePickerField<T extends FieldValues>({
           <FormControl fullWidth error={Boolean(error)}>
             <DateTimePicker
               {...props}
+              views={['year', 'month', 'day', 'hours', 'minutes']}
+              ampm={false}
+              format="YYYY/MM/DD HH:mm"
               value={field.value as Dayjs | null}
               disabled={disabled ?? isSubmitting}
               minDate={props.minDate ?? undefined}

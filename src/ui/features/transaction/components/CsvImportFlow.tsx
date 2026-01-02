@@ -349,10 +349,11 @@ export function CsvImportFlow() {
       const fromBucketIdStr = fromBucketId ? fromBucketId.toString() : '';
       const toBucketIdStr = toBucketId ? toBucketId.toString() : '';
 
+      const dateString = formatToDateTimeLocal(
+        row[mapping.transactionDate] || '',
+      );
       return {
-        transaction_date: formatToDateTimeLocal(
-          row[mapping.transactionDate] || '',
-        ),
+        transaction_date: dayjs(dateString),
         amount: Math.abs(transactionAmount),
         notes: notes,
         from_bucket_id: fromBucketIdStr, // Will be auto-suggested from keyword mapping
@@ -368,7 +369,7 @@ export function CsvImportFlow() {
 
     // Sort by transaction_date in ascending order
     const sortedMapped = [...mapped].sort((a, b) => {
-      return dayjs(a.transaction_date).diff(dayjs(b.transaction_date));
+      return a.transaction_date.diff(b.transaction_date);
     });
 
     setMappedTransactions(sortedMapped);

@@ -106,18 +106,13 @@ export function AddBucketDialog({
               label="Bucket Name"
               inputRef={nameInputRef}
             />
-            <FormSelectField
-              name="account_id"
-              label="Account"
-              options={accountOptions}
-            />
             <Controller
               name="type"
               control={form.control}
               render={({ field }) => (
                 <FormControl component="fieldset">
                   <FormLabel component="legend">Bucket Type</FormLabel>
-                  <RadioGroup {...field}>
+                  <RadioGroup {...field} row>
                     <FormControlLabel
                       value="saving"
                       control={<Radio />}
@@ -133,6 +128,11 @@ export function AddBucketDialog({
                   </RadioGroup>
                 </FormControl>
               )}
+            />
+            <FormSelectField
+              name="account_id"
+              label="Account"
+              options={accountOptions}
             />
           </Box>
         </FormProvider>

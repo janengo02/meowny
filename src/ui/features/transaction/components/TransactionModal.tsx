@@ -18,8 +18,8 @@ import { FormBucketSelectField } from '../../../shared/components/form/FormBucke
 import { FormNumberInput } from '../../../shared/components/form/FormNumberInput';
 import { DateTimePickerField } from '../../../shared/components/form/DateTimePickerField';
 import {
-  transactionModalSchema,
-  type TransactionModalFormData,
+  baseTransactionSchema,
+  type BaseTransactionFormData,
 } from '../schemas/transaction.schema';
 import {
   useCreateTransactionMutation,
@@ -50,8 +50,8 @@ export function TransactionModal({
 
   const isLoading = isCreating || isUpdating;
 
-  const form = useForm<TransactionModalFormData>({
-    resolver: zodResolver(transactionModalSchema),
+  const form = useForm<BaseTransactionFormData>({
+    resolver: zodResolver(baseTransactionSchema),
     mode: 'onChange',
     defaultValues: {
       from_bucket_id: '',
@@ -93,7 +93,7 @@ export function TransactionModal({
     }
   }, [open, bucketId, transactionToEdit, form]);
 
-  const onSubmit = async (data: TransactionModalFormData) => {
+  const onSubmit = async (data: BaseTransactionFormData) => {
     try {
       const transactionData = {
         from_bucket_id: data.from_bucket_id

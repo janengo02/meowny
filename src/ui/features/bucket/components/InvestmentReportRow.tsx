@@ -1,5 +1,11 @@
 import { useFormContext, useWatch } from 'react-hook-form';
-import { TableRow, TableCell, Typography, Box, IconButton } from '@mui/material';
+import {
+  TableRow,
+  TableCell,
+  Typography,
+  Box,
+  IconButton,
+} from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
@@ -70,15 +76,6 @@ export function InvestmentReportRow({
           </Typography>
         </Box>
       </TableCell>
-      <TableCell align="right" sx={{ minWidth: 150 }}>
-        <FormMoneyInput
-          name={`buckets.${index}.market_value`}
-          label=""
-          variant="outlined"
-          allowNegative={false}
-          size="small"
-        />
-      </TableCell>
       <TableCell sx={{ minWidth: 200 }}>
         <FormTextField
           name={`buckets.${index}.notes`}
@@ -89,12 +86,18 @@ export function InvestmentReportRow({
           size="small"
         />
       </TableCell>
-      <TableCell align="center">
-        <IconButton
-          onClick={() => onRemove(index)}
+      <TableCell align="right" sx={{ minWidth: 150 }}>
+        <FormMoneyInput
+          name={`buckets.${index}.market_value`}
+          label=""
+          variant="outlined"
+          allowNegative={false}
           size="small"
-          color="error"
-        >
+        />
+      </TableCell>
+
+      <TableCell align="center">
+        <IconButton onClick={() => onRemove(index)} size="small" color="error">
           <DeleteIcon fontSize="small" />
         </IconButton>
       </TableCell>

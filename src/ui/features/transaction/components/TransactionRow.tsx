@@ -7,6 +7,7 @@ import {
   Box,
   Typography,
 } from '@mui/material';
+import dayjs from 'dayjs';
 import {
   useForm,
   FormProvider,
@@ -19,6 +20,7 @@ import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormCheckbox } from '../../../shared/components/form/FormCheckbox';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import { FormNumberInput } from '../../../shared/components/form/FormNumberInput';
+import { DateTimePickerField } from '../../../shared/components/form/DateTimePickerField';
 import {
   transactionImportSchema,
   type ImportStatus,
@@ -100,7 +102,7 @@ const TransactionRowContent = React.memo(
 
     const validateTransaction = useCallback(
       async (
-        transactionDateWatch: string,
+        transactionDateWatch: dayjs.Dayjs,
         amountWatch: number,
         notesWatch: string,
         fromBucketIdWatch: string,
@@ -285,21 +287,14 @@ const TransactionRowContent = React.memo(
           />
         </TableCell>
         <TableCell>
-          <FormTextField
-            name="transaction_date"
-            type="datetime-local"
-            variant="standard"
-            size="small"
-            disabled={isBatchImporting || !!importResult}
-            slotProps={{
-              input: {
-                disableUnderline: true,
-                sx: {
-                  width: 200,
-                },
-              },
-            }}
-          />
+          <Box sx={{ width: 200 }}>
+            <DateTimePickerField
+              name="transaction_date"
+              label=""
+              size="small"
+              disabled={isBatchImporting || !!importResult}
+            />
+          </Box>
         </TableCell>
         <TableCell>
           <FormTextField
@@ -550,7 +545,7 @@ export const TransactionRow = React.memo((props: TransactionRowProps) => {
     resolver: zodResolver(transactionImportSchema),
     mode: 'onChange',
     defaultValues: {
-      transaction_date: props.initialTransaction.transaction_date,
+      transaction_date: dayjs(props.initialTransaction.transaction_date),
       amount: props.initialTransaction.amount,
       notes: props.initialTransaction.notes || '',
       from_bucket_id: props.initialTransaction.from_bucket_id,

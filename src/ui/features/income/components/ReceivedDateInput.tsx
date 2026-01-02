@@ -11,7 +11,10 @@ interface ReceivedDateInputProps {
   historyId: number;
 }
 
-export function ReceivedDateInput({ value, historyId }: ReceivedDateInputProps) {
+export function ReceivedDateInput({
+  value,
+  historyId,
+}: ReceivedDateInputProps) {
   const [updateIncomeHistory] = useUpdateIncomeHistoryMutation();
   const [displayValue, setDisplayValue] = useState<Dayjs | null>(dayjs(value));
 
@@ -24,7 +27,7 @@ export function ReceivedDateInput({ value, historyId }: ReceivedDateInputProps) 
     setDisplayValue(newValue);
 
     // Convert to ISO string and save
-    const isoDate = formatDateForDB(newValue.format('YYYY-MM-DD'));
+    const isoDate = formatDateForDB(newValue.format('YYYY/MM/DD'));
 
     try {
       await updateIncomeHistory({

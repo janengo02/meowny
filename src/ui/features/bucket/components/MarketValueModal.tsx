@@ -161,8 +161,6 @@ export function MarketValueModal({
               <DateTimePickerField
                 name="recorded_at"
                 label="Recorded Date & Time"
-                format="YYYY-MM-DD HH:mm:ss"
-                ampm={false}
               />
 
               <FormTextField name="notes" label="Notes" multiline rows={3} />

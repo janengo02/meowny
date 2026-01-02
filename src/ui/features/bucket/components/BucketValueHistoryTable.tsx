@@ -24,6 +24,7 @@ import { formatDateForDB } from '../../../shared/utils/dateTime';
 import { useMemo, useState } from 'react';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
 import { MarketValueModal } from './MarketValueModal';
+import dayjs from 'dayjs';
 
 interface BucketValueHistoryTableProps {
   bucketId: number;
@@ -255,10 +256,10 @@ export function BucketValueHistoryTable({
               >
                 <TableCell>
                   <Typography variant="body2">
-                    {new Date(history.recorded_at).toLocaleDateString()}
+                    {dayjs(history.recorded_at).format('YYYY/MM/DD')}
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {new Date(history.recorded_at).toLocaleTimeString()}
+                    {dayjs(history.recorded_at).format('HH:mm')}
                   </Typography>
                 </TableCell>
                 <TableCell>

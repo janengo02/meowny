@@ -136,7 +136,7 @@ export function InvestmentReportDialog({
     <Dialog
       open={open}
       onClose={handleClose}
-      maxWidth="md"
+      maxWidth="lg"
       fullWidth
       PaperProps={{
         sx: {
@@ -170,18 +170,7 @@ export function InvestmentReportDialog({
               <DateTimePickerField
                 name="recorded_at"
                 label="Recorded Date & Time"
-                format="YYYY-MM-DD HH:mm:ss"
-                ampm={false}
-              />
-
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={includeZeroUnits}
-                    onChange={(e) => setIncludeZeroUnits(e.target.checked)}
-                  />
-                }
-                label="Include buckets with 0 units"
+                sx={{ width: 'fit-content' }}
               />
 
               {isLoadingBuckets ? (
@@ -199,11 +188,11 @@ export function InvestmentReportDialog({
                     <TableHead>
                       <TableRow>
                         <TableCell>Bucket</TableCell>
-                        <TableCell align="right">Total Units</TableCell>
-                        <TableCell align="right">Contributed</TableCell>
-                        <TableCell align="right">Gain/Loss</TableCell>
-                        <TableCell align="right">Market Value</TableCell>
+                        <TableCell>Total Units</TableCell>
+                        <TableCell>Contributed</TableCell>
+                        <TableCell>Gain/Loss</TableCell>
                         <TableCell>Notes</TableCell>
+                        <TableCell>Market Value</TableCell>
                         <TableCell align="center"></TableCell>
                       </TableRow>
                     </TableHead>
@@ -223,11 +212,22 @@ export function InvestmentReportDialog({
           </DialogContent>
 
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={handleClose} disabled={isLoading}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={includeZeroUnits}
+                  onChange={(e) => setIncludeZeroUnits(e.target.checked)}
+                />
+              }
+              label="Include buckets with 0 units"
+              sx={{ width: 'fit-content', mr: 'auto' }}
+            />
+            <Button onClick={handleClose} disabled={isLoading} size="small">
               Cancel
             </Button>
             <Button
               type="submit"
+              size="small"
               variant="contained"
               disabled={
                 isLoading || fields.length === 0 || !form.formState.isValid
