@@ -50,6 +50,38 @@ export function DateTimePickerField<T extends FieldValues>({
                   size,
                   error: Boolean(error),
                 },
+                openPickerButton: {
+                  size: 'small',
+                  sx: {
+                    '& .MuiSvgIcon-root': {
+                      fontSize: '1rem',
+                    },
+                    padding: 0,
+                    margin: 0,
+                    border: 'none',
+                    outline: 'none',
+                    boxShadow: 'none',
+                    transition: 'none',
+                    '&:hover': {
+                      backgroundColor: 'transparent',
+                      transform: 'none',
+                      border: 'none',
+                      boxShadow: 'none',
+                    },
+                    '&:focus': {
+                      backgroundColor: 'transparent',
+                      transform: 'none',
+                      border: 'none',
+                      boxShadow: 'none',
+                    },
+                    '&:active': {
+                      backgroundColor: 'transparent',
+                      transform: 'none',
+                      border: 'none',
+                      boxShadow: 'none',
+                    },
+                  },
+                },
               }}
             />
             {error && <FormHelperText>{error}</FormHelperText>}

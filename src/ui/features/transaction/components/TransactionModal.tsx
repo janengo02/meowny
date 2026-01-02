@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import dayjs from 'dayjs';
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,20 +16,17 @@ import CloseIcon from '@mui/icons-material/Close';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
 import { FormBucketSelectField } from '../../../shared/components/form/FormBucketSelectField';
 import { FormNumberInput } from '../../../shared/components/form/FormNumberInput';
+import { DateTimePickerField } from '../../../shared/components/form/DateTimePickerField';
 import {
-  baseTransactionSchema,
-  type BaseTransactionFormData,
+  transactionModalSchema,
+  type TransactionModalFormData,
 } from '../schemas/transaction.schema';
 import {
   useCreateTransactionMutation,
   useUpdateTransactionMutation,
 } from '../api/transactionApi';
-import { getTokyoDateTime } from '../../../shared/utils';
 import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
-import {
-  formatDateForDB,
-  formatToTokyoDateTime,
-} from '../../../shared/utils/dateTime';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 import { useGetBucketsQuery } from '../../bucket/api/bucketApi';
 
 interface TransactionModalProps {
@@ -53,14 +50,14 @@ export function TransactionModal({
 
   const isLoading = isCreating || isUpdating;
 
-  const form = useForm<BaseTransactionFormData>({
-    resolver: zodResolver(baseTransactionSchema),
+  const form = useForm<TransactionModalFormData>({
+    resolver: zodResolver(transactionModalSchema),
     mode: 'onChange',
     defaultValues: {
       from_bucket_id: '',
       to_bucket_id: bucketId ? String(bucketId) : '',
       amount: 0,
-      transaction_date: getTokyoDateTime(),
+      transaction_date: dayjs(),
       notes: '',
     },
   });
@@ -78,9 +75,7 @@ export function TransactionModal({
             ? String(transactionToEdit.to_bucket_id)
             : '',
           amount: transactionToEdit.amount,
-          transaction_date: formatToTokyoDateTime(
-            transactionToEdit.transaction_date,
-          ),
+          transaction_date: dayjs(transactionToEdit.transaction_date),
           notes: transactionToEdit.notes || '',
           from_units: transactionToEdit.from_units || undefined,
           to_units: transactionToEdit.to_units || undefined,
@@ -91,14 +86,14 @@ export function TransactionModal({
           from_bucket_id: '',
           to_bucket_id: bucketId ? String(bucketId) : '',
           amount: 0,
-          transaction_date: getTokyoDateTime(),
+          transaction_date: dayjs(),
           notes: '',
         });
       }
     }
   }, [open, bucketId, transactionToEdit, form]);
 
-  const onSubmit = async (data: BaseTransactionFormData) => {
+  const onSubmit = async (data: TransactionModalFormData) => {
     try {
       const transactionData = {
         from_bucket_id: data.from_bucket_id
@@ -202,54 +197,18 @@ export function TransactionModal({
               {/* From Bucket and To Bucket - Same Row */}
               <Grid container spacing={2}>
                 <Grid size={6}>
-                  <Box sx={{ mt: 'auto' }}>
-                    <FormBucketSelectField
-                      name="from_bucket_id"
-                      label="From Bucket"
-                    />
-                    {fromBucket && (
-                      <Chip
-                        label={
-                          fromBucket.type.charAt(0).toUpperCase() +
-                          fromBucket.type.slice(1)
-                        }
-                        size="small"
-                        variant="outlined"
-                        color={
-                          fromBucket.type === 'saving'
-                            ? 'primary'
-                            : fromBucket.type === 'investment'
-                              ? 'warning'
-                              : 'default'
-                        }
-                      />
-                    )}
-                  </Box>
+                  <FormBucketSelectField
+                    name="from_bucket_id"
+                    label="From Bucket"
+                    size="small"
+                  />
                 </Grid>
                 <Grid size={6}>
-                  <Box sx={{ mt: 'auto' }}>
-                    <FormBucketSelectField
-                      name="to_bucket_id"
-                      label="To Bucket"
-                    />
-                    {toBucket && (
-                      <Chip
-                        label={
-                          toBucket.type.charAt(0).toUpperCase() +
-                          toBucket.type.slice(1)
-                        }
-                        size="small"
-                        variant="outlined"
-                        color={
-                          toBucket.type === 'saving'
-                            ? 'primary'
-                            : toBucket.type === 'investment'
-                              ? 'warning'
-                              : 'default'
-                        }
-                      />
-                    )}
-                  </Box>
+                  <FormBucketSelectField
+                    name="to_bucket_id"
+                    label="To Bucket"
+                    size="small"
+                  />
                 </Grid>
               </Grid>
 
@@ -283,17 +242,13 @@ export function TransactionModal({
                 name="amount"
                 label="Amount"
                 variant="outlined"
-                size="medium"
                 allowNegative={false}
               />
 
               {/* Transaction Date */}
-              <FormTextField
+              <DateTimePickerField
                 name="transaction_date"
-                label="Transaction Date & Time (Tokyo)"
-                type="datetime-local"
-                InputLabelProps={{ shrink: true }}
-                slotProps={{ htmlInput: { step: 1 } }}
+                label="Transaction Date & Time"
               />
 
               {/* Notes */}

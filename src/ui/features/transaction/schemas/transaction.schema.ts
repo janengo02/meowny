@@ -1,6 +1,7 @@
 import { z } from 'zod';
+import type { Dayjs } from 'dayjs';
 
-// Base schema for transaction data (without UI state)
+// Base schema for transaction data (without UI state) - uses string for CSV compatibility
 export const baseTransactionSchema = z
   .object({
     transaction_date: z.string().min(1, { message: 'Date is required' }),
@@ -23,6 +24,35 @@ export const baseTransactionSchema = z
   });
 
 export type BaseTransactionFormData = z.infer<typeof baseTransactionSchema>;
+
+// Custom Dayjs schema for modal form
+const dayjsSchema = z.custom<Dayjs>((val) => {
+  return val && typeof val === 'object' && 'isValid' in val && typeof val.isValid === 'function' && (val.isValid as () => boolean)();
+}, 'Invalid date');
+
+// Modal-specific schema that uses Dayjs for date picker
+export const transactionModalSchema = z
+  .object({
+    transaction_date: dayjsSchema,
+    amount: z
+      .number({ message: 'Amount is required' })
+      .positive({ message: 'Amount must be greater than 0' }),
+    notes: z.string().optional(),
+    from_bucket_id: z.string().optional(),
+    to_bucket_id: z.string().optional(),
+    from_units: z.number().positive().nullable().optional(),
+    to_units: z.number().positive().nullable().optional(),
+  })
+  .refine((data) => data.from_bucket_id || data.to_bucket_id, {
+    message: 'At least one bucket (From or To) must be selected',
+    path: ['to_bucket_id', 'from_bucket_id'],
+  })
+  .refine((data) => data.from_bucket_id !== data.to_bucket_id, {
+    message: 'From bucket and To bucket cannot be the same',
+    path: ['to_bucket_id', 'from_bucket_id'],
+  });
+
+export type TransactionModalFormData = z.infer<typeof transactionModalSchema>;
 
 const importStatusSchema = z.enum([
   'validating',

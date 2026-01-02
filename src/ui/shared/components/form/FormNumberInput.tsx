@@ -25,7 +25,7 @@ export function FormNumberInput({
   allowNegative = false,
   textAlign = 'right',
   variant = 'outlined',
-  size = 'medium',
+  size = 'small',
   sx,
   decimalScale = 4,
   fixedDecimalScale = false,
@@ -41,7 +41,8 @@ export function FormNumberInput({
   });
 
   // Get numeric value from field
-  const numericValue = typeof field.value === 'number' ? field.value : undefined;
+  const numericValue =
+    typeof field.value === 'number' ? field.value : undefined;
 
   return (
     <NumericFormat

@@ -165,33 +165,6 @@ export const theme = createTheme({
         variant: 'outlined',
         fullWidth: true,
       },
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.8)',
-            transition: 'all 0.15s ease',
-            '& fieldset': {
-              borderWidth: '3px',
-              borderColor: '#000000',
-              transition: 'all 0.15s ease',
-            },
-            '&:hover': {
-              transform: 'translate(-1px, -1px)',
-              boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
-            },
-            '&:hover fieldset': {
-              borderWidth: '3px',
-            },
-            '&.Mui-focused': {
-              transform: 'translate(-1px, -1px)',
-              boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
-            },
-            '&.Mui-focused fieldset': {
-              borderWidth: '3px',
-            },
-          },
-        },
-      },
     },
     MuiCard: {
       styleOverrides: {
