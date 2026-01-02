@@ -46,7 +46,9 @@ export function BucketDeleteConfirmDialog({
       aria-labelledby="delete-dialog-title"
       aria-describedby="delete-dialog-description"
     >
-      <DialogTitle id="delete-dialog-title">Delete Bucket?</DialogTitle>
+      <DialogTitle variant="h3" id="delete-dialog-title">
+        Delete Bucket?
+      </DialogTitle>
       <DialogContent>
         <DialogContentText id="delete-dialog-description">
           Are you sure you want to delete "{bucket.name}"? This action cannot be

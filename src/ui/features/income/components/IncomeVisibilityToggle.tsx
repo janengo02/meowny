@@ -30,7 +30,13 @@ export function IncomeVisibilityToggle({
       }
       label="Show on dashboard"
       labelPlacement="start"
-      sx={{ m: 0 }}
+      sx={{ m: 0, cursor: 'default' }}
+      componentsProps={{
+        typography: {
+          sx: { cursor: 'pointer' },
+        },
+      }}
+      disableTypography={false}
     />
   );
 }

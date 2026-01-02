@@ -69,6 +69,17 @@ export const incomeSourceApi = baseApi.injectEndpoints({
         }
       },
     }),
+    deleteIncomeSource: builder.mutation<void, number>({
+      queryFn: async (id) => {
+        try {
+          await window.electron.deleteIncomeSource(id);
+          return { data: undefined };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['Income'],
+    }),
   }),
 });
 
@@ -77,4 +88,5 @@ export const {
   useGetIncomeSourceQuery,
   useCreateIncomeSourceMutation,
   useUpdateIncomeSourceMutation,
+  useDeleteIncomeSourceMutation,
 } = incomeSourceApi;

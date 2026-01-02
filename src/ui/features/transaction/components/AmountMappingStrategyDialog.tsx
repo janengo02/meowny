@@ -141,6 +141,7 @@ export function AmountMappingStrategyDialog({
       }}
     >
       <DialogTitle
+        variant="h3"
         sx={{
           display: 'flex',
           justifyContent: 'space-between',

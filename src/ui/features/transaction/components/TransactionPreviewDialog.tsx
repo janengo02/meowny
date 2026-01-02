@@ -261,7 +261,7 @@ export function TransactionPreviewDialog({
         }}
       >
         <Box sx={{ flex: 1 }}>
-          <Typography variant="h2">Transaction Preview</Typography>
+          <Typography variant="h3">Transaction Preview</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             Review and assign buckets to {initialMappedTransactions.length}{' '}
             transaction(s). Duplicate transactions will be automatically

@@ -133,6 +133,7 @@ export function MarketValueModal({
       <FormProvider {...form}>
         <Box component="form" onSubmit={form.handleSubmit(onSubmit)}>
           <DialogTitle
+            variant="h3"
             sx={{
               display: 'flex',
               justifyContent: 'space-between',
