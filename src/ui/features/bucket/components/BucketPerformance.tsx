@@ -27,8 +27,8 @@ export function BucketPerformance({ bucket }: BucketPerformanceProps) {
     mode: 'onChange',
     defaultValues: {
       mode: 'month',
-      periodFrom: dayjs().subtract(11, 'month').startOf('month'),
-      periodTo: dayjs().endOf('month'),
+      periodFrom: dayjs().subtract(12, 'month').startOf('month'),
+      periodTo: dayjs().subtract(1, 'month').endOf('month'),
     },
   });
 
