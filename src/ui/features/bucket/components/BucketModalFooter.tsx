@@ -2,6 +2,7 @@ import { Box, Button, Divider, Typography } from '@mui/material';
 import { useState } from 'react';
 import { BucketDeleteConfirmDialog } from './BucketDeleteConfirmDialog';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { BucketVisibilityToggle } from './BucketVisibilityToggle';
 
 interface BucketModalFooterProps {
   bucket: Bucket;
@@ -48,6 +49,10 @@ export function BucketModalFooter({ bucket, onClose }: BucketModalFooterProps) {
           Delete Bucket
         </Button>
         <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <BucketVisibilityToggle
+            bucketId={bucket.id}
+            isHidden={bucket.is_hidden}
+          />
           <Box>
             <Typography variant="caption" color="text.secondary">
               Created
