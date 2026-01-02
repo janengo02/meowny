@@ -125,8 +125,10 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           fontWeight: 700,
-          border: '3px solid #000000',
           transition: 'all 0.15s ease',
+        },
+        contained: {
+          border: '3px solid #000000',
           boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
           '&:hover': {
             transform: 'translate(-2px, -2px)',
@@ -137,13 +139,23 @@ export const theme = createTheme({
             boxShadow: '2px 2px 0px rgba(0, 0, 0, 0.8)',
           },
         },
-        contained: {
-          border: '3px solid #000000',
-        },
         outlined: {
           borderWidth: '3px',
+          boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
           '&:hover': {
             borderWidth: '3px',
+            transform: 'translate(-2px, -2px)',
+            boxShadow: '6px 6px 0px rgba(0, 0, 0, 0.8)',
+          },
+          '&:active': {
+            transform: 'translate(1px, 1px)',
+            boxShadow: '2px 2px 0px rgba(0, 0, 0, 0.8)',
+          },
+        },
+        text: {
+          '&:hover': {
+            background: 'none',
+            filter: 'brightness(0.8)',
           },
         },
       },

@@ -13,6 +13,7 @@ export function ExpenseBucketCard({ bucket, onClick }: ExpenseBucketCardProps) {
         display: 'inline-flex',
         flexDirection: 'column',
         width: 'fit-content',
+        backgroundColor: '#1a1a1a50',
         boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
         '&:hover': {
           transform: 'translate(-1px, -1px)',

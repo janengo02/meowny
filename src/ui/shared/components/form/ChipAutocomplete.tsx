@@ -164,17 +164,14 @@ export function ChipAutocomplete<T extends string>({
           sx={{
             cursor: disabled ? 'default' : 'pointer',
             transition: 'all 0.15s ease',
+            '&:hover': {
+              transform: 'translate(-1px, -1px)',
+              boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
+            },
             ...(colorConfig && {
               backgroundColor: `${colorConfig.bgColor} !important`,
               color: currentColor ? colorConfig.color : undefined,
-              '&:hover': {
-                backgroundColor: `${colorConfig.bgColor} !important`,
-                transform: 'translate(-1px, -1px)',
-                boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
-              },
-              '&:focus': {
-                backgroundColor: `${colorConfig.bgColor} !important`,
-              },
+
               '& .MuiChip-deleteIcon': {
                 color: colorConfig.color,
                 '&:hover': {

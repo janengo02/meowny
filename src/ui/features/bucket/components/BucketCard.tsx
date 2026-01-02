@@ -22,6 +22,7 @@ export function BucketCard({ bucket, onClick }: BucketCardProps) {
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
+        backgroundColor: '#1a1a1a50',
         '&:hover': {
           transform: 'translate(-2px, -2px)',
           boxShadow: '8px 8px 0px rgba(0, 0, 0, 0.8)',

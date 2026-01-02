@@ -1,19 +1,5 @@
 import { useState, useMemo } from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  Grid,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 import { BucketCard } from '../../bucket/components/BucketCard';
 import { DraggableBucketCard } from '../../bucket/components/DraggableBucketCard';
 import { AddBucketCard } from '../../bucket/components/AddBucketCard';
@@ -23,12 +9,8 @@ import {
   selectAccountById,
   selectBucketsByAccount,
 } from '../selectors/accountSelectors';
-import {
-  useUpdateAccountMutation,
-  useDeleteAccountMutation,
-} from '../api/accountApi';
-import { RenameAccountDialog } from './RenameAccountDialog';
-import { DeleteAccountDialog } from './DeleteAccountDialog';
+import { AccountCardMenu } from './AccountCardMenu';
+import { getColorConfig } from '../../../shared/theme/colors';
 import {
   DndContext,
   DragOverlay,
@@ -66,15 +48,10 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
 
   const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const [activeBucketId, setActiveBucketId] = useState<number | null>(null);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Get bucket order preferences
   const { data: bucketOrderPreference } = useGetBucketOrderQuery();
   const [saveBucketOrder] = useSaveBucketOrderMutation();
-  const [updateAccount] = useUpdateAccountMutation();
-  const [deleteAccount] = useDeleteAccountMutation();
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -104,46 +81,6 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
   }, [buckets, bucketOrderPreference, accountId]);
 
   if (!account) return null;
-
-  // Menu handlers
-  const handleMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleRenameClick = () => {
-    handleMenuClose();
-    setIsRenameDialogOpen(true);
-  };
-
-  const handleDeleteClick = () => {
-    handleMenuClose();
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleRename = async (newName: string) => {
-    try {
-      await updateAccount({
-        id: accountId,
-        params: { name: newName },
-      }).unwrap();
-      setIsRenameDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to rename account:', error);
-    }
-  };
-
-  const handleDelete = async () => {
-    try {
-      await deleteAccount(accountId).unwrap();
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Failed to delete account:', error);
-    }
-  };
 
   // Drag handlers
   const handleDragStart = (event: DragStartEvent) => {
@@ -204,6 +141,7 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
   const bucketCardSize = getBucketCardSize();
 
   const activeBucket = orderedBuckets.find((b) => b.id === activeBucketId);
+  const colorConfig = getColorConfig(account.color);
 
   return (
     <DndContext
@@ -212,7 +150,12 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <Card>
+      <Card
+        sx={{
+          backgroundColor: colorConfig.bgColor + '50',
+          color: colorConfig.color,
+        }}
+      >
         <CardContent>
           <Box
             sx={{
@@ -224,32 +167,8 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
             <Typography variant="h4" gutterBottom>
               {account.name}
             </Typography>
-            <IconButton
-              size="small"
-              onClick={handleMenuOpen}
-              aria-label="account options"
-            >
-              <MoreVertIcon sx={{ fontSize: '0.75rem' }} />
-            </IconButton>
+            <AccountCardMenu account={account} />
           </Box>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleRenameClick}>
-              <ListItemIcon>
-                <EditIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Rename</ListItemText>
-            </MenuItem>
-            <MenuItem onClick={handleDeleteClick}>
-              <ListItemIcon>
-                <DeleteIcon fontSize="small" />
-              </ListItemIcon>
-              <ListItemText>Delete</ListItemText>
-            </MenuItem>
-          </Menu>
 
           <SortableContext
             items={orderedBuckets.map((b) => b.id)}
@@ -285,20 +204,6 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
           </Box>
         ) : null}
       </DragOverlay>
-
-      <RenameAccountDialog
-        open={isRenameDialogOpen}
-        currentName={account.name}
-        onClose={() => setIsRenameDialogOpen(false)}
-        onRename={handleRename}
-      />
-
-      <DeleteAccountDialog
-        open={isDeleteDialogOpen}
-        accountName={account.name}
-        onClose={() => setIsDeleteDialogOpen(false)}
-        onDelete={handleDelete}
-      />
     </DndContext>
   );
 }

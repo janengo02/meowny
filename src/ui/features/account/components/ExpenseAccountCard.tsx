@@ -9,6 +9,8 @@ import {
   selectAccountById,
   selectBucketsByAccount,
 } from '../selectors/accountSelectors';
+import { AccountCardMenu } from './AccountCardMenu';
+import { getColorConfig } from '../../../shared/theme/colors';
 import {
   DndContext,
   DragOverlay,
@@ -107,6 +109,7 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
   };
 
   const activeBucket = orderedBuckets.find((b) => b.id === activeBucketId);
+  const colorConfig = getColorConfig(account.color);
 
   return (
     <DndContext
@@ -122,40 +125,54 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
               px: 1.5,
               py: 1,
               height: '100%',
+              backgroundColor: colorConfig.bgColor + '50',
+              color: colorConfig.color,
             }}
           >
             <Box
               sx={{
                 display: 'flex',
                 flexDirection: 'row',
-                alignItems: 'center',
-                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                flexWrap: 'nowrap',
                 gap: 1,
               }}
             >
-              <Typography
-                variant="body1"
-                fontWeight="bold"
+              <Box
                 sx={{
-                  color: 'white',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 1,
                 }}
               >
-                {account.name}
-              </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight="bold"
+                  sx={{
+                    color: colorConfig.color,
+                  }}
+                >
+                  {account.name}
+                </Typography>
 
-              <SortableContext
-                items={orderedBuckets.map((b) => b.id)}
-                strategy={horizontalListSortingStrategy}
-              >
-                {orderedBuckets.map((bucket) => (
-                  <DraggableExpenseBucketCard
-                    key={bucket.id}
-                    bucket={bucket}
-                    onClick={() => setSelectedBucketId(bucket.id)}
-                  />
-                ))}
-              </SortableContext>
-              <AddExpenseBucketCard account={account} categoryId={null} />
+                <SortableContext
+                  items={orderedBuckets.map((b) => b.id)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {orderedBuckets.map((bucket) => (
+                    <DraggableExpenseBucketCard
+                      key={bucket.id}
+                      bucket={bucket}
+                      onClick={() => setSelectedBucketId(bucket.id)}
+                    />
+                  ))}
+                </SortableContext>
+                <AddExpenseBucketCard account={account} categoryId={null} />
+              </Box>
+              <AccountCardMenu account={account} />
             </Box>
           </Card>
         </Grid>

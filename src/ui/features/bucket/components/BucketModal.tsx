@@ -4,13 +4,17 @@ import CloseIcon from '@mui/icons-material/Close';
 import { BucketCategorySelect } from './BucketCategorySelect';
 import { useGetBucketQuery } from '../api/bucketApi';
 import { useAppSelector } from '../../../store/hooks';
-import { selectAccountById } from '../../account/selectors/accountSelectors';
+import {
+  selectAccountById,
+  selectBucketById,
+} from '../../account/selectors/accountSelectors';
 import { BucketGoal } from './BucketGoal';
 import { BucketSummary } from './BucketSummary';
 import { BucketTitle } from './BucketTitle';
 import { BucketModalFooter } from './BucketModalFooter';
 import { BucketPerformance } from './BucketPerformance';
 import { BucketVisibilityToggle } from './BucketVisibilityToggle';
+import { getColorConfig } from '../../../shared/theme/colors';
 
 interface BucketModalProps {
   bucketId: number | null;
@@ -19,10 +23,18 @@ interface BucketModalProps {
 }
 
 export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
-  // Get bucket from API
-  const { data: bucket } = useGetBucketQuery(bucketId ?? 0, {
-    skip: !bucketId,
+  // First check if bucket exists in Redux store
+  const bucketFromStore = useAppSelector((state) =>
+    bucketId ? selectBucketById(state, bucketId) : null,
+  );
+
+  // Only fetch from API if bucket is not in store
+  const { data: bucketFromApi } = useGetBucketQuery(bucketId ?? 0, {
+    skip: !bucketId || !!bucketFromStore,
   });
+
+  // Use store data if available, otherwise use API data
+  const bucket = bucketFromStore || bucketFromApi;
 
   // Get the account for this bucket
   const account = useAppSelector((state) =>
@@ -30,6 +42,9 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
   );
 
   if (!bucketId || !bucket) return null;
+  const accountColorConfig = account?.color
+    ? getColorConfig(account?.color)
+    : null;
 
   return (
     <Drawer
@@ -80,17 +95,6 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             alignItems: 'center',
           }}
         >
-          {account && (
-            <Chip
-              label={account.name}
-              size="medium"
-              sx={{
-                borderColor: account.color,
-                color: account.color,
-              }}
-              variant="outlined"
-            />
-          )}
           <Chip
             label={bucket.type}
             size="medium"
@@ -104,8 +108,32 @@ export function BucketModal({ bucketId, open, onClose }: BucketModalProps) {
             }
             sx={{
               textTransform: 'capitalize',
+              '&:hover': {
+                transform: 'translate(-1px, -1px)',
+                boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
+              },
             }}
           />
+          {account && (
+            <Chip
+              label={account.name}
+              size="medium"
+              sx={{
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  transform: 'translate(-1px, -1px)',
+                  boxShadow: '4px 4px 0px rgba(0, 0, 0, 0.8)',
+                },
+                ...(accountColorConfig && {
+                  backgroundColor: `${accountColorConfig.bgColor} !important`,
+                  color: accountColorConfig.color
+                    ? accountColorConfig.color
+                    : undefined,
+                }),
+              }}
+              variant="outlined"
+            />
+          )}
 
           <BucketCategorySelect
             bucketId={bucket.id}
