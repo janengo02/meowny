@@ -170,7 +170,7 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
                     />
                   ))}
                 </SortableContext>
-                <AddExpenseBucketCard account={account} categoryId={null} />
+                <AddExpenseBucketCard account={account} />
               </Box>
               <AccountCardMenu account={account} />
             </Box>

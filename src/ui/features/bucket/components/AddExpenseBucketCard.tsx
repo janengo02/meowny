@@ -1,17 +1,13 @@
 import { Card, CardActionArea, CardContent, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useState } from 'react';
-import { AddExpenseBucketDialog } from './AddExpenseBucketDialog';
+import { CreateBucketDialog } from './CreateBucketDialog';
 
 interface AddExpenseBucketCardProps {
   account: Account;
-  categoryId?: number | null;
 }
 
-export function AddExpenseBucketCard({
-  account,
-  categoryId,
-}: AddExpenseBucketCardProps) {
+export function AddExpenseBucketCard({ account }: AddExpenseBucketCardProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -48,11 +44,11 @@ export function AddExpenseBucketCard({
         </CardActionArea>
       </Card>
 
-      <AddExpenseBucketDialog
+      <CreateBucketDialog
         account={account}
-        categoryId={categoryId}
         open={open}
         onClose={() => setOpen(false)}
+        accountTypeFilter="expense"
       />
     </>
   );

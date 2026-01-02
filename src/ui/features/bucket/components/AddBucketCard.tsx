@@ -1,7 +1,7 @@
 import { Card, CardActionArea, CardContent, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useState } from 'react';
-import { AddBucketDialog } from './AddBucketDialog';
+import { CreateBucketDialog } from './CreateBucketDialog';
 
 interface AddBucketCardProps {
   account: Account;
@@ -44,10 +44,11 @@ export function AddBucketCard({ account }: AddBucketCardProps) {
         </CardActionArea>
       </Card>
 
-      <AddBucketDialog
+      <CreateBucketDialog
         account={account}
         open={open}
         onClose={() => setOpen(false)}
+        accountTypeFilter="asset"
       />
     </>
   );

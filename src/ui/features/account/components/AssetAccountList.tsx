@@ -25,7 +25,7 @@ import type {
   DragStartEvent,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { AddBucketDialog } from '../../bucket/components/AddBucketDialog';
+import { CreateBucketDialog } from '../../bucket/components/CreateBucketDialog';
 import { AddAssetAccountDialog } from './AddAssetAccountDialog';
 
 const DEFAULT_LAYOUT: AssetAccountListLayoutPreference = {
@@ -487,9 +487,10 @@ export function AssetAccountList() {
         onClose={() => setIsAccountDialogOpen(false)}
       />
 
-      <AddBucketDialog
+      <CreateBucketDialog
         open={isBucketDialogOpen}
         onClose={() => setIsBucketDialogOpen(false)}
+        accountTypeFilter="asset"
       />
     </DndContext>
   );

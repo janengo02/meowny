@@ -6,7 +6,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { ExpenseAccountCard } from './ExpenseAccountCard';
 import { selectAccountIdsByType } from '../selectors/accountSelectors';
 import { AddExpenseAccountDialog } from './AddExpenseAccountDialog';
-import { AddExpenseBucketDialog } from '../../bucket/components/AddExpenseBucketDialog';
+import { CreateBucketDialog } from '../../bucket/components/CreateBucketDialog';
 import {
   useGetExpenseAccountListLayoutQuery,
   useSaveExpenseAccountListLayoutMutation,
@@ -209,9 +209,10 @@ export function ExpenseAccountList() {
         onClose={() => setIsAccountDialogOpen(false)}
       />
 
-      <AddExpenseBucketDialog
+      <CreateBucketDialog
         open={isBucketDialogOpen}
         onClose={() => setIsBucketDialogOpen(false)}
+        accountTypeFilter="expense"
       />
     </DndContext>
   );
