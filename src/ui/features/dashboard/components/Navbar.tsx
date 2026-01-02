@@ -8,37 +8,23 @@ import {
   IconButton,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useNavigate } from 'react-router-dom';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import { useAppSelector } from '../../../store/hooks';
-import { useSignOutMutation } from '../../auth/api/authApi';
 import { CsvImportFlow } from '../../transaction/components/CsvImportFlow';
 import { InvestmentReportDialog } from '../../bucket/components/InvestmentReportDialog';
 import { SettingsDrawer } from '../../settings/components/SettingsDrawer';
 import { useState } from 'react';
 
 export function Navbar() {
-  const navigate = useNavigate();
   const user = useAppSelector((state) => state.auth.user);
-  const [signOut, { isLoading: isSigningOut }] = useSignOutMutation();
   const [isInvestmentReportOpen, setIsInvestmentReportOpen] = useState(false);
   const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Still navigate to login on error
-      navigate('/login');
-    }
-  };
 
   return (
     <>
       <AppBar
-        position="static"
-        color="transparent"
+        position="sticky"
+        color="default"
         elevation={0}
         sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
@@ -71,20 +57,13 @@ export function Navbar() {
             <Button
               variant="outlined"
               size="small"
+              color="warning"
+              startIcon={<TrendingUpIcon />}
               onClick={() => setIsInvestmentReportOpen(true)}
-              disabled={isSigningOut}
             >
               Report Investment Market Value
             </Button>
             <CsvImportFlow />
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleLogout}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? 'Logging out...' : 'Logout'}
-            </Button>
           </Box>
           <InvestmentReportDialog
             open={isInvestmentReportOpen}

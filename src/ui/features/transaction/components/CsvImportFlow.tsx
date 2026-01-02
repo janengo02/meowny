@@ -400,10 +400,11 @@ export function CsvImportFlow() {
       />
       <Button
         variant="outlined"
+        size="small"
         startIcon={<UploadFileIcon />}
         onClick={handleImportClick}
       >
-        Import CSV
+        Import Transaction CSV
       </Button>
 
       <AmountMappingStrategyDialog
