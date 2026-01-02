@@ -52,6 +52,17 @@ export const incomeCategoryApi = baseApi.injectEndpoints({
         { type: 'Income', id },
       ],
     }),
+    deleteIncomeCategory: builder.mutation<void, number>({
+      queryFn: async (id) => {
+        try {
+          await window.electron.deleteIncomeCategory(id);
+          return { data: undefined };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['Income'],
+    }),
   }),
 });
 
@@ -60,4 +71,5 @@ export const {
   useGetIncomeCategoryQuery,
   useCreateIncomeCategoryMutation,
   useUpdateIncomeCategoryMutation,
+  useDeleteIncomeCategoryMutation,
 } = incomeCategoryApi;

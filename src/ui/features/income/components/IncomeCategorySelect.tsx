@@ -4,6 +4,7 @@ import {
   useGetIncomeCategoriesQuery,
   useCreateIncomeCategoryMutation,
   useUpdateIncomeCategoryMutation,
+  useDeleteIncomeCategoryMutation,
 } from '../api/incomeCategoryApi';
 import { useUpdateIncomeHistoryMutation } from '../api/incomeHistoryApi';
 
@@ -25,6 +26,8 @@ export function IncomeCategorySelect({
   ] = useCreateIncomeCategoryMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] =
     useUpdateIncomeCategoryMutation();
+  const [deleteCategory, { isLoading: isDeletingCategory }] =
+    useDeleteIncomeCategoryMutation();
   const [updateIncomeHistory, { isLoading: isUpdating }] =
     useUpdateIncomeHistoryMutation();
 
@@ -75,6 +78,21 @@ export function IncomeCategorySelect({
     }
   };
 
+  const handleDelete = async (categoryId: string) => {
+    try {
+      await deleteCategory(Number(categoryId)).unwrap();
+      // If the deleted category was selected, clear the selection
+      if (value === Number(categoryId)) {
+        await updateIncomeHistory({
+          id: historyId,
+          params: { income_category_id: null },
+        }).unwrap();
+      }
+    } catch (error) {
+      console.error('Failed to delete income category:', error);
+    }
+  };
+
   // Include the newly created category in options if it's not yet in the cached list
   const options = useMemo(() => {
     const categoryOptions = categories.map((cat) => ({
@@ -106,10 +124,11 @@ export function IncomeCategorySelect({
       onCreate={handleCreateCategory}
       onColorChange={handleColorChange}
       onOptionNameChange={handleNameChange}
+      onOptionDelete={handleDelete}
       label="Category"
       placeholder="Search categories..."
       variant="outlined"
-      disabled={disabled || isCreating || isUpdating || isUpdatingCategory}
+      disabled={disabled || isCreating || isUpdating || isUpdatingCategory || isDeletingCategory}
     />
   );
 }

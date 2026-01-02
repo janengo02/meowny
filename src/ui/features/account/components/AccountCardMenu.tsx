@@ -108,12 +108,12 @@ export function AccountCardMenu({ account }: AccountCardMenuProps) {
                 onChange={(e) => setEditedName(e.target.value)}
                 placeholder="Account name"
                 autoFocus
-                fullWidth
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     handleNameSave();
                   }
                 }}
+                sx={{ width: 150 }}
               />
               <Button
                 variant="contained"

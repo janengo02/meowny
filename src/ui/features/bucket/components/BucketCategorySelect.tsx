@@ -5,6 +5,7 @@ import { useUpdateBucketMutation } from '../api/bucketApi';
 import {
   useCreateBucketCategoryMutation,
   useUpdateBucketCategoryMutation,
+  useDeleteBucketCategoryMutation,
 } from '../api/bucketCategoryApi';
 import { selectAllBucketCategories } from '../../account/selectors/accountSelectors';
 import type { RootState } from '../../../store/store';
@@ -30,6 +31,8 @@ export function BucketCategorySelect({
   ] = useCreateBucketCategoryMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] =
     useUpdateBucketCategoryMutation();
+  const [deleteCategory, { isLoading: isDeletingCategory }] =
+    useDeleteBucketCategoryMutation();
 
   const handleCategoryChange = async (categoryId: string | null) => {
     try {
@@ -78,6 +81,21 @@ export function BucketCategorySelect({
     }
   };
 
+  const handleDelete = async (categoryId: string) => {
+    try {
+      await deleteCategory(Number(categoryId)).unwrap();
+      // If the deleted category was selected, clear the selection
+      if (value === Number(categoryId)) {
+        await updateBucket({
+          id: bucketId,
+          params: { bucket_category_id: null },
+        }).unwrap();
+      }
+    } catch (error) {
+      console.error('Failed to delete bucket category:', error);
+    }
+  };
+
   // Include the newly created category in options if it's not yet in the cached list
   const options = useMemo(() => {
     const categoryOptions = categories.map((cat: BucketCategory) => ({
@@ -111,10 +129,11 @@ export function BucketCategorySelect({
       onCreate={handleCreateCategory}
       onColorChange={handleColorChange}
       onOptionNameChange={handleNameChange}
+      onOptionDelete={handleDelete}
       label="Category"
       placeholder="Search categories..."
       variant="outlined"
-      disabled={disabled || isUpdating || isCreating || isUpdatingCategory}
+      disabled={disabled || isUpdating || isCreating || isUpdatingCategory || isDeletingCategory}
     />
   );
 }

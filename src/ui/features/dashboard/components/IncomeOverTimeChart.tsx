@@ -117,17 +117,16 @@ export function IncomeOverTimeChart() {
     const labels = getCheckpointLabels(checkpoints, mode);
 
     // Create category name map
-    const categoryNameMap = new Map<number, string>();
+    const categoryNameMap = new Map<number | null, string>();
     incomeCategories.forEach((cat) => {
       categoryNameMap.set(cat.id, cat.name);
     });
+    categoryNameMap.set(null, 'Uncategorized');
 
-    // Get unique categories from income histories
+    // Get unique categories from income histories (including null for uncategorized)
     const uniqueCategoryIds = Array.from(
       new Set(
-        incomeHistories
-          .filter((h) => h.income_category_id !== null)
-          .map((h) => h.income_category_id!),
+        incomeHistories.map((h) => h.income_category_id),
       ),
     );
 

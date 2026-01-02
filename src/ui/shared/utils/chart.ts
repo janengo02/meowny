@@ -759,18 +759,15 @@ export const getGrossIncomeByCategory = (
   >[],
   checkpoint: Date,
   mode: 'month' | 'year',
-): Map<number, number> => {
+): Map<number | null, number> => {
   const checkpointDayjs = dayjs(checkpoint);
-  const categoryMap = new Map<number, number>();
+  const categoryMap = new Map<number | null, number>();
 
   incomeHistories.forEach((history) => {
     const receivedDate = dayjs(history.received_date);
 
     // Check if the received_date falls within the same period as checkpoint
-    if (
-      receivedDate.isSame(checkpointDayjs, mode) &&
-      history.income_category_id !== null
-    ) {
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
       const categoryId = history.income_category_id;
       categoryMap.set(
         categoryId,
@@ -790,18 +787,15 @@ export const getNetIncomeByCategory = (
   >[],
   checkpoint: Date,
   mode: 'month' | 'year',
-): Map<number, number> => {
+): Map<number | null, number> => {
   const checkpointDayjs = dayjs(checkpoint);
-  const categoryMap = new Map<number, number>();
+  const categoryMap = new Map<number | null, number>();
 
   incomeHistories.forEach((history) => {
     const receivedDate = dayjs(history.received_date);
 
     // Check if the received_date falls within the same period as checkpoint
-    if (
-      receivedDate.isSame(checkpointDayjs, mode) &&
-      history.income_category_id !== null
-    ) {
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
       const categoryId = history.income_category_id;
       categoryMap.set(
         categoryId,

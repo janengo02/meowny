@@ -723,6 +723,7 @@ type EventPayloadMapping = {
   'db:getBucketCategories': BucketCategory[];
   'db:createBucketCategory': BucketCategory;
   'db:updateBucketCategory': BucketCategory;
+  'db:deleteBucketCategory': void;
   'db:getAccounts': Account[];
   'db:createAccount': Account;
   'db:updateAccount': Account;
@@ -814,6 +815,7 @@ interface Window {
       id: number,
       params: UpdateBucketCategoryParams,
     ) => Promise<BucketCategory>;
+    deleteBucketCategory: (id: number) => Promise<void>;
     getAccounts: () => Promise<Account[]>;
     createAccount: (params: CreateAccountParams) => Promise<Account>;
     updateAccount: (

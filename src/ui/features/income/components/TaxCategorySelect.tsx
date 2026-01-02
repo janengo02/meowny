@@ -4,6 +4,7 @@ import {
   useGetTaxCategoriesQuery,
   useCreateTaxCategoryMutation,
   useUpdateTaxCategoryMutation,
+  useDeleteTaxCategoryMutation,
 } from '../api/taxCategoryApi';
 
 interface TaxCategorySelectProps {
@@ -19,6 +20,8 @@ export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
   ] = useCreateTaxCategoryMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] =
     useUpdateTaxCategoryMutation();
+  const [deleteCategory, { isLoading: isDeletingCategory }] =
+    useDeleteTaxCategoryMutation();
 
   const options = useMemo(() => {
     const categoryOptions = taxCategories.map((category) => ({
@@ -80,6 +83,18 @@ export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
     }
   };
 
+  const handleDelete = async (categoryId: string) => {
+    try {
+      await deleteCategory(Number(categoryId)).unwrap();
+      // If the deleted category was selected, clear the selection
+      if (value === Number(categoryId)) {
+        onChange(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete tax category:', error);
+    }
+  };
+
   return (
     <ChipAutocomplete
       value={value?.toString() ?? null}
@@ -88,11 +103,12 @@ export function TaxCategorySelect({ value, onChange }: TaxCategorySelectProps) {
       onCreate={handleCreate}
       onColorChange={handleColorChange}
       onOptionNameChange={handleNameChange}
+      onOptionDelete={handleDelete}
       size="small"
       variant="outlined"
       placeholder="Search tax categories..."
       label="Tax Category"
-      disabled={isCreating || isUpdatingCategory}
+      disabled={isCreating || isUpdatingCategory || isDeletingCategory}
     />
   );
 }

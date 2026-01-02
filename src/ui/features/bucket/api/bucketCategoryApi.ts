@@ -44,6 +44,17 @@ export const bucketCategoryApi = baseApi.injectEndpoints({
       },
       invalidatesTags: ['BucketCategory'],
     }),
+    deleteBucketCategory: builder.mutation<void, number>({
+      queryFn: async (id) => {
+        try {
+          await window.electron.deleteBucketCategory(id);
+          return { data: undefined };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      invalidatesTags: ['BucketCategory'],
+    }),
   }),
 });
 
@@ -51,4 +62,5 @@ export const {
   useGetBucketCategoriesQuery,
   useCreateBucketCategoryMutation,
   useUpdateBucketCategoryMutation,
+  useDeleteBucketCategoryMutation,
 } = bucketCategoryApi;

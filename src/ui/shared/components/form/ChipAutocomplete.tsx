@@ -16,6 +16,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import AddIcon from '@mui/icons-material/Add';
 import ClearIcon from '@mui/icons-material/Clear';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { AVAILABLE_COLORS, getColorConfig } from '../../theme/colors';
 
 interface ChipAutocompleteOption<T extends string> {
@@ -31,6 +32,7 @@ interface ChipAutocompleteProps<T extends string> {
   onCreate?: (value: string) => void;
   onColorChange?: (value: T, color: ColorEnum) => void;
   onOptionNameChange?: (value: T, newName: string) => void;
+  onOptionDelete?: (value: T) => void;
   size?: 'small' | 'medium';
   variant?: 'filled' | 'outlined';
   disabled?: boolean;
@@ -46,6 +48,7 @@ export function ChipAutocomplete<T extends string>({
   onCreate,
   onColorChange,
   onOptionNameChange,
+  onOptionDelete,
   size = 'medium',
   variant = 'outlined',
   disabled = false,
@@ -143,6 +146,13 @@ export function ChipAutocomplete<T extends string>({
   const handleNameSave = () => {
     if (selectedItemForColor && onOptionNameChange && editedName.trim()) {
       onOptionNameChange(selectedItemForColor, editedName.trim());
+    }
+    handleColorPickerClose();
+  };
+
+  const handleDeleteOption = () => {
+    if (selectedItemForColor && onOptionDelete) {
+      onOptionDelete(selectedItemForColor);
     }
     handleColorPickerClose();
   };
@@ -302,7 +312,7 @@ export function ChipAutocomplete<T extends string>({
           horizontal: 'right',
         }}
       >
-        <Box sx={{ p: 2 }}>
+        <Box sx={{ p: 2, pb: 1 }}>
           {onOptionNameChange && (
             <Box sx={{ mb: 2 }}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -336,6 +346,7 @@ export function ChipAutocomplete<T extends string>({
               display: 'grid',
               gridTemplateColumns: 'repeat(6, 1fr)',
               gap: 1,
+              mb: onOptionDelete ? 2 : 0,
             }}
           >
             {AVAILABLE_COLORS.map((colorOption) => {
@@ -360,6 +371,22 @@ export function ChipAutocomplete<T extends string>({
               );
             })}
           </Box>
+          {onOptionDelete && (
+            <>
+              <Divider />
+              <Button
+                fullWidth
+                variant="text"
+                color="error"
+                size="small"
+                startIcon={<DeleteIcon />}
+                onClick={handleDeleteOption}
+                sx={{ justifyContent: 'flex-start', mt: 1 }}
+              >
+                Delete
+              </Button>
+            </>
+          )}
         </Box>
       </Popover>
     </>
