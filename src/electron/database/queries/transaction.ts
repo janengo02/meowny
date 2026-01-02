@@ -356,7 +356,12 @@ export async function getExpenseTransactionsByPeriod(params: {
         name,
         type,
         bucket_category_id,
+        account_id,
         category:bucket_category_id(
+          id,
+          name
+        ),
+        account:account_id(
           id,
           name
         )
@@ -383,6 +388,10 @@ export async function getExpenseTransactionsByPeriod(params: {
         id: number;
         name: string;
       } | null;
+      account: {
+        id: number;
+        name: string;
+      } | null;
     } | null;
 
     // Only include transactions where to_bucket.type === 'expense'
@@ -394,6 +403,8 @@ export async function getExpenseTransactionsByPeriod(params: {
           total_amount: 0,
           category_id: toBucket.category?.id ?? null,
           category_name: toBucket.category?.name ?? null,
+          account_id: toBucket.account?.id ?? null,
+          account_name: toBucket.account?.name ?? null,
         });
       }
 

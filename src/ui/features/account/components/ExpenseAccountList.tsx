@@ -1,11 +1,4 @@
-import {
-  Grid,
-  Typography,
-  Box,
-  Button,
-  Menu,
-  MenuItem,
-} from '@mui/material';
+import { Grid, Typography, Box, Button, Menu, MenuItem } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useState, useMemo, useEffect } from 'react';
@@ -26,7 +19,11 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { DraggableExpenseAccountCard } from './DraggableExpenseAccountCard';
 
 export function ExpenseAccountList() {
@@ -157,7 +154,7 @@ export function ExpenseAccountList() {
           p: 1,
         }}
       >
-        <Typography variant="h2">Expense Accounts</Typography>
+        <Typography variant="h2">Expenses</Typography>
         <Button
           variant="contained"
           size="small"
@@ -182,9 +179,7 @@ export function ExpenseAccountList() {
           <MenuItem onClick={handleExpenseAccountClick}>
             Expense Account
           </MenuItem>
-          <MenuItem onClick={handleExpenseBucketClick}>
-            Expense Bucket
-          </MenuItem>
+          <MenuItem onClick={handleExpenseBucketClick}>Expense Bucket</MenuItem>
         </Menu>
       </Box>
 

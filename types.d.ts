@@ -486,6 +486,8 @@ type ExpenseTransactionSummary = {
   total_amount: number;
   category_id: number | null;
   category_name: string | null;
+  account_id: number | null;
+  account_name: string | null;
 };
 
 type GetExpenseTransactionsByPeriodParams = {

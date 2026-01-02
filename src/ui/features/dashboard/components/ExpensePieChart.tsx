@@ -23,9 +23,12 @@ import {
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { useGetExpenseTransactionsByPeriodQuery } from '../../transaction/api/transactionApi';
 import { useMemo, useState, useCallback } from 'react';
-import { CHART_COLORS, donutChartOptions } from '../../../shared/utils/chart';
+import {
+  centerTextPlugin,
+  CHART_COLORS,
+  expenseDonutChartOptions,
+} from '../../../shared/utils/chart';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
-import { formatMoney } from '../../../shared/utils/formatMoney';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
@@ -37,89 +40,6 @@ import { ExpenseCategoryModal } from '../../bucket/components/ExpenseCategoryMod
 
 // Register Chart.js components (excluding ChartDataLabels - applied per-chart)
 ChartJS.register(ArcElement, Tooltip, Legend);
-
-// Plugin to display total in the center of the donut chart
-const centerTextPlugin = {
-  id: 'centerText',
-  afterDraw(chart: ChartJS<'doughnut'>) {
-    const { ctx, chartArea, data } = chart;
-
-    if (!chartArea) return;
-
-    ctx.save();
-
-    // Calculate total from chart data
-    const total = data.datasets.reduce((sum, dataset) => {
-      return (
-        sum +
-        dataset.data.reduce((dataSum, value) => {
-          return dataSum + (typeof value === 'number' ? value : 0);
-        }, 0)
-      );
-    }, 0);
-
-    // Calculate center of the actual chart area (excluding legends)
-    const centerX = (chartArea.left + chartArea.right) / 2;
-    const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-    // Calculate appropriate font sizes based on chart area size
-    const chartHeight = chartArea.bottom - chartArea.top;
-    const totalFontSize = Math.max(chartHeight / 10, 14);
-    const labelFontSize = Math.max(chartHeight / 20, 10);
-
-    // Draw "Total" label on top
-    ctx.font = `${labelFontSize}px sans-serif`;
-    ctx.fillStyle = '#ddd';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Total', centerX, centerY - totalFontSize / 2);
-
-    // Draw total amount below the label
-    ctx.font = `bold ${totalFontSize}px sans-serif`;
-    ctx.fillStyle = '#ddd';
-    const totalText = formatMoney(total);
-    ctx.fillText(totalText, centerX, centerY + labelFontSize);
-
-    ctx.restore();
-  },
-};
-
-// Custom donut chart options with data labels
-const expenseDonutChartOptions = {
-  ...donutChartOptions,
-  plugins: {
-    ...donutChartOptions.plugins,
-    datalabels: {
-      color: '#fff',
-      font: {
-        weight: 'bold' as const,
-        size: 10,
-      },
-      formatter: (
-        value: number,
-        context: { chart: { data: { labels?: string[] } }; dataIndex: number },
-      ) => {
-        const label = context.chart.data.labels?.[context.dataIndex] || '';
-        const formattedAmount = formatMoney(value);
-        return `${label}\n${formattedAmount}`;
-      },
-      display: (context: {
-        chart: { data: { datasets: { data: number[] }[] } };
-        dataset: { data: number[] };
-        dataIndex: number;
-      }) => {
-        // Only show label if the percentage is greater than 5%
-        const total = context.chart.data.datasets[0].data.reduce(
-          (acc: number, val: number) => acc + val,
-          0,
-        );
-        const percentage =
-          (context.dataset.data[context.dataIndex] / total) * 100;
-        return percentage > 5;
-      },
-    },
-  },
-} as typeof donutChartOptions;
 
 export function ExpensePieChart() {
   const methods = useForm<ExpensePieChartFormData>({
@@ -197,6 +117,30 @@ export function ExpensePieChart() {
       groupedData = Array.from(categoryMap.entries())
         .map(([name, { total, id }]) => ({ name, total, id }))
         .sort((a, b) => b.total - a.total);
+    } else if (groupBy === 'account') {
+      // Group by account
+      const accountMap = new Map<
+        string,
+        { total: number; id: number | null }
+      >();
+
+      filteredData.forEach((item) => {
+        const accountName = item.account_name || 'No Account';
+        const existing = accountMap.get(accountName);
+
+        if (existing) {
+          existing.total += item.total_amount;
+        } else {
+          accountMap.set(accountName, {
+            total: item.total_amount,
+            id: item.account_id,
+          });
+        }
+      });
+
+      groupedData = Array.from(accountMap.entries())
+        .map(([name, { total, id }]) => ({ name, total, id }))
+        .sort((a, b) => b.total - a.total);
     } else {
       // Group by bucket (default)
       groupedData = filteredData
@@ -259,9 +203,10 @@ export function ExpensePieChart() {
         if (currentGroupBy === 'category') {
           setSelectedCategoryId(clickedId);
           setIsCategoryModalOpen(true);
-        } else {
+        } else if (currentGroupBy === 'bucket') {
           setSelectedBucketId(clickedId);
         }
+        // For 'account' groupBy, we don't open any modal
       }
     },
     [chartData],
@@ -341,6 +286,7 @@ export function ExpensePieChart() {
                   size="small"
                   options={[
                     { value: 'bucket', label: 'Bucket' },
+                    { value: 'account', label: 'Account' },
                     { value: 'category', label: 'Category' },
                   ]}
                 />

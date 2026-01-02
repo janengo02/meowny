@@ -252,8 +252,8 @@ export function AssetsOverTimeChart() {
                 size="small"
                 options={[
                   { value: 'bucket', label: 'Bucket' },
-                  { value: 'category', label: 'Category' },
                   { value: 'account', label: 'Account' },
+                  { value: 'category', label: 'Category' },
                 ]}
               />
             </Stack>

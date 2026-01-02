@@ -406,6 +406,89 @@ export const donutChartOptions: DonutChartOptions = {
   },
 };
 
+// Plugin to display total in the center of the donut chart
+export const centerTextPlugin = {
+  id: 'centerText',
+  afterDraw(chart: ChartJS<'doughnut'>) {
+    const { ctx, chartArea, data } = chart;
+
+    if (!chartArea) return;
+
+    ctx.save();
+
+    // Calculate total from chart data
+    const total = data.datasets.reduce((sum, dataset) => {
+      return (
+        sum +
+        dataset.data.reduce((dataSum, value) => {
+          return dataSum + (typeof value === 'number' ? value : 0);
+        }, 0)
+      );
+    }, 0);
+
+    // Calculate center of the actual chart area (excluding legends)
+    const centerX = (chartArea.left + chartArea.right) / 2;
+    const centerY = (chartArea.top + chartArea.bottom) / 2;
+
+    // Calculate appropriate font sizes based on chart area size
+    const chartHeight = chartArea.bottom - chartArea.top;
+    const totalFontSize = Math.max(chartHeight / 10, 14);
+    const labelFontSize = Math.max(chartHeight / 20, 10);
+
+    // Draw "Total" label on top
+    ctx.font = `${labelFontSize}px sans-serif`;
+    ctx.fillStyle = '#ddd';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Total', centerX, centerY - totalFontSize / 2);
+
+    // Draw total amount below the label
+    ctx.font = `bold ${totalFontSize}px sans-serif`;
+    ctx.fillStyle = '#ddd';
+    const totalText = formatMoney(total);
+    ctx.fillText(totalText, centerX, centerY + labelFontSize);
+
+    ctx.restore();
+  },
+};
+
+// Custom donut chart options with data labels
+export const expenseDonutChartOptions = {
+  ...donutChartOptions,
+  plugins: {
+    ...donutChartOptions.plugins,
+    datalabels: {
+      color: '#fff',
+      font: {
+        weight: 'bold' as const,
+        size: 10,
+      },
+      formatter: (
+        value: number,
+        context: { chart: { data: { labels?: string[] } }; dataIndex: number },
+      ) => {
+        const label = context.chart.data.labels?.[context.dataIndex] || '';
+        const formattedAmount = formatMoney(value);
+        return `${label}\n${formattedAmount}`;
+      },
+      display: (context: {
+        chart: { data: { datasets: { data: number[] }[] } };
+        dataset: { data: number[] };
+        dataIndex: number;
+      }) => {
+        // Only show label if the percentage is greater than 5%
+        const total = context.chart.data.datasets[0].data.reduce(
+          (acc: number, val: number) => acc + val,
+          0,
+        );
+        const percentage =
+          (context.dataset.data[context.dataIndex] / total) * 100;
+        return percentage > 5;
+      },
+    },
+  },
+} as typeof donutChartOptions;
+
 // Custom dataset type with metadata for horizontal bar charts
 export interface DatasetWithMetadata {
   label: string;
