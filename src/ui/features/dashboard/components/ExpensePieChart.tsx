@@ -124,7 +124,7 @@ const expenseDonutChartOptions = {
 export function ExpensePieChart() {
   const methods = useForm<ExpensePieChartFormData>({
     defaultValues: {
-      targetMonth: dayjs(),
+      targetMonth: dayjs().subtract(1, 'month'),
       groupBy: 'bucket',
     },
   });

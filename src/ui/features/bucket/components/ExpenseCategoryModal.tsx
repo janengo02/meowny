@@ -75,8 +75,8 @@ export function ExpenseCategoryModal({
     mode: 'onChange',
     defaultValues: {
       mode: 'month',
-      periodFrom: dayjs().startOf('year'),
-      periodTo: dayjs().endOf('year'),
+      periodFrom: dayjs().subtract(11, 'month').startOf('month'),
+      periodTo: dayjs().endOf('month'),
     },
   });
 

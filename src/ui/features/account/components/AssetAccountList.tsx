@@ -136,7 +136,9 @@ export function AssetAccountList() {
       const lastColumnIndex = layoutPreference.accountOrder.length - 1;
       const updatedOrder = layoutPreference.accountOrder.map(
         (columnIds, index) =>
-          index === lastColumnIndex ? [...columnIds, ...newAccounts] : columnIds,
+          index === lastColumnIndex
+            ? [...columnIds, ...newAccounts]
+            : columnIds,
       );
 
       saveLayout({
@@ -419,7 +421,7 @@ export function AssetAccountList() {
           p: 1,
         }}
       >
-        <Typography variant="h2">Asset Accounts</Typography>
+        <Typography variant="h2">Assets</Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Button
             variant="contained"

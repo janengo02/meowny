@@ -59,8 +59,8 @@ export function IncomeVsSavingsChart() {
     mode: 'onChange',
     defaultValues: {
       mode: 'month',
-      periodFrom: dayjs().startOf('year'),
-      periodTo: dayjs().endOf('year'),
+      periodFrom: dayjs().subtract(11, 'month').startOf('month'),
+      periodTo: dayjs().endOf('month'),
     },
   });
 
@@ -252,12 +252,14 @@ export function IncomeVsSavingsChart() {
               label="From"
               size="small"
               views={mode === 'month' ? ['year', 'month'] : ['year']}
+              format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
             />
             <DatePickerField
               name="periodTo"
               label="To"
               size="small"
               views={mode === 'month' ? ['year', 'month'] : ['year']}
+              format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
             />
           </Stack>
 
