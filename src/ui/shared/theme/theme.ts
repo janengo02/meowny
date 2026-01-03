@@ -1,46 +1,151 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, type ThemeOptions } from '@mui/material/styles';
 
-export const theme = createTheme({
+// Extend the MUI Palette to include customColors
+declare module '@mui/material/styles' {
+  interface Palette {
+    customColors: {
+      red: { bgColor: string; color: string };
+      yellow: { bgColor: string; color: string };
+      green: { bgColor: string; color: string };
+      blue: { bgColor: string; color: string };
+      purple: { bgColor: string; color: string };
+      violet: { bgColor: string; color: string };
+      orange: { bgColor: string; color: string };
+      pink: { bgColor: string; color: string };
+      emerald: { bgColor: string; color: string };
+      gray: { bgColor: string; color: string };
+      brown: { bgColor: string; color: string };
+      navy: { bgColor: string; color: string };
+      cyan: { bgColor: string; color: string };
+      magenta: { bgColor: string; color: string };
+      teal: { bgColor: string; color: string };
+      lime: { bgColor: string; color: string };
+      indigo: { bgColor: string; color: string };
+      default: { bgColor: string; color: string };
+    };
+  }
+
+  interface PaletteOptions {
+    customColors?: {
+      red?: { bgColor: string; color: string };
+      yellow?: { bgColor: string; color: string };
+      green?: { bgColor: string; color: string };
+      blue?: { bgColor: string; color: string };
+      purple?: { bgColor: string; color: string };
+      violet?: { bgColor: string; color: string };
+      orange?: { bgColor: string; color: string };
+      pink?: { bgColor: string; color: string };
+      emerald?: { bgColor: string; color: string };
+      gray?: { bgColor: string; color: string };
+      brown?: { bgColor: string; color: string };
+      navy?: { bgColor: string; color: string };
+      cyan?: { bgColor: string; color: string };
+      magenta?: { bgColor: string; color: string };
+      teal?: { bgColor: string; color: string };
+      lime?: { bgColor: string; color: string };
+      indigo?: { bgColor: string; color: string };
+      default?: { bgColor: string; color: string };
+    };
+  }
+}
+
+export type ThemeMode = 'light' | 'dark';
+
+const getDesignTokens = (mode: ThemeMode): ThemeOptions => ({
   palette: {
-    mode: 'dark',
+    mode,
     primary: {
       main: '#3fa34d', // Bright matrix green
       light: '#7fb446',
       dark: '#26773aff',
-      contrastText: '#000000',
+      contrastText: mode === 'dark' ? '#000000' : '#ffffff',
     },
     secondary: {
-      main: '#fbaf00', // Bright magenta
+      main: '#fbaf00', // Bright orange
       light: '#ffd639',
       dark: '#c08b0fff',
       contrastText: '#000000',
     },
-    background: {
-      default: '#0a0a0a', // Deep black
-      paper: '#1a1a1a',
-    },
+    background: mode === 'dark'
+      ? {
+          default: '#0a0a0a', // Deep black
+          paper: '#1a1a1a',
+        }
+      : {
+          default: '#f5f5f5', // Light gray
+          paper: '#ffffff',
+        },
     error: {
       main: '#e51e5f', // Hot pink error
       light: '#ff3377',
       dark: '#cc0044',
     },
     warning: {
-      main: '#ffff00', // Bright yellow
+      main: mode === 'dark' ? '#ffff00' : '#ff9800', // Bright yellow for dark, orange for light
       contrastText: '#000000',
     },
     info: {
-      main: '#00ffff', // Cyan
-      contrastText: '#000000',
+      main: mode === 'dark' ? '#00ffff' : '#0288d1', // Cyan for dark, blue for light
+      contrastText: mode === 'dark' ? '#000000' : '#ffffff',
     },
     success: {
       main: '#3fa34d',
-      contrastText: '#000000',
+      contrastText: mode === 'dark' ? '#000000' : '#ffffff',
     },
-    text: {
-      primary: '#ffffff',
-      secondary: 'rgba(255, 255, 255, 0.7)',
-      disabled: 'rgba(255, 255, 255, 0.5)',
-    },
+    text: mode === 'dark'
+      ? {
+          primary: '#ffffff',
+          secondary: 'rgba(255, 255, 255, 0.7)',
+          disabled: 'rgba(255, 255, 255, 0.5)',
+        }
+      : {
+          primary: '#000000',
+          secondary: 'rgba(0, 0, 0, 0.6)',
+          disabled: 'rgba(0, 0, 0, 0.38)',
+        },
+    // Custom color mappings from COLOR_HEX_MAP
+    customColors: mode === 'dark'
+      ? {
+          red: { bgColor: '#991b1b', color: '#ffffff' },
+          yellow: { bgColor: '#854d0e', color: '#ffffff' },
+          green: { bgColor: '#166534', color: '#ffffff' },
+          blue: { bgColor: '#1e40af', color: '#ffffff' },
+          purple: { bgColor: '#7e22ce', color: '#ffffff' },
+          violet: { bgColor: '#6d28d9', color: '#ffffff' },
+          orange: { bgColor: '#c2410c', color: '#ffffff' },
+          pink: { bgColor: '#be185d', color: '#ffffff' },
+          emerald: { bgColor: '#065f46', color: '#ffffff' },
+          gray: { bgColor: '#4b5563', color: '#ffffff' },
+          brown: { bgColor: '#78350f', color: '#ffffff' },
+          navy: { bgColor: '#1e3a8a', color: '#ffffff' },
+          cyan: { bgColor: '#155e75', color: '#ffffff' },
+          magenta: { bgColor: '#a21caf', color: '#ffffff' },
+          teal: { bgColor: '#115e59', color: '#ffffff' },
+          lime: { bgColor: '#4d7c0f', color: '#ffffff' },
+          indigo: { bgColor: '#4338ca', color: '#ffffff' },
+          default: { bgColor: '#4b5563', color: '#ffffff' },
+        }
+      : {
+          // Light mode - lighter backgrounds with darker text
+          red: { bgColor: '#fecaca', color: '#7f1d1d' },
+          yellow: { bgColor: '#fef3c7', color: '#713f12' },
+          green: { bgColor: '#bbf7d0', color: '#14532d' },
+          blue: { bgColor: '#bfdbfe', color: '#1e3a8a' },
+          purple: { bgColor: '#e9d5ff', color: '#581c87' },
+          violet: { bgColor: '#ddd6fe', color: '#4c1d95' },
+          orange: { bgColor: '#fed7aa', color: '#7c2d12' },
+          pink: { bgColor: '#fbcfe8', color: '#831843' },
+          emerald: { bgColor: '#a7f3d0', color: '#064e3b' },
+          gray: { bgColor: '#e5e7eb', color: '#1f2937' },
+          brown: { bgColor: '#fde68a', color: '#78350f' },
+          navy: { bgColor: '#bfdbfe', color: '#1e3a8a' },
+          cyan: { bgColor: '#a5f3fc', color: '#164e63' },
+          magenta: { bgColor: '#f5d0fe', color: '#86198f' },
+          teal: { bgColor: '#99f6e4', color: '#134e4a' },
+          lime: { bgColor: '#d9f99d', color: '#365314' },
+          indigo: { bgColor: '#c7d2fe', color: '#3730a3' },
+          default: { bgColor: '#e5e7eb', color: '#1f2937' },
+        },
   },
   typography: {
     fontFamily:
@@ -262,7 +367,7 @@ export const theme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          backgroundColor: '#1a1a1a',
+          backgroundColor: mode === 'dark' ? '#1a1a1a' : '#424242',
           border: '2px solid #000000',
           boxShadow: '3px 3px 0px rgba(0, 0, 0, 0.8)',
           fontSize: '0.5rem',
@@ -271,3 +376,8 @@ export const theme = createTheme({
     },
   },
 });
+
+export const createAppTheme = (mode: ThemeMode) => createTheme(getDesignTokens(mode));
+
+// Default export for backward compatibility
+export const theme = createAppTheme('dark');

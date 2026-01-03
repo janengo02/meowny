@@ -9,7 +9,8 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { AVAILABLE_COLORS, getColorConfig } from '../../../shared/theme/colors';
+import { AVAILABLE_COLORS } from '../../../shared/theme/colors';
+import { useThemeColors } from '../../../shared/theme/useThemeColors';
 import {
   useUpdateAccountMutation,
   useDeleteAccountMutation,
@@ -26,6 +27,9 @@ export function AccountCardMenu({ account }: AccountCardMenuProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [updateAccount] = useUpdateAccountMutation();
   const [deleteAccount] = useDeleteAccountMutation();
+
+  // Get theme-aware colors
+  const { getColorConfig } = useThemeColors();
 
   const handlePopoverOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);

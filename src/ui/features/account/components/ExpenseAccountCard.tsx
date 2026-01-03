@@ -10,7 +10,7 @@ import {
   selectBucketsByAccount,
 } from '../selectors/accountSelectors';
 import { AccountCardMenu } from './AccountCardMenu';
-import { getColorConfig } from '../../../shared/theme/colors';
+import { useThemeColors } from '../../../shared/theme/useThemeColors';
 import {
   DndContext,
   DragOverlay,
@@ -45,6 +45,9 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
 
   const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const [activeBucketId, setActiveBucketId] = useState<number | null>(null);
+
+  // Get theme-aware colors
+  const { getColorConfig } = useThemeColors();
 
   // Get bucket order preferences
   const { data: bucketOrderPreference } = useGetBucketOrderQuery();

@@ -8,8 +8,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { selectAccountById } from '../../account/selectors/accountSelectors';
 import { TransactionModal } from '../../transaction/components/TransactionModal';
 import { MarketValueModal } from './MarketValueModal';
-
-import { getColorConfig } from '../../../shared/theme/colors';
+import { useThemeColors } from '../../../shared/theme/useThemeColors';
 
 interface BucketModalActionsProps {
   bucket: Bucket;
@@ -19,6 +18,9 @@ export function BucketModalActions({ bucket }: BucketModalActionsProps) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [transactionModalOpen, setTransactionModalOpen] = useState(false);
   const [marketValueModalOpen, setMarketValueModalOpen] = useState(false);
+
+  // Get theme-aware colors
+  const { getColorConfig } = useThemeColors();
 
   // Get the account for this bucket
   const account = useAppSelector((state) =>

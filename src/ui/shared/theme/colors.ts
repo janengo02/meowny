@@ -1,5 +1,22 @@
 /**
  * Color configuration with dark background and white text colors
+ *
+ * NOTE: These are fallback values for dark mode.
+ * For theme-aware colors that automatically switch between light and dark modes,
+ * use theme.palette.customColors instead (e.g., theme.palette.customColors.red).
+ *
+ * Example usage with theme:
+ * ```tsx
+ * import { useTheme } from '@mui/material';
+ *
+ * const theme = useTheme();
+ * const redColors = theme.palette.customColors.red;
+ *
+ * <Box sx={{
+ *   backgroundColor: (theme) => theme.palette.customColors.red.bgColor,
+ *   color: (theme) => theme.palette.customColors.red.color
+ * }} />
+ * ```
  */
 export const COLOR_HEX_MAP: Record<
   ColorEnum,

@@ -14,8 +14,11 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import HomeIcon from '@mui/icons-material/Home';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { useNavigate } from 'react-router-dom';
 import { useSignOutMutation } from '../../auth/api/authApi';
+import { useTheme } from '../../../shared/context/ThemeContext';
 
 interface SettingsDrawerProps {
   open: boolean;
@@ -25,6 +28,7 @@ interface SettingsDrawerProps {
 export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const navigate = useNavigate();
   const [signOut, { isLoading: isSigningOut }] = useSignOutMutation();
+  const { mode, toggleTheme } = useTheme();
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -86,6 +90,17 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
           </Box>
 
           <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={toggleTheme}>
+                <ListItemIcon>
+                  {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                </ListItemIcon>
+                <ListItemText
+                  primary="Theme"
+                  secondary={mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+                />
+              </ListItemButton>
+            </ListItem>
             <ListItem disablePadding>
               <ListItemButton
                 onClick={() => handleNavigate('/settings/hidden-buckets')}

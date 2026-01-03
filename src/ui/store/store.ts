@@ -3,6 +3,7 @@ import { baseApi } from './baseApi';
 import authReducer from '../features/auth/slices/authSlice';
 import incomeReducer from '../features/income/slices/incomeSlice';
 import accountReducer from '../features/account/slices/accountSlice';
+import themeReducer from './slices/themeSlice';
 
 // Import API slices to ensure they're registered
 import '../features/auth/api/authApi';
@@ -15,6 +16,7 @@ export const store = configureStore({
     auth: authReducer,
     income: incomeReducer,
     account: accountReducer,
+    theme: themeReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>

@@ -25,6 +25,7 @@ export function DraggableBucketCard({
     transition,
     opacity: isDragging ? 0.3 : 1,
     cursor: isDragging ? 'grabbing' : 'grab',
+    height: '100%',
   };
 
   return (

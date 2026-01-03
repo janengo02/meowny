@@ -53,7 +53,7 @@ export function Navbar() {
               {user?.email}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Button
               variant="outlined"
               size="small"

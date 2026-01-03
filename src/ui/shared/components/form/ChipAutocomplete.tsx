@@ -17,7 +17,8 @@ import AddIcon from '@mui/icons-material/Add';
 import ClearIcon from '@mui/icons-material/Clear';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { AVAILABLE_COLORS, getColorConfig } from '../../theme/colors';
+import { AVAILABLE_COLORS } from '../../theme/colors';
+import { useThemeColors } from '../../theme/useThemeColors';
 
 interface ChipAutocompleteOption<T extends string> {
   value: T;
@@ -65,6 +66,9 @@ export function ChipAutocomplete<T extends string>({
     null,
   );
   const [editedName, setEditedName] = useState('');
+
+  // Get theme-aware colors
+  const { getColorConfig } = useThemeColors();
 
   const normalizedOptions: ChipAutocompleteOption<T>[] = options.map((opt) =>
     typeof opt === 'string' ? { value: opt, label: opt } : opt,
