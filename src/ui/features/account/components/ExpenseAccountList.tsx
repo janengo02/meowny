@@ -1,4 +1,13 @@
-import { Grid, Typography, Box, Button, Menu, MenuItem } from '@mui/material';
+import {
+  Grid,
+  Typography,
+  Box,
+  Button,
+  Menu,
+  MenuItem,
+  Card,
+  CardContent,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useState, useMemo, useEffect } from 'react';
@@ -149,12 +158,11 @@ export function ExpenseAccountList() {
       <Box
         sx={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          justifyContent: 'end',
           p: 1,
         }}
       >
-        <Typography variant="h2">Expenses</Typography>
         <Button
           variant="contained"
           size="small"
@@ -183,18 +191,39 @@ export function ExpenseAccountList() {
         </Menu>
       </Box>
 
-      <SortableContext
-        items={orderedAccountIds}
-        strategy={verticalListSortingStrategy}
-      >
-        <Grid container>
-          {orderedAccountIds.map((accountId) => (
-            <Grid key={accountId} size={{ xs: 12 }}>
-              <DraggableExpenseAccountCard accountId={accountId} />
-            </Grid>
-          ))}
-        </Grid>
-      </SortableContext>
+      {accountIds.length === 0 ? (
+        <Card sx={{ width: '100%' }}>
+          <CardContent
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pt: 3,
+            }}
+          >
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No expense accounts yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Click the "Add" button above to create your first expense account
+            </Typography>
+          </CardContent>
+        </Card>
+      ) : (
+        <SortableContext
+          items={orderedAccountIds}
+          strategy={verticalListSortingStrategy}
+        >
+          <Grid container>
+            {orderedAccountIds.map((accountId) => (
+              <Grid key={accountId} size={{ xs: 12 }}>
+                <DraggableExpenseAccountCard accountId={accountId} />
+              </Grid>
+            ))}
+          </Grid>
+        </SortableContext>
+      )}
 
       <DragOverlay dropAnimation={null}>
         {activeId && dragOverlayWidth ? (

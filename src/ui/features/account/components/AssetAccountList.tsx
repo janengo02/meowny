@@ -1,4 +1,12 @@
-import { Typography, Box, Button, Menu, MenuItem } from '@mui/material';
+import {
+  Typography,
+  Box,
+  Button,
+  Menu,
+  MenuItem,
+  Card,
+  CardContent,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useCallback, useState, useMemo, useEffect } from 'react';
@@ -462,7 +470,26 @@ export function AssetAccountList() {
           alignItems: 'stretch',
         }}
       >
-        {columns === 1 ? (
+        {accountIds.length === 0 ? (
+          <Card sx={{ width: '100%' }}>
+            <CardContent
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pt: 3,
+              }}
+            >
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No asset accounts yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Click the "Add" button above to create your first asset account
+              </Typography>
+            </CardContent>
+          </Card>
+        ) : columns === 1 ? (
           <DroppableColumn
             columnId="column-0"
             accountIds={columnAccounts[0] || []}
