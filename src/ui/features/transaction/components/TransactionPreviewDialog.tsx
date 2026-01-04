@@ -67,31 +67,35 @@ export function TransactionPreviewDialog({
     setEditedTransactions(initialMappedTransactions);
   }, [initialMappedTransactions]);
 
-  // Set up progress event listener
+  // Set up progress event listener for real-time status updates
   useEffect(() => {
     const unsubscribe = window.electron.onBatchCreateTransactionsProgress(
       (progress) => {
-        // Update individual transaction statuses as they complete
+        // Update transaction status in real-time as each one completes
+        const lastTransaction = progress.lastTransaction;
+        if (!lastTransaction) return;
+
         setEditedTransactions((prev) => {
           const updated = [...prev];
           const transactionsToImport = prev.filter(
             (t) => t.should_import && t.import_status !== 'ready',
           );
 
-          // Mark completed transactions as success
-          for (
-            let i = 0;
-            i < Math.min(progress.completed, transactionsToImport.length);
-            i++
-          ) {
-            const originalIndex = prev.indexOf(transactionsToImport[i]);
-            if (
-              originalIndex !== -1 &&
-              updated[originalIndex].import_status === 'importing'
-            ) {
+          // Find the transaction in the importing list by its original index
+          const transactionInList = transactionsToImport.find((_, idx) => {
+            // The lastTransaction.index corresponds to the position in paramsArray
+            // which matches the order of transactionsToImport
+            return idx === lastTransaction.index;
+          });
+
+          if (transactionInList) {
+            const originalIndex = prev.indexOf(transactionInList);
+            if (originalIndex !== -1) {
               updated[originalIndex] = {
                 ...updated[originalIndex],
-                import_status: 'success',
+                import_status:
+                  lastTransaction.status === 'success' ? 'success' : 'error',
+                error_message: lastTransaction.error,
               };
             }
           }
@@ -186,14 +190,23 @@ export function TransactionPreviewDialog({
         return updated;
       });
 
-      // Batch create all transactions (progress updates will come via event listener)
+      // Batch create all transactions
+      // Transaction statuses are updated in real-time via progress event listener
       const paramsArray = transactionsToImport.map((t) => t.params);
-      await batchCreateTransactions(paramsArray).unwrap();
+      const result = await batchCreateTransactions(paramsArray).unwrap();
 
-      const successCount = transactionsToImport.length;
+      // Get final counts from result
+      const successCount = result.successCount;
+      const failedCount = result.failedCount;
 
-      // Show success message
-      const messageParts = [`${successCount} imported`];
+      // Show appropriate message based on results
+      const messageParts: string[] = [];
+      if (successCount > 0) {
+        messageParts.push(`${successCount} imported`);
+      }
+      if (failedCount > 0) {
+        messageParts.push(`${failedCount} failed`);
+      }
       if (skipCount > 0) {
         messageParts.push(`${skipCount} skipped`);
       }
@@ -201,7 +214,8 @@ export function TransactionPreviewDialog({
       const message = `Import completed: ${messageParts.join(', ')}`;
       setAlert({
         message,
-        severity: skipCount > 0 ? 'info' : 'success',
+        severity:
+          failedCount > 0 ? 'error' : skipCount > 0 ? 'info' : 'success',
       });
     } catch (error) {
       console.error('Error importing transactions:', error);
@@ -214,6 +228,8 @@ export function TransactionPreviewDialog({
             updated[index] = {
               ...updated[index],
               import_status: 'error',
+              error_message:
+                error instanceof Error ? error.message : 'Unknown error',
             };
           }
         });

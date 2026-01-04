@@ -1,16 +1,12 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
 
-import {
-  updateKeywordBucketMapping,
-  batchUpdateKeywordBucketMappings,
-} from './keywordBucketMapping.js';
+import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
 import { withDatabaseLogging } from '../../logger/dbLogger.js';
 import {
   deleteTransactionToDatabase,
   insertTransactionToDatabase,
   validateTransactionParams,
-  batchInsertTransactionsToDatabase,
 } from './transactionUtils.js';
 import {
   bucketValueProcedureForAddingTransaction,
@@ -225,70 +221,119 @@ export async function createTransaction(
 // ============================================
 export async function batchCreateTransactions(
   paramsArray: CreateTransactionParams[],
-  onProgress?: (progress: { completed: number; total: number }) => void,
-): Promise<Transaction[]> {
+  onProgress?: (progress: BatchCreateTransactionsProgress) => void,
+): Promise<BatchCreateTransactionsResult> {
   return withDatabaseLogging(
     'batchCreateTransactions',
     async () => {
-      if (paramsArray.length === 0) return [];
+      if (paramsArray.length === 0) {
+        return { successCount: 0, failedCount: 0 };
+      }
 
-      // Step 1: Validate all parameters
+      // Step 1: Validate all parameters upfront
       for (const params of paramsArray) {
         validateTransactionParams(params);
       }
 
-      // Step 2: Batch insert all transactions to database
-      const transactions = await batchInsertTransactionsToDatabase(paramsArray);
+      let successCount = 0;
+      let failedCount = 0;
 
-      // Step 3: Batch update keyword-bucket mappings
-      // Fire-and-forget to avoid blocking transaction creation
-      batchUpdateKeywordBucketMappings(
-        paramsArray.map((params) => ({
-          notes: params.notes ?? null,
-          from_bucket_id: params.from_bucket_id ?? null,
-          to_bucket_id: params.to_bucket_id ?? null,
-        })),
-      ).catch((error) => {
-        console.error('Error updating keyword mappings:', error);
-      });
-
-      // Step 4: Update bucket value histories for each transaction
-      const total = transactions.length;
-      for (let i = 0; i < transactions.length; i++) {
-        const transaction = transactions[i];
+      // Step 2: Process each transaction individually
+      // Each transaction is atomic - either fully succeeds or fully fails
+      const total = paramsArray.length;
+      for (let i = 0; i < paramsArray.length; i++) {
         const params = paramsArray[i];
+        let transactionResult: { status: 'success' | 'error'; error?: string };
+        let createdTransactionId: number | null = null;
 
-        // Update from_bucket if specified
-        if (params.from_bucket_id) {
-          await bucketValueProcedureForAddingTransaction(
-            params.from_bucket_id,
-            params.transaction_date,
-            -params.amount, // Negative delta for source bucket
-            params.from_units ? -params.from_units : null,
-            transaction.id,
-            params.notes ?? null,
-          );
+        try {
+          // Step 2a: Insert the transaction
+          const transaction = await insertTransactionToDatabase(params);
+          createdTransactionId = transaction.id;
+
+          // Step 2b: Update bucket value histories for both buckets
+          // If this fails, we'll delete the transaction in the catch block
+          try {
+            // Update from_bucket if specified
+            if (params.from_bucket_id) {
+              await bucketValueProcedureForAddingTransaction(
+                params.from_bucket_id,
+                params.transaction_date,
+                -params.amount, // Negative delta for source bucket
+                params.from_units ? -params.from_units : null,
+                transaction.id,
+                params.notes ?? null,
+              );
+            }
+
+            // Update to_bucket if specified
+            if (params.to_bucket_id) {
+              await bucketValueProcedureForAddingTransaction(
+                params.to_bucket_id,
+                params.transaction_date,
+                params.amount, // Positive delta for destination bucket
+                params.to_units ? params.to_units : null,
+                transaction.id,
+                params.notes ?? null,
+              );
+            }
+
+            // Success!
+            successCount++;
+            transactionResult = { status: 'success' };
+
+            // Update keyword-bucket mapping for this transaction
+            // Fire-and-forget to avoid blocking
+            updateKeywordBucketMapping(
+              params.notes ?? null,
+              params.from_bucket_id ?? null,
+              params.to_bucket_id ?? null,
+            ).catch((error) => {
+              console.error(
+                `Error updating keyword mapping for transaction ${transaction.id}:`,
+                error,
+              );
+            });
+          } catch (bucketError) {
+            // Bucket update failed - delete the transaction to maintain consistency
+            if (createdTransactionId) {
+              try {
+                await deleteTransactionToDatabase(createdTransactionId);
+              } catch (deleteError) {
+                console.error(
+                  `Failed to delete transaction ${createdTransactionId} after bucket update error:`,
+                  deleteError,
+                );
+              }
+            }
+            throw bucketError; // Re-throw to be caught by outer catch
+          }
+        } catch (error) {
+          // Handle any errors (transaction insert or bucket update)
+          failedCount++;
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error occurred';
+          transactionResult = { status: 'error', error: errorMessage };
         }
 
-        // Update to_bucket if specified
-        if (params.to_bucket_id) {
-          await bucketValueProcedureForAddingTransaction(
-            params.to_bucket_id,
-            params.transaction_date,
-            params.amount, // Positive delta for destination bucket
-            params.to_units ? params.to_units : null,
-            transaction.id,
-            params.notes ?? null,
-          );
-        }
-
-        // Report progress after each transaction is fully processed
+        // Report progress after each transaction attempt with result details
         if (onProgress) {
-          onProgress({ completed: i + 1, total });
+          onProgress({
+            completed: i + 1,
+            total,
+            lastTransaction: {
+              index: i,
+              status: transactionResult.status,
+              error: transactionResult.error,
+            },
+          });
         }
       }
 
-      return transactions;
+      return {
+        successCount,
+        failedCount,
+      };
     },
     {
       transaction_count: paramsArray.length,

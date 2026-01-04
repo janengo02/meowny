@@ -681,6 +681,16 @@ type AssetsValueHistoryResponse = {
 type BatchCreateTransactionsProgress = {
   completed: number;
   total: number;
+  lastTransaction?: {
+    index: number; // Index in the original params array
+    status: 'success' | 'error';
+    error?: string; // Error message if failed
+  };
+};
+
+type BatchCreateTransactionsResult = {
+  successCount: number;
+  failedCount: number;
 };
 
 // CSV Import Template Types
@@ -733,7 +743,7 @@ type EventPayloadMapping = {
   'db:getTransaction': Transaction;
   'db:getTransactionsByBucket': Transaction[];
   'db:createTransaction': Transaction;
-  'db:batchCreateTransactions': Transaction[];
+  'db:batchCreateTransactions': BatchCreateTransactionsResult;
   'db:batchCreateTransactions:progress': BatchCreateTransactionsProgress;
   'db:updateTransaction': Transaction;
   'db:deleteTransaction': void;
@@ -834,7 +844,7 @@ interface Window {
     ) => Promise<Transaction>;
     batchCreateTransactions: (
       paramsArray: CreateTransactionParams[],
-    ) => Promise<Transaction[]>;
+    ) => Promise<BatchCreateTransactionsResult>;
     updateTransaction: (
       id: number,
       params: UpdateTransactionParams,

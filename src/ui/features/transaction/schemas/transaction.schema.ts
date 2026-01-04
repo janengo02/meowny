@@ -113,4 +113,5 @@ export type MappedTransaction = TransactionImportFormData & {
   suggested_bucket_id?: number | null; // Optional: Bucket ID suggested by keyword mapping
   is_deposit?: boolean; // Track if this transaction is a deposit (for display purposes)
   default_unit?: number | null; // Default units value from CSV import
+  error_message?: string; // Error message if import failed
 };

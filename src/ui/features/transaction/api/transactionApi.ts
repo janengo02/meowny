@@ -53,14 +53,14 @@ export const transactionApi = baseApi.injectEndpoints({
       invalidatesTags: ['Transaction', 'Bucket'],
     }),
     batchCreateTransactions: builder.mutation<
-      Transaction[],
+      BatchCreateTransactionsResult,
       CreateTransactionParams[]
     >({
       queryFn: async (paramsArray) => {
         try {
-          const transactions =
+          const result =
             await window.electron.batchCreateTransactions(paramsArray);
-          return { data: transactions };
+          return { data: result };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }

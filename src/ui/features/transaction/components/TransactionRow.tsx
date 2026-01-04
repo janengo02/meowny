@@ -6,6 +6,7 @@ import {
   CircularProgress,
   Box,
   Typography,
+  Tooltip,
 } from '@mui/material';
 import dayjs from 'dayjs';
 import {
@@ -529,7 +530,12 @@ const TransactionRowContent = React.memo(
             <Chip label="Invalid" size="small" color="error" />
           )}
           {currentImportStatus === 'error' && (
-            <Chip label="Error" size="small" color="error" />
+            <Tooltip
+              title={initialTransaction.error_message || 'An error occurred'}
+              arrow
+            >
+              <Chip label="Error" size="small" color="error" />
+            </Tooltip>
           )}
         </TableCell>
       </TableRow>
