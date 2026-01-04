@@ -133,7 +133,10 @@ export function formatToTokyoDateTime(dateString: string): string {
 
     return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
   } catch (error) {
-    console.error(`Error formatting date to Tokyo timezone: ${dateString}`, error);
+    console.error(
+      `Error formatting date to Tokyo timezone: ${dateString}`,
+      error,
+    );
     return '';
   }
 }
@@ -141,5 +144,8 @@ export function formatToTokyoDateTime(dateString: string): string {
 export const formatDateForDB = (date: string | Date | Dayjs): string => {
   if (!date) return '';
   const formattedDate = dayjs(date);
+  if (!formattedDate.isValid()) {
+    return '';
+  }
   return formattedDate.toISOString();
 };

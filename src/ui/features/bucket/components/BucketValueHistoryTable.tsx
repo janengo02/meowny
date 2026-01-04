@@ -211,31 +211,34 @@ export function BucketValueHistoryTable({
               <TableCell rowSpan={2}>Date</TableCell>
               <TableCell rowSpan={2}>Transaction</TableCell>
               <TableCell rowSpan={2}>Notes</TableCell>
-              <TableCell
-                align="center"
-                colSpan={bucketType === 'investment' ? 3 : 1}
-                sx={{
-                  borderBottom: 1,
-                  borderColor: 'divider',
-                }}
-              >
-                Balance
-              </TableCell>
+              {bucketType !== 'expense' && (
+                <TableCell
+                  align="center"
+                  colSpan={bucketType === 'investment' ? 3 : 1}
+                  sx={{
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                  }}
+                >
+                  Balance
+                </TableCell>
+              )}
+
               <TableCell rowSpan={2} align="center" width={90}>
                 Actions
               </TableCell>
             </TableRow>
-            <TableRow>
-              <TableCell>
-                {bucketType === 'expense' ? 'Spent' : 'Contributed'}
-              </TableCell>
-              {bucketType === 'investment' && (
-                <>
-                  <TableCell>Market Value</TableCell>
-                  <TableCell>Total Units</TableCell>
-                </>
-              )}
-            </TableRow>
+            {bucketType !== 'expense' && (
+              <TableRow>
+                <TableCell>Contributed</TableCell>
+                {bucketType === 'investment' && (
+                  <>
+                    <TableCell>Market Value</TableCell>
+                    <TableCell>Total Units</TableCell>
+                  </>
+                )}
+              </TableRow>
+            )}
           </TableHead>
           <TableBody>
             {valueHistory.map((history) => (
@@ -329,11 +332,13 @@ export function BucketValueHistoryTable({
                     </Typography>
                   )}
                 </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2">
-                    {formatMoney(history.contributed_amount)}
-                  </Typography>
-                </TableCell>
+                {bucketType !== 'expense' && (
+                  <TableCell align="right">
+                    <Typography variant="body2">
+                      {formatMoney(history.contributed_amount)}
+                    </Typography>
+                  </TableCell>
+                )}
                 {bucketType === 'investment' && (
                   <>
                     <TableCell align="right">
