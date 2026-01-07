@@ -44,12 +44,14 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 export function ExpensePieChart() {
   const methods = useForm<ExpensePieChartFormData>({
     defaultValues: {
+      mode: 'month',
       targetMonth: dayjs().subtract(1, 'month'),
       groupBy: 'bucket',
     },
   });
 
   const { control } = methods;
+  const mode = useWatch({ control, name: 'mode' });
   const groupBy = useWatch({ control, name: 'groupBy' });
   const targetMonth = useWatch({ control, name: 'targetMonth' });
 
@@ -63,14 +65,14 @@ export function ExpensePieChart() {
   // Calculate start and end dates for the query
   const queryParams =
     useMemo((): GetExpenseTransactionsByPeriodParams | null => {
-      const startDate = formatDateForDB(targetMonth.startOf('month'));
-      const endDate = formatDateForDB(targetMonth.endOf('month'));
+      const startDate = formatDateForDB(targetMonth.startOf(mode));
+      const endDate = formatDateForDB(targetMonth.endOf(mode));
 
       return {
         startDate,
         endDate,
       };
-    }, [targetMonth]);
+    }, [targetMonth, mode]);
 
   const { data, isLoading, error } = useGetExpenseTransactionsByPeriodQuery(
     queryParams!,
@@ -173,17 +175,17 @@ export function ExpensePieChart() {
     };
   }, [data, groupBy]);
 
-  const handlePrevMonth = () => {
-    const newMonth = targetMonth.subtract(1, 'month');
-    methods.setValue('targetMonth', newMonth);
+  const handlePrevPeriod = () => {
+    const newPeriod = targetMonth.subtract(1, mode);
+    methods.setValue('targetMonth', newPeriod);
   };
 
-  const handleNextMonth = () => {
-    const newMonth = targetMonth.add(1, 'month');
-    methods.setValue('targetMonth', newMonth);
+  const handleNextPeriod = () => {
+    const newPeriod = targetMonth.add(1, mode);
+    methods.setValue('targetMonth', newPeriod);
   };
 
-  const handleMonthChange = (newValue: Dayjs | null) => {
+  const handlePeriodChange = (newValue: Dayjs | null) => {
     if (newValue) {
       methods.setValue('targetMonth', newValue);
     }
@@ -256,29 +258,44 @@ export function ExpensePieChart() {
               justifyContent="space-between"
               sx={{ mb: 2 }}
             >
-              {/* Month Navigation */}
-              <Stack direction="row" spacing={1} alignItems="center">
-                <IconButton onClick={handlePrevMonth} size="small">
-                  <ChevronLeftIcon />
-                </IconButton>
-                <DatePickerField
-                  name="targetMonth"
-                  views={['year', 'month']}
-                  format="YYYY/MM"
-                  onChange={handleMonthChange}
+              {/* Left side: Mode and Period Navigation */}
+              <Stack direction="row" spacing={2} alignItems="center">
+                {/* Mode Select */}
+                <FormSelectField
+                  name="mode"
+                  label="View Mode"
                   size="small"
-                  sx={{ width: 140 }}
+                  options={[
+                    { value: 'month', label: 'Monthly' },
+                    { value: 'year', label: 'Yearly' },
+                  ]}
+                  sx={{ minWidth: 120 }}
                 />
-                <IconButton
-                  onClick={handleNextMonth}
-                  size="small"
-                  disabled={targetMonth.isSame(dayjs(), 'month')}
-                >
-                  <ChevronRightIcon />
-                </IconButton>
+
+                {/* Period Navigation */}
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <IconButton onClick={handlePrevPeriod} size="small">
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  <DatePickerField
+                    name="targetMonth"
+                    views={mode === 'month' ? ['year', 'month'] : ['year']}
+                    format={mode === 'month' ? 'YYYY/MM' : 'YYYY'}
+                    onChange={handlePeriodChange}
+                    size="small"
+                    sx={{ width: 140 }}
+                  />
+                  <IconButton
+                    onClick={handleNextPeriod}
+                    size="small"
+                    disabled={targetMonth.isSame(dayjs(), mode)}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Stack>
               </Stack>
 
-              {/* Group By Dropdown */}
+              {/* Right side: Group By Dropdown */}
               <Stack>
                 <FormSelectField
                   name="groupBy"
@@ -322,7 +339,7 @@ export function ExpensePieChart() {
                   }}
                 >
                   <Doughnut
-                    key={`donut-chart-${targetMonth.format('YYYY-MM')}`}
+                    key={`donut-chart-${mode}-${targetMonth.format(mode === 'month' ? 'YYYY-MM' : 'YYYY')}`}
                     data={chartData}
                     options={chartOptions}
                     plugins={[centerTextPlugin, ChartDataLabels]}

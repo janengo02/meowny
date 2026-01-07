@@ -21,6 +21,7 @@ export const chartFilterSchema = z
 export type ChartFilterFormData = z.infer<typeof chartFilterSchema>;
 
 export const expensePieChartFormSchema = z.object({
+  mode: z.enum(['month', 'year']),
   targetMonth: z.custom<Dayjs>((val) => val !== null && val !== undefined),
   groupBy: z.enum(['bucket', 'category', 'account']),
 });
