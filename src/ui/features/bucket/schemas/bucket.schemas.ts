@@ -33,3 +33,13 @@ export const createBucketSchema = z.object({
 });
 
 export type CreateBucketFormData = z.infer<typeof createBucketSchema>;
+
+export const bucketGoalSchema = z.object({
+  min_amount: z.number().min(0).nullable().optional(),
+  max_amount: z.number().min(0).nullable().optional(),
+  start_date: z.custom<Dayjs>((val) => val === null || val === undefined || (val && typeof val === 'object' && 'isValid' in val && typeof val.isValid === 'function' && (val.isValid as () => boolean)())).nullable().optional(),
+  end_date: z.custom<Dayjs>((val) => val === null || val === undefined || (val && typeof val === 'object' && 'isValid' in val && typeof val.isValid === 'function' && (val.isValid as () => boolean)())).nullable().optional(),
+  notes: z.string().optional(),
+});
+
+export type BucketGoalFormData = z.infer<typeof bucketGoalSchema>;

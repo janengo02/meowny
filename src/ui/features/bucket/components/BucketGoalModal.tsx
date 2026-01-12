@@ -11,23 +11,20 @@ import {
   IconButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { z } from 'zod';
+import dayjs from 'dayjs';
 import { FormTextField } from '../../../shared/components/form/FormTextField';
+import { DatePickerField } from '../../../shared/components/form/DatePickerField';
+import { FormMoneyInput } from '../../../shared/components/form/FormMoneyInput';
 import {
   useCreateBucketGoalMutation,
   useUpdateBucketGoalMutation,
   useDeleteBucketGoalMutation,
 } from '../api/bucketGoalApi';
-
-const bucketGoalSchema = z.object({
-  min_amount: z.string().optional(),
-  max_amount: z.string().optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type BucketGoalFormData = z.infer<typeof bucketGoalSchema>;
+import {
+  bucketGoalSchema,
+  type BucketGoalFormData,
+} from '../schemas/bucket.schemas';
+import { formatDateForDB } from '../../../shared/utils/dateTime';
 
 interface BucketGoalModalProps {
   bucketId: number;
@@ -56,10 +53,10 @@ export function BucketGoalModal({
     resolver: zodResolver(bucketGoalSchema),
     mode: 'onChange',
     defaultValues: {
-      min_amount: '',
-      max_amount: '',
-      start_date: '',
-      end_date: '',
+      min_amount: null,
+      max_amount: null,
+      start_date: null,
+      end_date: null,
       notes: '',
     },
   });
@@ -69,23 +66,19 @@ export function BucketGoalModal({
       if (!isNew) {
         // Editing mode - populate with existing goal data
         form.reset({
-          min_amount: goal.min_amount !== null ? String(goal.min_amount) : '',
-          max_amount: goal.max_amount !== null ? String(goal.max_amount) : '',
-          start_date: goal.start_date
-            ? new Date(goal.start_date).toISOString().split('T')[0]
-            : '',
-          end_date: goal.end_date
-            ? new Date(goal.end_date).toISOString().split('T')[0]
-            : '',
+          min_amount: goal.min_amount ?? null,
+          max_amount: goal.max_amount ?? null,
+          start_date: goal.start_date ? dayjs(goal.start_date) : null,
+          end_date: goal.end_date ? dayjs(goal.end_date) : null,
           notes: goal.notes || '',
         });
       } else {
         // Create mode - reset to empty
         form.reset({
-          min_amount: '',
-          max_amount: '',
-          start_date: '',
-          end_date: '',
+          min_amount: null,
+          max_amount: null,
+          start_date: null,
+          end_date: null,
           notes: '',
         });
       }
@@ -95,20 +88,14 @@ export function BucketGoalModal({
   const onSubmit = async (data: BucketGoalFormData) => {
     try {
       // Format start_date to 0:00:00
-      let formattedStartDate: string | null = null;
-      if (data.start_date) {
-        const startDate = new Date(data.start_date);
-        startDate.setHours(0, 0, 0, 0);
-        formattedStartDate = startDate.toISOString();
-      }
+      const formattedStartDate = data.start_date
+        ? formatDateForDB(data.start_date.startOf('day'))
+        : null;
 
       // Format end_date to 23:59:59
-      let formattedEndDate: string | null = null;
-      if (data.end_date) {
-        const endDate = new Date(data.end_date);
-        endDate.setHours(23, 59, 59, 999);
-        formattedEndDate = endDate.toISOString();
-      }
+      const formattedEndDate = data.end_date
+        ? formatDateForDB(data.end_date.endOf('day'))
+        : null;
 
       if (!isNew) {
         // Update existing goal
@@ -116,8 +103,8 @@ export function BucketGoalModal({
           id: goal.id,
           params: {
             bucket_id: bucketId,
-            min_amount: data.min_amount ? parseFloat(data.min_amount) : null,
-            max_amount: data.max_amount ? parseFloat(data.max_amount) : null,
+            min_amount: data.min_amount ?? null,
+            max_amount: data.max_amount ?? null,
             start_date: formattedStartDate,
             end_date: formattedEndDate,
             notes: data.notes || null,
@@ -127,8 +114,8 @@ export function BucketGoalModal({
         // Create new goal
         await createBucketGoal({
           bucket_id: bucketId,
-          min_amount: data.min_amount ? parseFloat(data.min_amount) : null,
-          max_amount: data.max_amount ? parseFloat(data.max_amount) : null,
+          min_amount: data.min_amount ?? null,
+          max_amount: data.max_amount ?? null,
           start_date: formattedStartDate,
           end_date: formattedEndDate,
           notes: data.notes || null,
@@ -202,33 +189,25 @@ export function BucketGoalModal({
             <Box
               sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}
             >
-              <FormTextField
+              <FormMoneyInput
                 name="min_amount"
                 label="Min Amount"
-                type="number"
-                inputProps={{ min: 0, step: 0.01 }}
+                size="small"
+                variant="outlined"
+                allowNegative={false}
               />
 
-              <FormTextField
+              <FormMoneyInput
                 name="max_amount"
                 label="Max Amount"
-                type="number"
-                inputProps={{ min: 0, step: 0.01 }}
+                size="small"
+                variant="outlined"
+                allowNegative={false}
               />
 
-              <FormTextField
-                name="start_date"
-                label="Period Start"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-              />
+              <DatePickerField name="start_date" label="Period Start" />
 
-              <FormTextField
-                name="end_date"
-                label="Period End"
-                type="date"
-                InputLabelProps={{ shrink: true }}
-              />
+              <DatePickerField name="end_date" label="Period End" />
 
               <FormTextField name="notes" label="Notes" multiline rows={3} />
             </Box>
