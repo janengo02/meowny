@@ -4,10 +4,12 @@ import { ExpenseAccountCard } from './ExpenseAccountCard';
 
 interface DraggableExpenseAccountCardProps {
   accountId: number;
+  setSelectedBucketId: (bucketId: number | null) => void;
 }
 
 export function DraggableExpenseAccountCard({
   accountId,
+  setSelectedBucketId,
 }: DraggableExpenseAccountCardProps) {
   const {
     attributes,
@@ -27,7 +29,10 @@ export function DraggableExpenseAccountCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <ExpenseAccountCard accountId={accountId} />
+      <ExpenseAccountCard
+        accountId={accountId}
+        setSelectedBucketId={setSelectedBucketId}
+      />
     </div>
   );
 }

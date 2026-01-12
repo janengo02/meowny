@@ -3,7 +3,6 @@ import { Card, Typography, Box, Grid } from '@mui/material';
 import { ExpenseBucketCard } from '../../bucket/components/ExpenseBucketCard';
 import { DraggableExpenseBucketCard } from '../../bucket/components/DraggableExpenseBucketCard';
 import { AddExpenseBucketCard } from '../../bucket/components/AddExpenseBucketCard';
-import { BucketModal } from '../../bucket/components/BucketModal';
 import { useAppSelector } from '../../../store/hooks';
 import {
   selectAccountById,
@@ -32,9 +31,13 @@ import {
 
 interface ExpenseAccountCardProps {
   accountId: number;
+  setSelectedBucketId: (bucketId: number | null) => void;
 }
 
-export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
+export function ExpenseAccountCard({
+  accountId,
+  setSelectedBucketId,
+}: ExpenseAccountCardProps) {
   const account = useAppSelector((state) =>
     selectAccountById(state, accountId),
   );
@@ -43,7 +46,6 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
     selectBucketsByAccount(state, accountId),
   );
 
-  const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const [activeBucketId, setActiveBucketId] = useState<number | null>(null);
 
   // Get theme-aware colors
@@ -115,85 +117,81 @@ export function ExpenseAccountCard({ accountId }: ExpenseAccountCardProps) {
   const colorConfig = getColorConfig(account.color);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <Grid container>
-        <Grid size={12}>
-          <Card
-            sx={{
-              px: 1.5,
-              py: 1,
-              height: '100%',
-              backgroundColor: colorConfig.bgColor + '50',
-              color: colorConfig.color,
-            }}
-          >
-            <Box
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <Grid container>
+          <Grid size={12}>
+            <Card
               sx={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                flexWrap: 'nowrap',
-                gap: 1,
+                px: 1.5,
+                py: 1,
+                height: '100%',
+                backgroundColor: colorConfig.bgColor + '50',
+                color: colorConfig.color,
               }}
             >
               <Box
                 sx={{
                   display: 'flex',
                   flexDirection: 'row',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  flexWrap: 'nowrap',
                   gap: 1,
                 }}
               >
-                <Typography
-                  variant="body1"
-                  fontWeight="bold"
+                <Box
                   sx={{
-                    color: colorConfig.color,
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 1,
                   }}
                 >
-                  {account.name}
-                </Typography>
+                  <Typography
+                    variant="body1"
+                    fontWeight="bold"
+                    sx={{
+                      color: colorConfig.color,
+                    }}
+                  >
+                    {account.name}
+                  </Typography>
 
-                <SortableContext
-                  items={orderedBuckets.map((b) => b.id)}
-                  strategy={horizontalListSortingStrategy}
-                >
-                  {orderedBuckets.map((bucket) => (
-                    <DraggableExpenseBucketCard
-                      key={bucket.id}
-                      bucket={bucket}
-                      onClick={() => setSelectedBucketId(bucket.id)}
-                    />
-                  ))}
-                </SortableContext>
-                <AddExpenseBucketCard account={account} />
+                  <SortableContext
+                    items={orderedBuckets.map((b) => b.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {orderedBuckets.map((bucket) => (
+                      <DraggableExpenseBucketCard
+                        key={bucket.id}
+                        bucket={bucket}
+                        onClick={() => setSelectedBucketId(bucket.id)}
+                      />
+                    ))}
+                  </SortableContext>
+                  <AddExpenseBucketCard account={account} />
+                </Box>
+                <AccountCardMenu account={account} />
               </Box>
-              <AccountCardMenu account={account} />
-            </Box>
-          </Card>
+            </Card>
+          </Grid>
         </Grid>
-      </Grid>
 
-      <BucketModal
-        bucketId={selectedBucketId}
-        open={selectedBucketId !== null}
-        onClose={() => setSelectedBucketId(null)}
-      />
-
-      <DragOverlay>
-        {activeBucket ? (
-          <Box sx={{ opacity: 0.95 }}>
-            <ExpenseBucketCard bucket={activeBucket} />
-          </Box>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay>
+          {activeBucket ? (
+            <Box sx={{ opacity: 0.95 }}>
+              <ExpenseBucketCard bucket={activeBucket} />
+            </Box>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </>
   );
 }

@@ -34,6 +34,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { DraggableExpenseAccountCard } from './DraggableExpenseAccountCard';
+import { BucketModal } from '../../bucket/components/BucketModal';
 
 export function ExpenseAccountList() {
   // Only select account IDs - ExpenseAccountCard will fetch its own buckets
@@ -52,6 +53,7 @@ export function ExpenseAccountList() {
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [isBucketDialogOpen, setIsBucketDialogOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
+  const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
 
   // Configure drag sensors
   const sensors = useSensors(
@@ -218,7 +220,10 @@ export function ExpenseAccountList() {
           <Grid container>
             {orderedAccountIds.map((accountId) => (
               <Grid key={accountId} size={{ xs: 12 }}>
-                <DraggableExpenseAccountCard accountId={accountId} />
+                <DraggableExpenseAccountCard
+                  accountId={accountId}
+                  setSelectedBucketId={setSelectedBucketId}
+                />
               </Grid>
             ))}
           </Grid>
@@ -228,7 +233,10 @@ export function ExpenseAccountList() {
       <DragOverlay dropAnimation={null}>
         {activeId && dragOverlayWidth ? (
           <Box sx={{ opacity: 0.95, width: dragOverlayWidth }}>
-            <ExpenseAccountCard accountId={activeId} />
+            <ExpenseAccountCard
+              accountId={activeId}
+              setSelectedBucketId={setSelectedBucketId}
+            />
           </Box>
         ) : null}
       </DragOverlay>
@@ -242,6 +250,13 @@ export function ExpenseAccountList() {
         open={isBucketDialogOpen}
         onClose={() => setIsBucketDialogOpen(false)}
         accountTypeFilter="expense"
+      />
+
+      {/* Render outside of DndContext to avoid interference with drag-and-drop */}
+      <BucketModal
+        bucketId={selectedBucketId}
+        open={selectedBucketId !== null}
+        onClose={() => setSelectedBucketId(null)}
       />
     </DndContext>
   );

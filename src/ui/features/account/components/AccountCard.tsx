@@ -3,7 +3,6 @@ import { Card, CardContent, Typography, Box, Grid } from '@mui/material';
 import { BucketCard } from '../../bucket/components/BucketCard';
 import { DraggableBucketCard } from '../../bucket/components/DraggableBucketCard';
 import { AddBucketCard } from '../../bucket/components/AddBucketCard';
-import { BucketModal } from '../../bucket/components/BucketModal';
 import { useAppSelector } from '../../../store/hooks';
 import {
   selectAccountById,
@@ -33,9 +32,14 @@ import {
 interface AccountCardProps {
   accountId: number;
   columnWidth?: number; // Grid units (out of 12) for the parent column
+  setSelectedBucketId: (bucketId: number | null) => void;
 }
 
-export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
+export function AccountCard({
+  accountId,
+  columnWidth = 12,
+  setSelectedBucketId,
+}: AccountCardProps) {
   // Select account data - only re-renders if THIS account changes
   const account = useAppSelector((state) =>
     selectAccountById(state, accountId),
@@ -46,7 +50,6 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
     selectBucketsByAccount(state, accountId),
   );
 
-  const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
   const [activeBucketId, setActiveBucketId] = useState<number | null>(null);
 
   // Get theme-aware colors
@@ -147,66 +150,62 @@ export function AccountCard({ accountId, columnWidth = 12 }: AccountCardProps) {
   const colorConfig = getColorConfig(account.color);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <Card
-        sx={{
-          backgroundColor: colorConfig.bgColor + '50',
-          color: colorConfig.color,
-        }}
+    <>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        <CardContent>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <Typography variant="h4" gutterBottom>
-              {account.name}
-            </Typography>
-            <AccountCardMenu account={account} />
-          </Box>
+        <Card
+          sx={{
+            backgroundColor: colorConfig.bgColor + '50',
+            color: colorConfig.color,
+          }}
+        >
+          <CardContent>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Typography variant="h4" gutterBottom>
+                {account.name}
+              </Typography>
+              <AccountCardMenu account={account} />
+            </Box>
 
-          <SortableContext
-            items={orderedBuckets.map((b) => b.id)}
-            strategy={rectSortingStrategy}
-          >
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              {orderedBuckets.map((bucket) => (
-                <Grid key={bucket.id} size={bucketCardSize}>
-                  <DraggableBucketCard
-                    bucket={bucket}
-                    onClick={() => setSelectedBucketId(bucket.id)}
-                  />
+            <SortableContext
+              items={orderedBuckets.map((b) => b.id)}
+              strategy={rectSortingStrategy}
+            >
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                {orderedBuckets.map((bucket) => (
+                  <Grid key={bucket.id} size={bucketCardSize}>
+                    <DraggableBucketCard
+                      bucket={bucket}
+                      onClick={() => setSelectedBucketId(bucket.id)}
+                    />
+                  </Grid>
+                ))}
+                <Grid size={bucketCardSize}>
+                  <AddBucketCard account={account} />
                 </Grid>
-              ))}
-              <Grid size={bucketCardSize}>
-                <AddBucketCard account={account} />
               </Grid>
-            </Grid>
-          </SortableContext>
-        </CardContent>
+            </SortableContext>
+          </CardContent>
+        </Card>
 
-        <BucketModal
-          bucketId={selectedBucketId}
-          open={selectedBucketId !== null}
-          onClose={() => setSelectedBucketId(null)}
-        />
-      </Card>
-
-      <DragOverlay>
-        {activeBucket ? (
-          <Box sx={{ opacity: 0.95, width: 200 }}>
-            <BucketCard bucket={activeBucket} />
-          </Box>
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+        <DragOverlay>
+          {activeBucket ? (
+            <Box sx={{ opacity: 0.95, width: 200 }}>
+              <BucketCard bucket={activeBucket} />
+            </Box>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+    </>
   );
 }

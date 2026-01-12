@@ -11,6 +11,7 @@ interface DroppableColumnProps {
   accountIds: number[];
   columnWidth: number;
   flexBasis: string;
+  setSelectedBucketId: (bucketId: number | null) => void;
 }
 
 export function DroppableColumn({
@@ -18,6 +19,7 @@ export function DroppableColumn({
   accountIds,
   columnWidth,
   flexBasis,
+  setSelectedBucketId,
 }: DroppableColumnProps) {
   const { setNodeRef } = useDroppable({
     id: columnId,
@@ -45,6 +47,7 @@ export function DroppableColumn({
             key={accountId}
             accountId={accountId}
             columnWidth={columnWidth}
+            setSelectedBucketId={setSelectedBucketId}
           />
         ))}
       </Box>

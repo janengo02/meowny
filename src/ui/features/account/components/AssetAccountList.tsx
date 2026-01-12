@@ -35,6 +35,7 @@ import type {
 import { arrayMove } from '@dnd-kit/sortable';
 import { CreateBucketDialog } from '../../bucket/components/CreateBucketDialog';
 import { AddAssetAccountDialog } from './AddAssetAccountDialog';
+import { BucketModal } from '../../bucket/components/BucketModal';
 
 const DEFAULT_LAYOUT: AssetAccountListLayoutPreference = {
   columns: 1,
@@ -63,6 +64,8 @@ export function AssetAccountList() {
   const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
   const [isBucketDialogOpen, setIsBucketDialogOpen] = useState(false);
   const isMenuOpen = Boolean(anchorEl);
+
+  const [selectedBucketId, setSelectedBucketId] = useState<number | null>(null);
 
   const handleAddClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
@@ -390,6 +393,7 @@ export function AssetAccountList() {
           accountIds={accounts}
           columnWidth={currentColumnWidth}
           flexBasis={flexBasis}
+          setSelectedBucketId={setSelectedBucketId}
         />,
       );
 
@@ -461,7 +465,6 @@ export function AssetAccountList() {
           />
         </Box>
       </Box>
-
       <Box
         data-resizable-container
         sx={{
@@ -495,29 +498,37 @@ export function AssetAccountList() {
             accountIds={columnAccounts[0] || []}
             columnWidth={12}
             flexBasis="100%"
+            setSelectedBucketId={setSelectedBucketId}
           />
         ) : (
           renderColumnsWithResizers()
         )}
       </Box>
-
       <DragOverlay dropAnimation={null}>
         {activeId && dragOverlayWidth ? (
           <Box sx={{ opacity: 0.95, width: dragOverlayWidth }}>
-            <AccountCard accountId={activeId} columnWidth={activeColumnWidth} />
+            <AccountCard
+              accountId={activeId}
+              columnWidth={activeColumnWidth}
+              setSelectedBucketId={setSelectedBucketId}
+            />
           </Box>
         ) : null}
       </DragOverlay>
-
       <AddAssetAccountDialog
         open={isAccountDialogOpen}
         onClose={() => setIsAccountDialogOpen(false)}
       />
-
       <CreateBucketDialog
         open={isBucketDialogOpen}
         onClose={() => setIsBucketDialogOpen(false)}
         accountTypeFilter="asset"
+      />
+      {/* Render outside of DndContext to avoid interference with drag-and-drop */}
+      <BucketModal
+        bucketId={selectedBucketId}
+        open={selectedBucketId !== null}
+        onClose={() => setSelectedBucketId(null)}
       />
     </DndContext>
   );

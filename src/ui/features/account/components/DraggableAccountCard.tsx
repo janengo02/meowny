@@ -5,11 +5,13 @@ import { AccountCard } from './AccountCard';
 interface DraggableAccountCardProps {
   accountId: number;
   columnWidth: number;
+  setSelectedBucketId: (bucketId: number | null) => void;
 }
 
 export function DraggableAccountCard({
   accountId,
   columnWidth,
+  setSelectedBucketId,
 }: DraggableAccountCardProps) {
   const {
     attributes,
@@ -29,7 +31,11 @@ export function DraggableAccountCard({
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <AccountCard accountId={accountId} columnWidth={columnWidth} />
+      <AccountCard
+        accountId={accountId}
+        columnWidth={columnWidth}
+        setSelectedBucketId={setSelectedBucketId}
+      />
     </div>
   );
 }
