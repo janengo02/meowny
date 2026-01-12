@@ -337,4 +337,11 @@ app.on('ready', async () => {
   ipcMainHandle('db:upsertUserPreference', async (args) => {
     return db.upsertUserPreference(args as UpsertUserPreferenceParams);
   });
+
+  // Dashboard handlers
+  ipcMainHandle('db:getIncomeVsSavingsChartData', async (args) => {
+    return db.getIncomeVsSavingsChartData(
+      args as GetIncomeVsSavingsChartDataParams,
+    );
+  });
 });

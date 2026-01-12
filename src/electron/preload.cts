@@ -150,6 +150,10 @@ electron.contextBridge.exposeInMainWorld('electron', {
   // Settings
   getHiddenBuckets: () => ipcInvoke('db:getHiddenBuckets'),
 
+  // Dashboard
+  getIncomeVsSavingsChartData: (params: GetIncomeVsSavingsChartDataParams) =>
+    ipcInvoke('db:getIncomeVsSavingsChartData', params),
+
   // Event listeners
   onBatchCreateTransactionsProgress: (
     callback: (progress: BatchCreateTransactionsProgress) => void,

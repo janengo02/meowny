@@ -20,3 +20,6 @@ export * from './queries/incomeTax.js';
 
 // User Preferences queries
 export * from './queries/userPreferences.js';
+
+// Dashboard queries
+export * from './queries/dashboard.js';

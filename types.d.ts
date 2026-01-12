@@ -507,6 +507,19 @@ type GetTransactionsByBucketParams = {
   endDate?: string;
 };
 
+type GetIncomeVsSavingsChartDataParams = {
+  startDate: string;
+  endDate: string;
+  mode: 'month' | 'year';
+};
+
+type IncomeVsSavingsChartData = {
+  labels: string[];
+  incomeData: number[];
+  expenseData: number[];
+  assetContributionData: number[];
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -794,6 +807,7 @@ type EventPayloadMapping = {
   'db:deleteTaxCategory': void;
   'db:getUserPreference': UserPreference | null;
   'db:upsertUserPreference': UserPreference;
+  'db:getIncomeVsSavingsChartData': IncomeVsSavingsChartData;
 };
 
 type UnSubscribeFunction = () => void;
@@ -970,6 +984,11 @@ interface Window {
     upsertUserPreference: (
       params: UpsertUserPreferenceParams,
     ) => Promise<UserPreference>;
+
+    // Dashboard methods
+    getIncomeVsSavingsChartData: (
+      params: GetIncomeVsSavingsChartDataParams,
+    ) => Promise<IncomeVsSavingsChartData>;
 
     // Event listeners
     onBatchCreateTransactionsProgress: (

@@ -18,36 +18,20 @@ import {
 } from 'chart.js';
 import { useMemo } from 'react';
 import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  barChartOptions,
-  CHART_COLORS,
-  getCheckpointLabels,
-  getCheckpoints,
-  getNetIncomeAtCheckpoint,
-  getAssetContributionAtCheckpoint,
-  getExpenseAtCheckpoint,
-} from '../../../shared/utils/chart';
+import { barChartOptions, CHART_COLORS } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
-import { useGetIncomeHistoriesByPeriodQuery } from '../../income/api/incomeHistoryApi';
-import { useGetAssetsValueHistoryQuery } from '../../bucket/api/bucketValueHistoryApi';
-import { useGetExpenseTransactionsWithDatesByPeriodQuery } from '../../transaction/api/transactionApi';
+import { useGetIncomeVsSavingsChartDataQuery } from '../api/dashboardApi';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import CompareArrowsIcon from '@mui/icons-material/CompareArrows';
 import {
   incomeVsSavingsChartFilterSchema,
   type IncomeVsSavingsChartFilterFormData,
 } from '../schemas/dashboard.schemas';
-
-// Extend dayjs with plugins
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -76,7 +60,6 @@ export function IncomeVsSavingsChart() {
   const queryParams = useMemo(() => {
     // Don't query if there are validation errors
     if (Object.keys(errors).length > 0) return null;
-
     // Convert period inputs to ISO date strings
     const startDate = formatDateForDB(periodFrom);
     const endDate = formatDateForDB(periodTo);
@@ -84,86 +67,25 @@ export function IncomeVsSavingsChart() {
     return {
       startDate,
       endDate,
+      mode,
     };
-  }, [periodFrom, periodTo, errors]);
+  }, [periodFrom, periodTo, mode, errors]);
 
   const {
-    data: incomeHistories,
-    isLoading: isLoadingIncome,
-    error: incomeError,
-  } = useGetIncomeHistoriesByPeriodQuery(queryParams!, {
-    skip: !queryParams,
-  });
-
-  const {
-    data: assetsData,
-    isLoading: isLoadingAssets,
-    error: assetsError,
-  } = useGetAssetsValueHistoryQuery(queryParams!, {
-    skip: !queryParams,
-  });
-
-  const {
-    data: expenseTransactions,
-    isLoading: isLoadingExpenses,
-    error: expenseError,
-  } = useGetExpenseTransactionsWithDatesByPeriodQuery(queryParams!, {
+    data: chartDataResponse,
+    isLoading,
+    error,
+  } = useGetIncomeVsSavingsChartDataQuery(queryParams!, {
     skip: !queryParams,
   });
 
   const chartData = useMemo(() => {
-    if (Object.keys(errors).length > 0) return null;
+    if (!chartDataResponse) return null;
 
-    if (
-      !incomeHistories ||
-      !assetsData ||
-      !assetsData.buckets ||
-      !expenseTransactions
-    ) {
-      return null;
-    }
+    const { labels, incomeData, expenseData, assetContributionData } =
+      chartDataResponse;
 
-    // Generate time checkpoints based on mode
-    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
-    if (checkpoints.length === 0) return null;
-
-    // Format checkpoint labels
-    const labels = getCheckpointLabels(checkpoints, mode);
-
-    // Calculate income by checkpoint using utility function
-    const incomeData = checkpoints.map((checkpoint) =>
-      getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
-    );
-
-    // Calculate expense totals by checkpoint using utility function
-    const expenseDataByCheckpoint = checkpoints.map((checkpoint) =>
-      getExpenseAtCheckpoint(expenseTransactions, checkpoint, mode),
-    );
-
-    // Group all bucket histories by bucket
-    const bucketHistoriesMap = new Map<
-      number,
-      (typeof assetsData.buckets)[0]['history']
-    >();
-    assetsData.buckets.forEach((bucket) => {
-      bucketHistoriesMap.set(bucket.id, bucket.history);
-    });
-
-    // Calculate asset contribution by checkpoint using utility function
-    const assetContributionData = checkpoints.map((checkpoint, index) => {
-      // For the first checkpoint, use the day before periodFrom at 23:59:59
-      // For subsequent checkpoints, use the previous checkpoint
-      const previousCheckpoint =
-        index > 0
-          ? checkpoints[index - 1]
-          : dayjs(periodFrom).subtract(1, 'day').endOf('day').toDate();
-
-      return getAssetContributionAtCheckpoint(
-        bucketHistoriesMap,
-        checkpoint,
-        previousCheckpoint,
-      );
-    });
+    if (labels.length === 0) return null;
 
     const datasets: ChartData<'bar'>['datasets'] = [
       {
@@ -177,7 +99,7 @@ export function IncomeVsSavingsChart() {
       },
       {
         label: 'Expense',
-        data: expenseDataByCheckpoint,
+        data: expenseData,
         backgroundColor: CHART_COLORS[3],
         borderColor: CHART_COLORS[3],
         borderWidth: 1,
@@ -196,18 +118,7 @@ export function IncomeVsSavingsChart() {
     ];
 
     return { labels, datasets };
-  }, [
-    incomeHistories,
-    assetsData,
-    expenseTransactions,
-    periodFrom,
-    periodTo,
-    mode,
-    errors,
-  ]);
-
-  const isLoading = isLoadingIncome || isLoadingAssets || isLoadingExpenses;
-  const error = incomeError || assetsError || expenseError;
+  }, [chartDataResponse]);
 
   if (isLoading) {
     return (
