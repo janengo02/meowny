@@ -140,7 +140,7 @@ export function IncomeVsSavingsChart() {
   return (
     <FormProvider {...methods}>
       <Typography variant="h2" sx={{ p: 1 }}>
-        Income, Expenses & Savings
+        Income, Expenses & Assets Contribution
       </Typography>
       <Card sx={{ height: 500, pt: 1 }}>
         <CardContent

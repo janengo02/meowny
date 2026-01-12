@@ -1,5 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
+import { fetchAllPages } from '../supabaseUtils.js';
 
 import { updateKeywordBucketMapping } from './keywordBucketMapping.js';
 import { withDatabaseLogging } from '../../logger/dbLogger.js';
@@ -17,14 +18,13 @@ export async function getTransactions(): Promise<Transaction[]> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('transaction')
     .select()
     .eq('user_id', userId)
     .order('transaction_date', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  return data;
+  return fetchAllPages<Transaction>(query);
 }
 
 export async function getTransaction(id: number): Promise<Transaction> {
@@ -66,10 +66,7 @@ export async function getTransactionsByBucket(
 
   query = query.order('transaction_date', { ascending: false });
 
-  const { data, error } = await query;
-
-  if (error) throw new Error(error.message);
-  return data;
+  return fetchAllPages<Transaction>(query);
 }
 
 export async function updateTransaction(
@@ -388,10 +385,10 @@ export async function getExpenseTransactionsByPeriod(params: {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Query all transactions within the target period
+  // Query all transactions within the target period (with pagination)
   // Left join with bucket table on to_bucket_id
   // Filter transactions with to_bucket_id of bucket with type 'expense' only
-  const { data: transactions, error } = await supabase
+  const query = supabase
     .from('transaction')
     .select(
       `
@@ -419,25 +416,29 @@ export async function getExpenseTransactionsByPeriod(params: {
     .not('to_bucket_id', 'is', null)
     .order('transaction_date', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  const transactions = await fetchAllPages<Transaction>(query);
 
   // Group by expense bucket and sum the amounts
   const expenseBuckets = new Map<number, ExpenseTransactionSummary>();
 
-  transactions?.forEach((transaction) => {
-    const toBucket = transaction.to_bucket as unknown as {
-      id: number;
-      name: string;
-      type: string;
-      category: {
-        id: number;
-        name: string;
-      } | null;
-      account: {
-        id: number;
-        name: string;
-      } | null;
-    } | null;
+  transactions.forEach((transaction) => {
+    const toBucket = (
+      transaction as Transaction & {
+        to_bucket: {
+          id: number;
+          name: string;
+          type: string;
+          category: {
+            id: number;
+            name: string;
+          } | null;
+          account: {
+            id: number;
+            name: string;
+          } | null;
+        } | null;
+      }
+    ).to_bucket;
 
     // Only include transactions where to_bucket.type === 'expense'
     if (toBucket && toBucket.type === 'expense') {
@@ -468,10 +469,8 @@ export async function getExpenseTransactionsWithDatesByPeriod(params: {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Query all transactions within the target period
-  // Left join with bucket table on to_bucket_id
-  // Filter transactions with to_bucket_id of bucket with type 'expense' only
-  const { data: transactions, error } = await supabase
+  // Build query with all filters
+  const query = supabase
     .from('transaction')
     .select(
       `
@@ -489,20 +488,21 @@ export async function getExpenseTransactionsWithDatesByPeriod(params: {
     .not('to_bucket_id', 'is', null)
     .order('transaction_date', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  // Fetch all transactions using pagination helper
+  const allTransactions = await fetchAllPages<Transaction>(query);
 
   // Filter and return only expense transactions
-  const expenseTransactions = transactions?.filter((transaction) => {
-    const toBucket = transaction.to_bucket as unknown as {
-      id: number;
-      name: string;
-      type: string;
-    } | null;
+  const expenseTransactions = allTransactions.filter((transaction) => {
+    const toBucket = (
+      transaction as Transaction & {
+        to_bucket: { id: number; name: string; type: string } | null;
+      }
+    ).to_bucket;
 
     return toBucket && toBucket.type === 'expense';
   });
 
-  return expenseTransactions || [];
+  return expenseTransactions;
 }
 
 export async function getExpenseTransactionsByCategoryAndPeriod(params: {
@@ -513,10 +513,8 @@ export async function getExpenseTransactionsByCategoryAndPeriod(params: {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Query all transactions within the target period
-  // Left join with bucket table on to_bucket_id
-  // Filter transactions with to_bucket_id of bucket with type 'expense' and matching category
-  const { data: transactions, error } = await supabase
+  // Build query with all filters
+  const query = supabase
     .from('transaction')
     .select(
       `
@@ -535,17 +533,22 @@ export async function getExpenseTransactionsByCategoryAndPeriod(params: {
     .not('to_bucket_id', 'is', null)
     .order('transaction_date', { ascending: false });
 
-  if (error) throw new Error(error.message);
+  // Fetch all transactions using pagination helper
+  const allTransactions = await fetchAllPages<Transaction>(query);
 
   // Filter transactions to only include those from expense buckets with matching category
   // If categoryId is null, match uncategorized buckets (bucket_category_id is null)
-  const expenseTransactions = transactions?.filter((transaction) => {
-    const toBucket = transaction.to_bucket as unknown as {
-      id: number;
-      name: string;
-      type: string;
-      bucket_category_id: number | null;
-    } | null;
+  const expenseTransactions = allTransactions.filter((transaction) => {
+    const toBucket = (
+      transaction as Transaction & {
+        to_bucket: {
+          id: number;
+          name: string;
+          type: string;
+          bucket_category_id: number | null;
+        } | null;
+      }
+    ).to_bucket;
 
     if (params.categoryId === null) {
       // Match uncategorized expense buckets
@@ -564,5 +567,5 @@ export async function getExpenseTransactionsByCategoryAndPeriod(params: {
     );
   });
 
-  return expenseTransactions || [];
+  return expenseTransactions;
 }

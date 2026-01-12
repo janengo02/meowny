@@ -1,5 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
+import { fetchAllPages } from '../supabaseUtils.js';
 
 export interface BucketAssignCount {
   from_bucket_id: number | null;
@@ -333,14 +334,13 @@ export async function getKeywordBucketMappings(): Promise<
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
+  const query = supabase
     .from('keyword_bucket_mapping')
     .select('*')
     .eq('user_id', userId)
     .order('keyword', { ascending: true });
 
-  if (error) throw new Error(error.message);
-  return data || [];
+  return fetchAllPages<KeywordBucketMapping>(query);
 }
 
 /**
@@ -375,13 +375,13 @@ export async function clearKeywordMappingsForBucket(
   const userId = await getCurrentUserId();
 
   // Get all keyword mappings
-  const { data: mappings, error: fetchError } = await supabase
+  const query = supabase
     .from('keyword_bucket_mapping')
     .select('*')
     .eq('user_id', userId);
 
-  if (fetchError) throw new Error(fetchError.message);
-  if (!mappings) return;
+  const mappings = await fetchAllPages<KeywordBucketMapping>(query);
+  if (!mappings || mappings.length === 0) return;
 
   // Update each mapping to remove any bucket pair that references this bucket
   for (const mapping of mappings) {

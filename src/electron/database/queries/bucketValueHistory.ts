@@ -1,5 +1,6 @@
 import { getSupabase } from '../supabase.js';
 import { getCurrentUserId } from '../auth.js';
+import { fetchAllPages } from '../supabaseUtils.js';
 import { updateBucketWithValues } from './bucket.js';
 import {
   batchUpdateBucketValueHistoryToDatabase,
@@ -46,8 +47,8 @@ export async function getBucketValueHistoriesAfterAdding(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Get the bucket value histories with delta columns (no need to fetch transactions)
-  const { data: histories, error: historiesError } = await supabase
+  // Get the bucket value histories with delta columns (with pagination)
+  const query = supabase
     .from('bucket_value_history')
     .select('*')
     .eq('user_id', userId)
@@ -56,8 +57,7 @@ export async function getBucketValueHistoriesAfterAdding(
     .order('recorded_at', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (historiesError) throw new Error(historiesError.message);
-  return histories ?? [];
+  return fetchAllPages<BucketValueHistory>(query);
 }
 
 // ============================================
@@ -408,8 +408,8 @@ export async function getBucketValueHistoriesAfterDeleting(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Get all records with recorded_at >= afterDate
-  const { data: allRecords, error: historiesError } = await supabase
+  // Get all records with recorded_at >= afterDate (with pagination)
+  const query = supabase
     .from('bucket_value_history')
     .select('*')
     .eq('user_id', userId)
@@ -418,8 +418,8 @@ export async function getBucketValueHistoriesAfterDeleting(
     .order('recorded_at', { ascending: true })
     .order('created_at', { ascending: true });
 
-  if (historiesError) throw new Error(historiesError.message);
-  if (!allRecords || allRecords.length === 0) return [];
+  const allRecords = await fetchAllPages<BucketValueHistory>(query);
+  if (allRecords.length === 0) return [];
 
   // Filter: if recorded_at equals afterDate, created_at must be after afterCreatedAt
   const histories = allRecords.filter((record) => {
@@ -802,8 +802,8 @@ export async function getAssetsValueHistory(
 
   const bucketIds = buckets.map((b) => b.id);
 
-  // Get value history for all buckets within the date range
-  const { data: historyData, error: historyError } = await supabase
+  // Get value history for all buckets within the date range (with pagination)
+  const historyQuery = supabase
     .from('bucket_value_history')
     .select(
       'id, bucket_id, market_value, contributed_amount, recorded_at, source_type, created_at',
@@ -815,7 +815,7 @@ export async function getAssetsValueHistory(
     .order('recorded_at', { ascending: true }) // Must be ascending for history
     .order('created_at', { ascending: true });
 
-  if (historyError) throw new Error(historyError.message);
+  const historyData = await fetchAllPages<BucketValueHistory>(historyQuery);
 
   // Get the last value before startDate for each bucket
   const { data: lastValuesBeforeStart, error: lastValuesError } = await supabase
@@ -846,7 +846,7 @@ export async function getAssetsValueHistory(
   );
 
   // Then, add all history data within the date range
-  historyData?.forEach((item) => {
+  historyData.forEach((item) => {
     if (!historyByBucket.has(item.bucket_id)) {
       historyByBucket.set(item.bucket_id, []);
     }
@@ -876,7 +876,7 @@ export async function getValueHistoryWithTransactionsByBucket(
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
 
-  // Build the bucket value history query
+  // Build the bucket value history query (with pagination)
   let historyQuery = supabase
     .from('bucket_value_history')
     .select('*')
@@ -891,12 +891,12 @@ export async function getValueHistoryWithTransactionsByBucket(
     historyQuery = historyQuery.lte('recorded_at', params.endDate);
   }
 
-  const { data: histories, error: historiesError } = await historyQuery
+  historyQuery = historyQuery
     .order('recorded_at', { ascending: false })
     .order('created_at', { ascending: false });
 
-  if (historiesError) throw new Error(historiesError.message);
-  if (!histories || histories.length === 0) return [];
+  const histories = await fetchAllPages<BucketValueHistory>(historyQuery);
+  if (histories.length === 0) return [];
 
   // Get all transaction IDs from the histories where source_type is 'transaction'
   const transactionIds = histories
@@ -995,10 +995,9 @@ export async function getBucketValueHistoriesByBucket(
     query = query.lte('recorded_at', params.endDate);
   }
 
-  const { data, error } = await query
+  query = query
     .order('recorded_at', { ascending: true }) // Must be ascending for history
     .order('created_at', { ascending: true });
 
-  if (error) throw new Error(error.message);
-  return data;
+  return fetchAllPages<BucketValueHistory>(query);
 }

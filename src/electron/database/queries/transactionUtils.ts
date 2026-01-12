@@ -73,40 +73,6 @@ export async function insertTransactionToDatabase(
   return transaction;
 }
 
-/**
- * Batch insert multiple transactions in a single query
- * This is much more efficient than inserting transactions one by one
- */
-export async function batchInsertTransactionsToDatabase(
-  paramsArray: CreateTransactionParams[],
-): Promise<Transaction[]> {
-  if (paramsArray.length === 0) return [];
-
-  const supabase = getSupabase();
-  const userId = await getCurrentUserId();
-
-  // Prepare all insert data
-  const insertData = paramsArray.map((params) => ({
-    user_id: userId,
-    from_bucket_id: params.from_bucket_id ?? null,
-    to_bucket_id: params.to_bucket_id ?? null,
-    amount: params.amount,
-    from_units: params.from_units ?? null,
-    to_units: params.to_units ?? null,
-    transaction_date: params.transaction_date,
-    notes: params.notes ?? null,
-  }));
-
-  const { data: transactions, error } = await supabase
-    .from('transaction')
-    .insert(insertData)
-    .select();
-
-  if (error) throw new Error(error.message);
-
-  return transactions;
-}
-
 export async function deleteTransactionToDatabase(id: number): Promise<void> {
   const supabase = getSupabase();
   const userId = await getCurrentUserId();
