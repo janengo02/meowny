@@ -20,7 +20,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import { useGetAssetsValueHistoryQuery } from '../../bucket/api/bucketValueHistoryApi';
+import { useGetAssetsOverTimeChartDataQuery } from '../api/dashboardApi';
 import { useMemo } from 'react';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,9 +28,6 @@ import { DatePickerField } from '../../../shared/components/form/DatePickerField
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import {
   CHART_COLORS,
-  getCheckpointLabels,
-  getCheckpoints,
-  getHistoryAtCheckpoint,
   lineStackedChartDefaultOptions,
   totalLabelPlugin,
 } from '../../../shared/utils/chart';
@@ -78,7 +75,7 @@ export function AssetsOverTimeChart() {
   const groupBy = useWatch({ control, name: 'groupBy' });
 
   // Prepare query params
-  const queryParams = useMemo((): GetAssetsValueHistoryParams | null => {
+  const queryParams = useMemo((): GetAssetsOverTimeChartDataParams | null => {
     // Don't query if there are validation errors
     if (Object.keys(errors).length > 0) return null;
 
@@ -89,71 +86,32 @@ export function AssetsOverTimeChart() {
     return {
       startDate,
       endDate,
+      mode,
+      groupBy,
     };
-  }, [periodFrom, periodTo, errors]);
+  }, [periodFrom, periodTo, mode, groupBy, errors]);
 
-  const { data, isLoading, error } = useGetAssetsValueHistoryQuery(
-    queryParams!,
-    {
-      skip: !queryParams,
-    },
-  );
+  const {
+    data: chartDataResponse,
+    isLoading,
+    error,
+  } = useGetAssetsOverTimeChartDataQuery(queryParams!, {
+    skip: !queryParams,
+  });
 
   const chartData = useMemo(() => {
-    if (Object.keys(errors).length > 0) return null;
-
-    if (!data || !data.buckets || data.buckets.length === 0) {
+    if (!chartDataResponse || chartDataResponse.datasets.length === 0) {
       return null;
     }
 
-    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
-    if (checkpoints.length === 0) return null;
+    const { labels, datasets } = chartDataResponse;
 
-    // Format checkpoint labels
-    const labels = getCheckpointLabels(checkpoints, mode);
-    // Map history data by bucket
-    const bucketGroup = new Map();
-    data.buckets?.forEach((bucket) => {
-      let groupKey;
-      let groupName;
-      switch (groupBy) {
-        case 'category':
-          groupKey = bucket.category ? bucket.category.id : 'no_group';
-          groupName = bucket.category ? bucket.category.name : 'No Category';
-          break;
-        case 'account':
-          groupKey = bucket.account ? bucket.account.id : 'no_group';
-          groupName = bucket.account ? bucket.account.name : 'No Account';
-          break;
-        case 'bucket':
-        default:
-          groupKey = bucket.id;
-          groupName = bucket.name;
-          break;
-      }
-      if (!bucketGroup.has(groupKey)) {
-        bucketGroup.set(groupKey, {
-          id: groupKey,
-          name: groupName,
-          buckets: [],
-        });
-      }
-      bucketGroup.get(groupKey)!.buckets.push(bucket);
-    });
-    // Create datasets for each bucket
-    const datasets = Array.from(bucketGroup.values()).map((group, index) => {
+    // Add Chart.js styling to datasets
+    const styledDatasets = datasets.map((dataset, index) => {
       const color = CHART_COLORS[index % CHART_COLORS.length];
       return {
-        label: group.name,
-        data: checkpoints.map((checkpoint) =>
-          group.buckets.reduce(
-            (sum: number, bucket: AssetsBucketData) =>
-              sum +
-              (getHistoryAtCheckpoint(bucket.history, checkpoint)
-                ?.market_value || 0),
-            0,
-          ),
-        ),
+        label: dataset.label,
+        data: dataset.data,
         borderColor: color,
         backgroundColor: color.replace('0.8', '0.5'),
         fill: true,
@@ -163,9 +121,9 @@ export function AssetsOverTimeChart() {
 
     return {
       labels,
-      datasets,
+      datasets: styledDatasets,
     };
-  }, [data, mode, periodFrom, periodTo, groupBy, errors]);
+  }, [chartDataResponse]);
 
   if (isLoading) {
     return (

@@ -344,4 +344,9 @@ app.on('ready', async () => {
       args as GetIncomeVsSavingsChartDataParams,
     );
   });
+  ipcMainHandle('db:getAssetsOverTimeChartData', async (args) => {
+    return db.getAssetsOverTimeChartData(
+      args as GetAssetsOverTimeChartDataParams,
+    );
+  });
 });

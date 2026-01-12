@@ -67,7 +67,7 @@ export const getExpenseAtCheckpoint = (
 };
 
 // Get market value at checkpoint (or nearest before) from bucket's history
-const getHistoryAtCheckpoint = (
+export const getHistoryAtCheckpoint = (
   history: Pick<
     BucketValueHistory,
     | 'id'

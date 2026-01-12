@@ -520,6 +520,21 @@ type IncomeVsSavingsChartData = {
   assetContributionData: number[];
 };
 
+type GetAssetsOverTimeChartDataParams = {
+  startDate: string;
+  endDate: string;
+  mode: 'month' | 'year';
+  groupBy: 'bucket' | 'account' | 'category';
+};
+
+type AssetsOverTimeChartData = {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+  }[];
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -808,6 +823,7 @@ type EventPayloadMapping = {
   'db:getUserPreference': UserPreference | null;
   'db:upsertUserPreference': UserPreference;
   'db:getIncomeVsSavingsChartData': IncomeVsSavingsChartData;
+  'db:getAssetsOverTimeChartData': AssetsOverTimeChartData;
 };
 
 type UnSubscribeFunction = () => void;
@@ -989,6 +1005,9 @@ interface Window {
     getIncomeVsSavingsChartData: (
       params: GetIncomeVsSavingsChartDataParams,
     ) => Promise<IncomeVsSavingsChartData>;
+    getAssetsOverTimeChartData: (
+      params: GetAssetsOverTimeChartDataParams,
+    ) => Promise<AssetsOverTimeChartData>;
 
     // Event listeners
     onBatchCreateTransactionsProgress: (
