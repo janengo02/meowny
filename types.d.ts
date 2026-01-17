@@ -589,6 +589,20 @@ type BucketTransactionHistoryChartData = {
   data: number[];
 };
 
+type GetBucketValueHistoryChartDataParams = {
+  bucketId: number;
+  startDate: string;
+  endDate: string;
+  mode: 'month' | 'year';
+};
+
+type BucketValueHistoryChartData = {
+  labels: string[];
+  contributedAmounts: number[];
+  gains: number[];
+  losses: number[];
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -882,6 +896,7 @@ type EventPayloadMapping = {
   'db:getBucketGoalsChartData': BucketGoalsChartData;
   'db:getIncomeOverTimeChartData': IncomeOverTimeChartData;
   'db:getBucketTransactionHistoryChartData': BucketTransactionHistoryChartData;
+  'db:getBucketValueHistoryChartData': BucketValueHistoryChartData;
 };
 
 type UnSubscribeFunction = () => void;
@@ -1076,6 +1091,9 @@ interface Window {
     getBucketTransactionHistoryChartData: (
       params: GetBucketTransactionHistoryChartDataParams,
     ) => Promise<BucketTransactionHistoryChartData>;
+    getBucketValueHistoryChartData: (
+      params: GetBucketValueHistoryChartDataParams,
+    ) => Promise<BucketValueHistoryChartData>;
 
     // Event listeners
     onBatchCreateTransactionsProgress: (

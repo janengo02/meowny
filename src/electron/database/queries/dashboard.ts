@@ -1,6 +1,9 @@
 import dayjs from 'dayjs';
 import { getIncomeHistoriesByPeriod } from './incomeHistory.js';
-import { getAssetsValueHistory } from './bucketValueHistory.js';
+import {
+  getAssetsValueHistory,
+  getBucketValueHistoriesByBucket,
+} from './bucketValueHistory.js';
 import {
   getExpenseTransactionsWithDatesByPeriod,
   getExpenseTransactionsByPeriod,
@@ -664,5 +667,78 @@ export async function getBucketTransactionHistoryChartData(
   return {
     labels,
     data,
+  };
+}
+
+export async function getBucketValueHistoryChartData(
+  params: GetBucketValueHistoryChartDataParams,
+): Promise<BucketValueHistoryChartData> {
+  const { bucketId, startDate, endDate, mode } = params;
+
+  // Fetch bucket value histories
+  const data = await getBucketValueHistoriesByBucket({
+    bucketId,
+    startDate,
+    endDate,
+  });
+
+  if (data.length === 0) {
+    return {
+      labels: [],
+      contributedAmounts: [],
+      gains: [],
+      losses: [],
+    };
+  }
+
+  // Generate time checkpoints based on mode
+  const periodFrom = dayjs(startDate);
+  const periodTo = dayjs(endDate);
+  const checkpoints = getCheckpoints(
+    periodFrom.toDate(),
+    periodTo.toDate(),
+    mode,
+  );
+
+  if (checkpoints.length === 0) {
+    return {
+      labels: [],
+      contributedAmounts: [],
+      gains: [],
+      losses: [],
+    };
+  }
+
+  // Format checkpoint labels
+  const labels = getCheckpointLabels(checkpoints, mode);
+
+  // Calculate contributed amount and gains/losses for each checkpoint
+  const contributedAmounts: number[] = [];
+  const gains: number[] = [];
+  const losses: number[] = [];
+
+  checkpoints.forEach((checkpoint) => {
+    const historyAtCheckpoint = getHistoryAtCheckpoint(data, checkpoint);
+    const contributedAmount = historyAtCheckpoint?.contributed_amount || 0;
+    const marketValue = historyAtCheckpoint?.market_value || 0;
+    const gainLoss = marketValue - contributedAmount;
+
+    contributedAmounts.push(contributedAmount);
+
+    // Separate gains and losses for color coding
+    if (gainLoss >= 0) {
+      gains.push(gainLoss);
+      losses.push(0);
+    } else {
+      gains.push(0);
+      losses.push(gainLoss); // This will be negative
+    }
+  });
+
+  return {
+    labels,
+    contributedAmounts,
+    gains,
+    losses,
   };
 }

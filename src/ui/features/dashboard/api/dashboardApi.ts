@@ -82,6 +82,20 @@ export const dashboardApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getBucketValueHistoryChartData: builder.query<
+      BucketValueHistoryChartData,
+      GetBucketValueHistoryChartDataParams
+    >({
+      queryFn: async (params) => {
+        try {
+          const chartData =
+            await window.electron.getBucketValueHistoryChartData(params);
+          return { data: chartData };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+    }),
   }),
 });
 
@@ -92,4 +106,5 @@ export const {
   useGetBucketGoalsChartDataQuery,
   useGetIncomeOverTimeChartDataQuery,
   useGetBucketTransactionHistoryChartDataQuery,
+  useGetBucketValueHistoryChartDataQuery,
 } = dashboardApi;

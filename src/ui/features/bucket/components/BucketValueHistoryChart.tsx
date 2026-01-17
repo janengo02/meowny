@@ -11,14 +11,10 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { useGetBucketValueHistoriesByBucketQuery } from '../api/bucketValueHistoryApi';
 import { useMemo } from 'react';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import {
   CHART_COLORS,
-  getCheckpointLabels,
-  getCheckpoints,
-  getHistoryAtCheckpoint,
   barTotalWithReturnPlugin,
   barStackedChartForGainLossDefaultOptions,
   barTotalLabelPlugin,
@@ -26,6 +22,7 @@ import {
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
+import { useGetBucketValueHistoryChartDataQuery } from '../../dashboard/api/dashboardApi';
 
 // Register Chart.js components
 ChartJS.register(
@@ -52,56 +49,31 @@ export function BucketValueHistoryChart({
   periodFrom,
   periodTo,
 }: BucketValueHistoryChartProps) {
-  // Query parameters for the API
   const queryParams = useMemo(
-    () => ({
+    (): GetBucketValueHistoryChartDataParams => ({
       bucketId,
       startDate: formatDateForDB(periodFrom),
       endDate: formatDateForDB(periodTo),
+      mode,
     }),
-    [bucketId, periodFrom, periodTo],
+    [bucketId, periodFrom, periodTo, mode],
   );
 
-  const { data, isLoading, error } = useGetBucketValueHistoriesByBucketQuery(
-    queryParams!,
-    {
-      skip: !queryParams,
-    },
-  );
+  const {
+    data: chartDataResponse,
+    isLoading,
+    error,
+  } = useGetBucketValueHistoryChartDataQuery(queryParams);
 
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) {
+    if (
+      !chartDataResponse ||
+      chartDataResponse.contributedAmounts.length === 0
+    ) {
       return null;
     }
 
-    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
-    if (checkpoints.length === 0) return null;
-
-    // Format checkpoint labels
-    const labels = getCheckpointLabels(checkpoints, mode);
-
-    // Calculate contributed amount and gains/losses for each checkpoint
-    const contributedAmounts: number[] = [];
-    const gains: number[] = [];
-    const losses: number[] = [];
-
-    checkpoints.forEach((checkpoint) => {
-      const historyAtCheckpoint = getHistoryAtCheckpoint(data, checkpoint);
-      const contributedAmount = historyAtCheckpoint?.contributed_amount || 0;
-      const marketValue = historyAtCheckpoint?.market_value || 0;
-      const gainLoss = marketValue - contributedAmount;
-
-      contributedAmounts.push(contributedAmount);
-
-      // Separate gains and losses for color coding
-      if (gainLoss >= 0) {
-        gains.push(gainLoss);
-        losses.push(0);
-      } else {
-        gains.push(0);
-        losses.push(gainLoss); // This will be negative
-      }
-    });
+    const { labels, contributedAmounts, gains, losses } = chartDataResponse;
 
     // Build datasets - only show Gains/Losses for investment buckets
     const datasets = [
@@ -138,7 +110,7 @@ export function BucketValueHistoryChart({
       labels,
       datasets,
     };
-  }, [data, mode, periodFrom, periodTo, bucketType]);
+  }, [chartDataResponse, bucketType]);
 
   if (isLoading) {
     return (

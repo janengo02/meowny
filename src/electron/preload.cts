@@ -163,6 +163,9 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getBucketTransactionHistoryChartData: (
     params: GetBucketTransactionHistoryChartDataParams,
   ) => ipcInvoke('db:getBucketTransactionHistoryChartData', params),
+  getBucketValueHistoryChartData: (
+    params: GetBucketValueHistoryChartDataParams,
+  ) => ipcInvoke('db:getBucketValueHistoryChartData', params),
 
   // Event listeners
   onBatchCreateTransactionsProgress: (

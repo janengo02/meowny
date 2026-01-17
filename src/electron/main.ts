@@ -365,4 +365,9 @@ app.on('ready', async () => {
       args as GetBucketTransactionHistoryChartDataParams,
     );
   });
+  ipcMainHandle('db:getBucketValueHistoryChartData', async (args) => {
+    return db.getBucketValueHistoryChartData(
+      args as GetBucketValueHistoryChartDataParams,
+    );
+  });
 });
