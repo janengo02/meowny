@@ -54,6 +54,20 @@ export const dashboardApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getIncomeOverTimeChartData: builder.query<
+      IncomeOverTimeChartData,
+      GetIncomeOverTimeChartDataParams
+    >({
+      queryFn: async (params) => {
+        try {
+          const chartData =
+            await window.electron.getIncomeOverTimeChartData(params);
+          return { data: chartData };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+    }),
   }),
 });
 
@@ -62,4 +76,5 @@ export const {
   useGetAssetsOverTimeChartDataQuery,
   useGetExpensePieChartDataQuery,
   useGetBucketGoalsChartDataQuery,
+  useGetIncomeOverTimeChartDataQuery,
 } = dashboardApi;

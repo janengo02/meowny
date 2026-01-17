@@ -46,6 +46,76 @@ export const getNetIncomeAtCheckpoint = (
   }, 0);
 };
 
+// Get total gross income at checkpoint from income histories
+export const getGrossIncomeAtCheckpoint = (
+  incomeHistories: Pick<IncomeHistoryWithTaxes, 'received_date' | 'gross_amount'>[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): number => {
+  const checkpointDayjs = dayjs(checkpoint);
+
+  return incomeHistories.reduce((total, history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    // Check if the received_date falls within the same period as checkpoint
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
+      return total + history.gross_amount;
+    }
+
+    return total;
+  }, 0);
+};
+
+// Get gross income by category at checkpoint
+export const getGrossIncomeByCategory = (
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'gross_amount' | 'income_category_id'
+  >[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): Map<number | null, number> => {
+  const checkpointDayjs = dayjs(checkpoint);
+  const categoryMap = new Map<number | null, number>();
+
+  incomeHistories.forEach((history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
+      const categoryId = history.income_category_id;
+      const currentAmount = categoryMap.get(categoryId) || 0;
+      categoryMap.set(categoryId, currentAmount + history.gross_amount);
+    }
+  });
+
+  return categoryMap;
+};
+
+// Get net income by category at checkpoint
+export const getNetIncomeByCategory = (
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'net_amount' | 'income_category_id'
+  >[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): Map<number | null, number> => {
+  const checkpointDayjs = dayjs(checkpoint);
+  const categoryMap = new Map<number | null, number>();
+
+  incomeHistories.forEach((history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
+      const categoryId = history.income_category_id;
+      const currentAmount = categoryMap.get(categoryId) || 0;
+      categoryMap.set(categoryId, currentAmount + history.net_amount);
+    }
+  });
+
+  return categoryMap;
+};
+
 // Get total expense amount at checkpoint from expense transactions
 export const getExpenseAtCheckpoint = (
   expenseTransactions: Pick<Transaction, 'transaction_date' | 'amount'>[],

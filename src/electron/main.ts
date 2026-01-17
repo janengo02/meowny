@@ -355,4 +355,9 @@ app.on('ready', async () => {
   ipcMainHandle('db:getBucketGoalsChartData', async () => {
     return db.getBucketGoalsChartData();
   });
+  ipcMainHandle('db:getIncomeOverTimeChartData', async (args) => {
+    return db.getIncomeOverTimeChartData(
+      args as GetIncomeOverTimeChartDataParams,
+    );
+  });
 });

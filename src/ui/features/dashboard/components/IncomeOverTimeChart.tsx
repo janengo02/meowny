@@ -16,34 +16,22 @@ import {
   BarElement,
   Tooltip,
   Legend,
-  type ChartData,
 } from 'chart.js';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
-
 import {
   CHART_COLORS,
   barChartOptions,
   barTotalLabelPlugin,
-  getCheckpointLabels,
-  getCheckpoints,
-  getGrossIncomeByCategory,
-  getNetIncomeByCategory,
-  getGrossIncomeAtCheckpoint,
-  getNetIncomeAtCheckpoint,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { FormSelectField } from '../../../shared/components/form/FormSelectField';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
-import { useGetIncomeCategoriesQuery } from '../../income/api/incomeCategoryApi';
-import { useGetIncomeHistoriesByPeriodQuery } from '../../income/api/incomeHistoryApi';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
+import { useGetIncomeOverTimeChartDataQuery } from '../api/dashboardApi';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import {
   incomeChartFilterSchema,
@@ -51,15 +39,10 @@ import {
   type TabValue,
 } from '../schemas/dashboard.schemas';
 
-// Extend dayjs with plugins
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
-
 // Register Chart.js components (without plugin - it will be added per-instance)
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 export function IncomeOverTimeChart() {
-  const { data: incomeCategories } = useGetIncomeCategoriesQuery();
   const [activeTab, setActiveTab] = useState<TabValue>('gross');
 
   // Period filter form
@@ -82,7 +65,7 @@ export function IncomeOverTimeChart() {
   const periodTo = useWatch({ control, name: 'periodTo' });
 
   // Prepare query params
-  const queryParams = useMemo(() => {
+  const queryParams = useMemo((): GetIncomeOverTimeChartDataParams | null => {
     // Don't query if there are validation errors
     if (Object.keys(errors).length > 0) return null;
 
@@ -93,150 +76,62 @@ export function IncomeOverTimeChart() {
     return {
       startDate,
       endDate,
+      mode,
     };
-  }, [periodFrom, periodTo, errors]);
+  }, [periodFrom, periodTo, mode, errors]);
 
   const {
-    data: incomeHistories,
-    isLoading: isLoadingHistories,
+    data: chartDataResponse,
+    isLoading,
     error,
-  } = useGetIncomeHistoriesByPeriodQuery(queryParams!, {
+  } = useGetIncomeOverTimeChartDataQuery(queryParams!, {
     skip: !queryParams,
   });
 
   const chartData = useMemo(() => {
-    if (!incomeHistories || incomeHistories.length === 0 || !incomeCategories) {
+    if (!chartDataResponse) {
       return null;
     }
 
-    // Generate time checkpoints based on mode
-    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
-    if (checkpoints.length === 0) return null;
+    const { labels, grossByCategory, netByCategory, grossTotal, netTotal } =
+      chartDataResponse;
 
-    // Format checkpoint labels
-    const labels = getCheckpointLabels(checkpoints, mode);
-
-    // Create category name map
-    const categoryNameMap = new Map<number | null, string>();
-    incomeCategories.forEach((cat) => {
-      categoryNameMap.set(cat.id, cat.name);
-    });
-    categoryNameMap.set(null, 'Uncategorized');
-
-    // Get unique categories from income histories (including null for uncategorized)
-    const uniqueCategoryIds = Array.from(
-      new Set(
-        incomeHistories.map((h) => h.income_category_id),
-      ),
-    );
-
-    // Create datasets based on active tab
-    const datasets: ChartData<'bar'>['datasets'] = [];
+    // Select datasets based on active tab
+    let datasets: { label: string; data: number[] }[] = [];
 
     if (activeTab === 'gross') {
-      // Gross only - by category
-      uniqueCategoryIds.forEach((categoryId, index) => {
-        const categoryName = categoryNameMap.get(categoryId) || 'Unknown';
-        const color = CHART_COLORS[index % CHART_COLORS.length];
-
-        const data = checkpoints.map((checkpoint) => {
-          const categoryMap = getGrossIncomeByCategory(
-            incomeHistories,
-            checkpoint,
-            mode,
-          );
-          return categoryMap.get(categoryId) || 0;
-        });
-
-        // Only add dataset if it has non-zero values
-        const hasNonZeroValues = data.some((value) => value > 0);
-        if (hasNonZeroValues) {
-          datasets.push({
-            label: categoryName,
-            data,
-            backgroundColor: color,
-            borderColor: color,
-            borderWidth: 1,
-            stack: 'stack',
-            barPercentage: 0.6,
-            categoryPercentage: 0.8,
-          });
-        }
-      });
+      datasets = grossByCategory;
     } else if (activeTab === 'net') {
-      // Net only - by category
-      uniqueCategoryIds.forEach((categoryId, index) => {
-        const categoryName = categoryNameMap.get(categoryId) || 'Unknown';
-        const color = CHART_COLORS[index % CHART_COLORS.length];
-
-        const data = checkpoints.map((checkpoint) => {
-          const categoryMap = getNetIncomeByCategory(
-            incomeHistories,
-            checkpoint,
-            mode,
-          );
-          return categoryMap.get(categoryId) || 0;
-        });
-
-        // Only add dataset if it has non-zero values
-        const hasNonZeroValues = data.some((value) => value > 0);
-        if (hasNonZeroValues) {
-          datasets.push({
-            label: categoryName,
-            data,
-            backgroundColor: color,
-            borderColor: color,
-            borderWidth: 1,
-            stack: 'stack',
-            barPercentage: 0.6,
-            categoryPercentage: 0.8,
-          });
-        }
-      });
+      datasets = netByCategory;
     } else {
-      // Comparison - total gross vs net (not by category)
-      const grossData = checkpoints.map((checkpoint) =>
-        getGrossIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
-      );
-
-      const netData = checkpoints.map((checkpoint) =>
-        getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
-      );
-
-      datasets.push({
-        label: 'Gross',
-        data: grossData,
-        backgroundColor: CHART_COLORS[0].replace('0.8', '0.5'),
-        borderColor: CHART_COLORS[0],
-        borderWidth: 1,
-        stack: 'stack',
-        barPercentage: 0.6,
-        categoryPercentage: 0.8,
-      });
-
-      datasets.push({
-        label: 'Net',
-        data: netData,
-        backgroundColor: CHART_COLORS[1],
-        borderColor: CHART_COLORS[1],
-        borderWidth: 1,
-        stack: 'stack',
-        barPercentage: 0.6,
-        categoryPercentage: 0.8,
-      });
+      // Comparison view
+      datasets = [
+        { label: 'Gross', data: grossTotal },
+        { label: 'Net', data: netTotal },
+      ];
     }
 
-    return { labels, datasets };
-  }, [
-    incomeHistories,
-    incomeCategories,
-    periodFrom,
-    periodTo,
-    mode,
-    activeTab,
-  ]);
+    if (datasets.length === 0) {
+      return null;
+    }
 
-  const isLoading = isLoadingHistories;
+    // Add Chart.js styling to datasets
+    const styledDatasets = datasets.map((dataset, index) => {
+      const color = CHART_COLORS[index % CHART_COLORS.length];
+      return {
+        label: dataset.label,
+        data: dataset.data,
+        backgroundColor: color,
+        borderColor: color,
+        borderWidth: 1,
+        stack: 'stack',
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
+      };
+    });
+
+    return { labels, datasets: styledDatasets };
+  }, [chartDataResponse, activeTab]);
 
   if (isLoading) {
     return (

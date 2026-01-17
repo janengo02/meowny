@@ -557,6 +557,26 @@ type BucketGoalsChartData = {
   }[];
 };
 
+type GetIncomeOverTimeChartDataParams = {
+  startDate: string;
+  endDate: string;
+  mode: 'month' | 'year';
+};
+
+type IncomeOverTimeChartData = {
+  labels: string[];
+  grossByCategory: {
+    label: string;
+    data: number[];
+  }[];
+  netByCategory: {
+    label: string;
+    data: number[];
+  }[];
+  grossTotal: number[];
+  netTotal: number[];
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -848,6 +868,7 @@ type EventPayloadMapping = {
   'db:getAssetsOverTimeChartData': AssetsOverTimeChartData;
   'db:getExpensePieChartData': ExpensePieChartData;
   'db:getBucketGoalsChartData': BucketGoalsChartData;
+  'db:getIncomeOverTimeChartData': IncomeOverTimeChartData;
 };
 
 type UnSubscribeFunction = () => void;
@@ -1036,6 +1057,9 @@ interface Window {
       params: GetExpensePieChartDataParams,
     ) => Promise<ExpensePieChartData>;
     getBucketGoalsChartData: () => Promise<BucketGoalsChartData>;
+    getIncomeOverTimeChartData: (
+      params: GetIncomeOverTimeChartDataParams,
+    ) => Promise<IncomeOverTimeChartData>;
 
     // Event listeners
     onBatchCreateTransactionsProgress: (

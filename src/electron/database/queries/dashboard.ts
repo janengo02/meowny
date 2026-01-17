@@ -8,11 +8,15 @@ import {
 import {
   getCheckpoints,
   getNetIncomeAtCheckpoint,
+  getGrossIncomeAtCheckpoint,
+  getGrossIncomeByCategory,
+  getNetIncomeByCategory,
   getExpenseAtCheckpoint,
   getAssetContributionAtCheckpoint,
   getHistoryAtCheckpoint,
 } from './dashboardChartUtils.js';
 import { getAllBucketGoalsWithStatus } from './bucketGoal.js';
+import { getIncomeCategories } from './incomeCategory.js';
 
 export async function getIncomeVsSavingsChartData(
   params: GetIncomeVsSavingsChartDataParams,
@@ -488,5 +492,141 @@ export async function getBucketGoalsChartData(): Promise<BucketGoalsChartData> {
         metadata: redExceedMax.metadata,
       },
     ],
+  };
+}
+
+export async function getIncomeOverTimeChartData(
+  params: GetIncomeOverTimeChartDataParams,
+): Promise<IncomeOverTimeChartData> {
+  const { startDate, endDate, mode } = params;
+
+  // Fetch data from database in parallel
+  const [incomeHistories, incomeCategories] = await Promise.all([
+    getIncomeHistoriesByPeriod({ startDate, endDate }),
+    getIncomeCategories(),
+  ]);
+
+  if (incomeHistories.length === 0 || incomeCategories.length === 0) {
+    return {
+      labels: [],
+      grossByCategory: [],
+      netByCategory: [],
+      grossTotal: [],
+      netTotal: [],
+    };
+  }
+
+  // Generate time checkpoints based on mode
+  const periodFrom = dayjs(startDate);
+  const periodTo = dayjs(endDate);
+  const checkpoints = getCheckpoints(
+    periodFrom.toDate(),
+    periodTo.toDate(),
+    mode,
+  );
+
+  if (checkpoints.length === 0) {
+    return {
+      labels: [],
+      grossByCategory: [],
+      netByCategory: [],
+      grossTotal: [],
+      netTotal: [],
+    };
+  }
+
+  // Format checkpoint labels
+  const labels = checkpoints.map((date) => {
+    const d = dayjs(date);
+    if (mode === 'month') {
+      return d.format('MMM YYYY');
+    } else {
+      return d.format('YYYY');
+    }
+  });
+
+  // Create category name map
+  const categoryNameMap = new Map<number | null, string>();
+  incomeCategories.forEach((cat) => {
+    categoryNameMap.set(cat.id, cat.name);
+  });
+  categoryNameMap.set(null, 'Uncategorized');
+
+  // Get unique categories from income histories
+  const uniqueCategoryIds = Array.from(
+    new Set(incomeHistories.map((h) => h.income_category_id)),
+  );
+
+  // Build gross income by category datasets
+  const grossByCategory: {
+    label: string;
+    data: number[];
+  }[] = [];
+
+  uniqueCategoryIds.forEach((categoryId) => {
+    const categoryName = categoryNameMap.get(categoryId) || 'Unknown';
+
+    const data = checkpoints.map((checkpoint) => {
+      const categoryMap = getGrossIncomeByCategory(
+        incomeHistories,
+        checkpoint,
+        mode,
+      );
+      return categoryMap.get(categoryId) || 0;
+    });
+
+    // Only add dataset if it has non-zero values
+    const hasNonZeroValues = data.some((value) => value > 0);
+    if (hasNonZeroValues) {
+      grossByCategory.push({
+        label: categoryName,
+        data,
+      });
+    }
+  });
+
+  // Build net income by category datasets
+  const netByCategory: {
+    label: string;
+    data: number[];
+  }[] = [];
+
+  uniqueCategoryIds.forEach((categoryId) => {
+    const categoryName = categoryNameMap.get(categoryId) || 'Unknown';
+
+    const data = checkpoints.map((checkpoint) => {
+      const categoryMap = getNetIncomeByCategory(
+        incomeHistories,
+        checkpoint,
+        mode,
+      );
+      return categoryMap.get(categoryId) || 0;
+    });
+
+    // Only add dataset if it has non-zero values
+    const hasNonZeroValues = data.some((value) => value > 0);
+    if (hasNonZeroValues) {
+      netByCategory.push({
+        label: categoryName,
+        data,
+      });
+    }
+  });
+
+  // Calculate total gross and net (for comparison view)
+  const grossTotal = checkpoints.map((checkpoint) =>
+    getGrossIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
+  );
+
+  const netTotal = checkpoints.map((checkpoint) =>
+    getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
+  );
+
+  return {
+    labels,
+    grossByCategory,
+    netByCategory,
+    grossTotal,
+    netTotal,
   };
 }
