@@ -349,4 +349,7 @@ app.on('ready', async () => {
       args as GetAssetsOverTimeChartDataParams,
     );
   });
+  ipcMainHandle('db:getExpensePieChartData', async (args) => {
+    return db.getExpensePieChartData(args as GetExpensePieChartDataParams);
+  });
 });

@@ -34,10 +34,27 @@ export const dashboardApi = baseApi.injectEndpoints({
       },
       providesTags: ['Bucket'],
     }),
+    getExpensePieChartData: builder.query<
+      ExpensePieChartData,
+      GetExpensePieChartDataParams
+    >({
+      queryFn: async (params) => {
+        try {
+          const chartData = await window.electron.getExpensePieChartData(
+            params,
+          );
+          return { data: chartData };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+      providesTags: ['Transaction'],
+    }),
   }),
 });
 
 export const {
   useGetIncomeVsSavingsChartDataQuery,
   useGetAssetsOverTimeChartDataQuery,
+  useGetExpensePieChartDataQuery,
 } = dashboardApi;

@@ -155,6 +155,8 @@ electron.contextBridge.exposeInMainWorld('electron', {
     ipcInvoke('db:getIncomeVsSavingsChartData', params),
   getAssetsOverTimeChartData: (params: GetAssetsOverTimeChartDataParams) =>
     ipcInvoke('db:getAssetsOverTimeChartData', params),
+  getExpensePieChartData: (params: GetExpensePieChartDataParams) =>
+    ipcInvoke('db:getExpensePieChartData', params),
 
   // Event listeners
   onBatchCreateTransactionsProgress: (

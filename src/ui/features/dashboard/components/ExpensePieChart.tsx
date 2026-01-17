@@ -21,7 +21,7 @@ import {
   type ActiveElement,
 } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { useGetExpenseTransactionsByPeriodQuery } from '../../transaction/api/transactionApi';
+import { useGetExpensePieChartDataQuery } from '../api/dashboardApi';
 import { useMemo, useState, useCallback } from 'react';
 import {
   centerTextPlugin,
@@ -60,103 +60,33 @@ export function ExpensePieChart() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(
     null,
   );
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   // Calculate start and end dates for the query
-  const queryParams =
-    useMemo((): GetExpenseTransactionsByPeriodParams | null => {
-      const startDate = formatDateForDB(targetMonth.startOf(mode));
-      const endDate = formatDateForDB(targetMonth.endOf(mode));
+  const queryParams = useMemo((): GetExpensePieChartDataParams | null => {
+    const startDate = formatDateForDB(targetMonth.startOf(mode));
+    const endDate = formatDateForDB(targetMonth.endOf(mode));
 
-      return {
-        startDate,
-        endDate,
-      };
-    }, [targetMonth, mode]);
+    return {
+      startDate,
+      endDate,
+      groupBy,
+    };
+  }, [targetMonth, mode, groupBy]);
 
-  const { data, isLoading, error } = useGetExpenseTransactionsByPeriodQuery(
-    queryParams!,
-    {
-      skip: !queryParams,
-    },
-  );
+  const {
+    data: chartDataResponse,
+    isLoading,
+    error,
+  } = useGetExpensePieChartDataQuery(queryParams!, {
+    skip: !queryParams,
+  });
 
   const chartData = useMemo(() => {
-    if (!data || data.length === 0) {
+    if (!chartDataResponse || chartDataResponse.labels.length === 0) {
       return null;
     }
 
-    // Filter out items with zero amounts
-    const filteredData = data.filter((item) => item.total_amount > 0);
-
-    if (filteredData.length === 0) {
-      return null;
-    }
-
-    let groupedData: { name: string; total: number; id: number | null }[];
-
-    if (groupBy === 'category') {
-      // Group by category
-      const categoryMap = new Map<
-        string,
-        { total: number; id: number | null }
-      >();
-
-      filteredData.forEach((item) => {
-        const categoryName = item.category_name || 'Uncategorized';
-        const existing = categoryMap.get(categoryName);
-
-        if (existing) {
-          existing.total += item.total_amount;
-        } else {
-          categoryMap.set(categoryName, {
-            total: item.total_amount,
-            id: item.category_id,
-          });
-        }
-      });
-
-      groupedData = Array.from(categoryMap.entries())
-        .map(([name, { total, id }]) => ({ name, total, id }))
-        .sort((a, b) => b.total - a.total);
-    } else if (groupBy === 'account') {
-      // Group by account
-      const accountMap = new Map<
-        string,
-        { total: number; id: number | null }
-      >();
-
-      filteredData.forEach((item) => {
-        const accountName = item.account_name || 'No Account';
-        const existing = accountMap.get(accountName);
-
-        if (existing) {
-          existing.total += item.total_amount;
-        } else {
-          accountMap.set(accountName, {
-            total: item.total_amount,
-            id: item.account_id,
-          });
-        }
-      });
-
-      groupedData = Array.from(accountMap.entries())
-        .map(([name, { total, id }]) => ({ name, total, id }))
-        .sort((a, b) => b.total - a.total);
-    } else {
-      // Group by bucket (default)
-      groupedData = filteredData
-        .map((item) => ({
-          name: item.bucket_name,
-          total: item.total_amount,
-          id: item.bucket_id,
-        }))
-        .sort((a, b) => b.total - a.total);
-    }
-
-    const labels = groupedData.map((item) => item.name);
-    const values = groupedData.map((item) => item.total);
-    const ids = groupedData.map((item) => item.id);
+    const { labels, values, ids } = chartDataResponse;
 
     return {
       labels,
@@ -173,7 +103,7 @@ export function ExpensePieChart() {
       // Store IDs for click handling
       metadata: { ids, groupBy },
     };
-  }, [data, groupBy]);
+  }, [chartDataResponse, groupBy]);
 
   const handlePrevPeriod = () => {
     const newPeriod = targetMonth.subtract(1, mode);
@@ -204,7 +134,6 @@ export function ExpensePieChart() {
 
         if (currentGroupBy === 'category') {
           setSelectedCategoryId(clickedId);
-          setIsCategoryModalOpen(true);
         } else if (currentGroupBy === 'bucket') {
           setSelectedBucketId(clickedId);
         }
@@ -373,8 +302,8 @@ export function ExpensePieChart() {
       />
       <ExpenseCategoryModal
         categoryId={selectedCategoryId}
-        open={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
+        open={selectedCategoryId !== null}
+        onClose={() => setSelectedCategoryId(null)}
       />
     </FormProvider>
   );

@@ -1,7 +1,10 @@
 import dayjs from 'dayjs';
 import { getIncomeHistoriesByPeriod } from './incomeHistory.js';
 import { getAssetsValueHistory } from './bucketValueHistory.js';
-import { getExpenseTransactionsWithDatesByPeriod } from './transaction.js';
+import {
+  getExpenseTransactionsWithDatesByPeriod,
+  getExpenseTransactionsByPeriod,
+} from './transaction.js';
 import {
   getCheckpoints,
   getNetIncomeAtCheckpoint,
@@ -186,5 +189,93 @@ export async function getAssetsOverTimeChartData(
   return {
     labels,
     datasets,
+  };
+}
+
+export async function getExpensePieChartData(
+  params: GetExpensePieChartDataParams,
+): Promise<ExpensePieChartData> {
+  const { startDate, endDate, groupBy } = params;
+
+  // Fetch expense transactions by period
+  const data = await getExpenseTransactionsByPeriod({ startDate, endDate });
+
+  // Filter out items with zero amounts
+  const filteredData = data.filter((item) => item.total_amount > 0);
+
+  if (filteredData.length === 0) {
+    return {
+      labels: [],
+      values: [],
+      ids: [],
+    };
+  }
+
+  let groupedData: { name: string; total: number; id: number | null }[];
+
+  if (groupBy === 'category') {
+    // Group by category
+    const categoryMap = new Map<
+      string,
+      { total: number; id: number | null }
+    >();
+
+    filteredData.forEach((item) => {
+      const categoryName = item.category_name || 'Uncategorized';
+      const existing = categoryMap.get(categoryName);
+
+      if (existing) {
+        existing.total += item.total_amount;
+      } else {
+        categoryMap.set(categoryName, {
+          total: item.total_amount,
+          id: item.category_id,
+        });
+      }
+    });
+
+    groupedData = Array.from(categoryMap.entries())
+      .map(([name, { total, id }]) => ({ name, total, id }))
+      .sort((a, b) => b.total - a.total);
+  } else if (groupBy === 'account') {
+    // Group by account
+    const accountMap = new Map<string, { total: number; id: number | null }>();
+
+    filteredData.forEach((item) => {
+      const accountName = item.account_name || 'No Account';
+      const existing = accountMap.get(accountName);
+
+      if (existing) {
+        existing.total += item.total_amount;
+      } else {
+        accountMap.set(accountName, {
+          total: item.total_amount,
+          id: item.account_id,
+        });
+      }
+    });
+
+    groupedData = Array.from(accountMap.entries())
+      .map(([name, { total, id }]) => ({ name, total, id }))
+      .sort((a, b) => b.total - a.total);
+  } else {
+    // Group by bucket (default)
+    groupedData = filteredData
+      .map((item) => ({
+        name: item.bucket_name,
+        total: item.total_amount,
+        id: item.bucket_id,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
+  const labels = groupedData.map((item) => item.name);
+  const values = groupedData.map((item) => item.total);
+  const ids = groupedData.map((item) => item.id);
+
+  return {
+    labels,
+    values,
+    ids,
   };
 }

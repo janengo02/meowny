@@ -535,6 +535,18 @@ type AssetsOverTimeChartData = {
   }[];
 };
 
+type GetExpensePieChartDataParams = {
+  startDate: string;
+  endDate: string;
+  groupBy: 'bucket' | 'account' | 'category';
+};
+
+type ExpensePieChartData = {
+  labels: string[];
+  values: number[];
+  ids: (number | null)[];
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -824,6 +836,7 @@ type EventPayloadMapping = {
   'db:upsertUserPreference': UserPreference;
   'db:getIncomeVsSavingsChartData': IncomeVsSavingsChartData;
   'db:getAssetsOverTimeChartData': AssetsOverTimeChartData;
+  'db:getExpensePieChartData': ExpensePieChartData;
 };
 
 type UnSubscribeFunction = () => void;
@@ -1008,6 +1021,9 @@ interface Window {
     getAssetsOverTimeChartData: (
       params: GetAssetsOverTimeChartDataParams,
     ) => Promise<AssetsOverTimeChartData>;
+    getExpensePieChartData: (
+      params: GetExpensePieChartDataParams,
+    ) => Promise<ExpensePieChartData>;
 
     // Event listeners
     onBatchCreateTransactionsProgress: (
