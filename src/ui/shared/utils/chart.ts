@@ -21,6 +21,7 @@ export const lineStackedChartDefaultOptions: ChartOptions<'line'> = {
   layout: {
     padding: {
       right: 50, // Add padding on the right for total labels
+      top: 20,
     },
   },
   interaction: {
@@ -29,7 +30,7 @@ export const lineStackedChartDefaultOptions: ChartOptions<'line'> = {
   },
   plugins: {
     legend: {
-      position: 'top' as const,
+      position: 'bottom' as const,
       labels: {
         boxWidth: 12,
         padding: 10,
@@ -189,8 +190,12 @@ export const totalLabelPlugin = {
     // Calculate totals for each data point
     const dataLength = data.datasets[0].data.length;
     for (let i = 0; i < dataLength; i++) {
-      // Sum all dataset values at this index
-      const total = data.datasets.reduce((sum, dataset) => {
+      // Sum only visible dataset values at this index
+      const total = data.datasets.reduce((sum, dataset, datasetIndex) => {
+        // Check if dataset is hidden via legend click
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return sum;
+
         const value = dataset.data[i] as number;
         return sum + (value || 0);
       }, 0);
@@ -198,9 +203,12 @@ export const totalLabelPlugin = {
       // Get the x position from the x-axis scale
       const x = scales.x.getPixelForValue(i);
 
-      // Get the highest y position (top of the stack)
+      // Get the highest y position (top of the stack) - only for visible datasets
       let stackedY = 0;
-      data.datasets.forEach((dataset) => {
+      data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+
         const value = dataset.data[i] as number;
         stackedY += value || 0;
       });
@@ -231,8 +239,12 @@ export const barTotalLabelPlugin = {
     // Calculate totals for each data point
     const dataLength = data.datasets[0].data.length;
     for (let i = 0; i < dataLength; i++) {
-      // Sum all dataset values at this index
-      const total = data.datasets.reduce((sum, dataset) => {
+      // Sum only visible dataset values at this index
+      const total = data.datasets.reduce((sum, dataset, datasetIndex) => {
+        // Check if dataset is hidden via legend click
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return sum;
+
         const value = dataset.data[i] as number;
         return sum + (value || 0);
       }, 0);
@@ -240,9 +252,12 @@ export const barTotalLabelPlugin = {
       // Get the x position from the x-axis scale
       const x = scales.x.getPixelForValue(i);
 
-      // Get the highest y position (top of the stack)
+      // Get the highest y position (top of the stack) - only for visible datasets
       let stackedY = 0;
-      data.datasets.forEach((dataset) => {
+      data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+
         const value = dataset.data[i] as number;
         stackedY += value || 0;
       });
@@ -270,14 +285,21 @@ export const barTotalWithReturnPlugin = {
     // Calculate totals and return percentages for each data point
     const dataLength = data.datasets[0].data.length;
     for (let i = 0; i < dataLength; i++) {
-      // Sum all dataset values at this index to get market value
-      const marketValue = data.datasets.reduce((sum, dataset) => {
+      // Sum only visible dataset values at this index to get market value
+      const marketValue = data.datasets.reduce((sum, dataset, datasetIndex) => {
+        // Check if dataset is hidden via legend click
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return sum;
+
         const value = dataset.data[i] as number;
         return sum + (value || 0);
       }, 0);
 
-      // Get contributed amount (first dataset)
-      const contributedAmount = (data.datasets[0].data[i] as number) || 0;
+      // Get contributed amount (first dataset) - check if it's visible
+      const firstDatasetMeta = chart.getDatasetMeta(0);
+      const contributedAmount = firstDatasetMeta.hidden
+        ? 0
+        : (data.datasets[0].data[i] as number) || 0;
 
       // Calculate return percentage
       let returnPercentage = 0;
@@ -289,9 +311,12 @@ export const barTotalWithReturnPlugin = {
       // Get the x position from the x-axis scale
       const x = scales.x.getPixelForValue(i);
 
-      // Get the highest y position (top of the stack)
+      // Get the highest y position (top of the stack) - only for visible datasets
       let stackedY = 0;
-      data.datasets.forEach((dataset) => {
+      data.datasets.forEach((dataset, datasetIndex) => {
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+
         const value = dataset.data[i] as number;
         stackedY += value > 0 ? value : 0;
       });
@@ -416,11 +441,19 @@ export const centerTextPlugin = {
 
     ctx.save();
 
-    // Calculate total from chart data
-    const total = data.datasets.reduce((sum, dataset) => {
+    // Calculate total from visible chart data only
+    const total = data.datasets.reduce((sum, dataset, datasetIndex) => {
+      // Check if dataset is hidden via legend click
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (meta.hidden) return sum;
+
       return (
         sum +
-        dataset.data.reduce((dataSum, value) => {
+        dataset.data.reduce((dataSum, value, valueIndex) => {
+          // For doughnut/pie charts, use getDataVisibility to check if segment is visible
+          if (!chart.getDataVisibility(valueIndex)) {
+            return dataSum;
+          }
           return dataSum + (typeof value === 'number' ? value : 0);
         }, 0)
       );
