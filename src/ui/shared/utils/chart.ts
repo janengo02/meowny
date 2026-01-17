@@ -830,43 +830,6 @@ export const getGrossIncomeAtCheckpoint = (
   }, 0);
 };
 
-// Get transaction sum at a specific checkpoint for a bucket
-// Calculates net transaction amount (incoming - outgoing) for the checkpoint period
-export const getTransactionSumAtCheckpoint = (
-  transactions: Pick<
-    Transaction,
-    'transaction_date' | 'amount' | 'from_bucket_id' | 'to_bucket_id'
-  >[],
-  checkpoint: Date,
-  bucketId: number,
-  mode: 'month' | 'year',
-): number => {
-  // Define the period for this checkpoint
-  const checkpointStart = dayjs(checkpoint).startOf(mode);
-  const checkpointEnd = dayjs(checkpoint).endOf(mode);
-
-  // Calculate sum of transactions within this checkpoint period
-  return transactions.reduce((sum, transaction) => {
-    const transactionDate = dayjs(transaction.transaction_date);
-
-    if (
-      transactionDate.isSameOrAfter(checkpointStart) &&
-      transactionDate.isSameOrBefore(checkpointEnd)
-    ) {
-      // Add if the target bucket is to_bucket_id (incoming)
-      if (transaction.to_bucket_id === bucketId) {
-        return sum + transaction.amount;
-      }
-      // Subtract if the target bucket is from_bucket_id (outgoing)
-      if (transaction.from_bucket_id === bucketId) {
-        return sum - transaction.amount;
-      }
-    }
-
-    return sum;
-  }, 0);
-};
-
 // Get total expense amount at checkpoint from expense transactions
 export const getExpenseAtCheckpoint = (
   expenseTransactions: Pick<Transaction, 'transaction_date' | 'amount'>[],

@@ -8,6 +8,7 @@ import {
   getExpenseTransactionsWithDatesByPeriod,
   getExpenseTransactionsByPeriod,
   getTransactionsByBucket,
+  getExpenseTransactionsByCategoryAndPeriod,
 } from './transaction.js';
 import {
   getCheckpoints,
@@ -740,5 +741,54 @@ export async function getBucketValueHistoryChartData(
     contributedAmounts,
     gains,
     losses,
+  };
+}
+
+export async function getExpenseCategoryChartData(
+  params: GetExpenseCategoryChartDataParams,
+): Promise<ExpenseCategoryChartData> {
+  const { categoryId, startDate, endDate, mode } = params;
+
+  // Fetch expense transactions by category
+  const transactions = await getExpenseTransactionsByCategoryAndPeriod({
+    categoryId,
+    startDate,
+    endDate,
+  });
+
+  if (transactions.length === 0) {
+    return {
+      labels: [],
+      data: [],
+    };
+  }
+
+  // Generate time checkpoints based on mode
+  const periodFrom = dayjs(startDate);
+  const periodTo = dayjs(endDate);
+  const checkpoints = getCheckpoints(
+    periodFrom.toDate(),
+    periodTo.toDate(),
+    mode,
+  );
+
+  if (checkpoints.length === 0) {
+    return {
+      labels: [],
+      data: [],
+    };
+  }
+
+  // Format checkpoint labels
+  const labels = getCheckpointLabels(checkpoints, mode);
+
+  // Calculate transaction sums for each checkpoint
+  const data = checkpoints.map((checkpoint) =>
+    getExpenseAtCheckpoint(transactions, checkpoint, mode),
+  );
+
+  return {
+    labels,
+    data,
   };
 }

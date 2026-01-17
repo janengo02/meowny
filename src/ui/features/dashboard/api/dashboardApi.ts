@@ -96,6 +96,21 @@ export const dashboardApi = baseApi.injectEndpoints({
         }
       },
     }),
+    getExpenseCategoryChartData: builder.query<
+      ExpenseCategoryChartData,
+      GetExpenseCategoryChartDataParams
+    >({
+      queryFn: async (params) => {
+        try {
+          const chartData = await window.electron.getExpenseCategoryChartData(
+            params,
+          );
+          return { data: chartData };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
+    }),
   }),
 });
 
@@ -107,4 +122,5 @@ export const {
   useGetIncomeOverTimeChartDataQuery,
   useGetBucketTransactionHistoryChartDataQuery,
   useGetBucketValueHistoryChartDataQuery,
+  useGetExpenseCategoryChartDataQuery,
 } = dashboardApi;

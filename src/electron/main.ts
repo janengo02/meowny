@@ -370,4 +370,9 @@ app.on('ready', async () => {
       args as GetBucketValueHistoryChartDataParams,
     );
   });
+  ipcMainHandle('db:getExpenseCategoryChartData', async (args) => {
+    return db.getExpenseCategoryChartData(
+      args as GetExpenseCategoryChartDataParams,
+    );
+  });
 });

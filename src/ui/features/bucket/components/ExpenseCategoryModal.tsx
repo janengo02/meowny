@@ -21,17 +21,14 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { useGetExpenseTransactionsByCategoryAndPeriodQuery } from '../../transaction/api/transactionApi';
 import { useMemo } from 'react';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import {
   CHART_COLORS,
-  getCheckpointLabels,
-  getCheckpoints,
-  getExpenseAtCheckpoint,
   barChartOptions,
   barTotalLabelPlugin,
 } from '../../../shared/utils/chart';
+import { useGetExpenseCategoryChartDataQuery } from '../../dashboard/api/dashboardApi';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
 import { DatePickerField } from '../../../shared/components/form/DatePickerField';
@@ -86,41 +83,32 @@ export function ExpenseCategoryModal({
   const periodTo = useWatch({ control, name: 'periodTo' });
 
   const queryParams = useMemo(
-    () => ({
+    (): GetExpenseCategoryChartDataParams => ({
       categoryId,
       startDate: formatDateForDB(periodFrom),
       endDate: formatDateForDB(periodTo),
+      mode,
     }),
-    [categoryId, periodFrom, periodTo],
+    [categoryId, periodFrom, periodTo, mode],
   );
 
   const {
-    data: transactions,
+    data: chartDataResponse,
     isLoading,
     error,
-  } = useGetExpenseTransactionsByCategoryAndPeriodQuery(queryParams);
+  } = useGetExpenseCategoryChartDataQuery(queryParams);
 
   const chartData = useMemo(() => {
-    if (!transactions || transactions.length === 0) {
+    if (!chartDataResponse || chartDataResponse.data.length === 0) {
       return null;
     }
 
-    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
-    if (checkpoints.length === 0) return null;
-
-    // Format checkpoint labels
-    const labels = getCheckpointLabels(checkpoints, mode);
-
-    // Calculate transaction sums for each checkpoint
-    // Sum all expense transactions within each checkpoint period
-    const transactionSums = checkpoints.map((checkpoint) =>
-      getExpenseAtCheckpoint(transactions, checkpoint, mode),
-    );
+    const { labels, data } = chartDataResponse;
 
     const datasets = [
       {
         label: 'Spent Amount',
-        data: transactionSums,
+        data,
         backgroundColor: CHART_COLORS[0].replace('0.8', '0.7'),
         borderColor: CHART_COLORS[0],
         borderWidth: 1,
@@ -131,7 +119,7 @@ export function ExpenseCategoryModal({
       labels,
       datasets,
     };
-  }, [transactions, mode, periodFrom, periodTo]);
+  }, [chartDataResponse]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
