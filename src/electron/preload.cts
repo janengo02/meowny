@@ -160,6 +160,9 @@ electron.contextBridge.exposeInMainWorld('electron', {
   getBucketGoalsChartData: () => ipcInvoke('db:getBucketGoalsChartData'),
   getIncomeOverTimeChartData: (params: GetIncomeOverTimeChartDataParams) =>
     ipcInvoke('db:getIncomeOverTimeChartData', params),
+  getBucketTransactionHistoryChartData: (
+    params: GetBucketTransactionHistoryChartDataParams,
+  ) => ipcInvoke('db:getBucketTransactionHistoryChartData', params),
 
   // Event listeners
   onBatchCreateTransactionsProgress: (

@@ -360,4 +360,9 @@ app.on('ready', async () => {
       args as GetIncomeOverTimeChartDataParams,
     );
   });
+  ipcMainHandle('db:getBucketTransactionHistoryChartData', async (args) => {
+    return db.getBucketTransactionHistoryChartData(
+      args as GetBucketTransactionHistoryChartDataParams,
+    );
+  });
 });

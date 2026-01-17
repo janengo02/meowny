@@ -4,9 +4,11 @@ import { getAssetsValueHistory } from './bucketValueHistory.js';
 import {
   getExpenseTransactionsWithDatesByPeriod,
   getExpenseTransactionsByPeriod,
+  getTransactionsByBucket,
 } from './transaction.js';
 import {
   getCheckpoints,
+  getCheckpointLabels,
   getNetIncomeAtCheckpoint,
   getGrossIncomeAtCheckpoint,
   getGrossIncomeByCategory,
@@ -49,14 +51,7 @@ export async function getIncomeVsSavingsChartData(
   }
 
   // Format checkpoint labels
-  const labels = checkpoints.map((date) => {
-    const d = dayjs(date);
-    if (mode === 'month') {
-      return d.format('MMM YYYY');
-    } else {
-      return d.format('YYYY');
-    }
-  });
+  const labels = getCheckpointLabels(checkpoints, mode);
 
   // Calculate income by checkpoint
   const incomeData = checkpoints.map((checkpoint) =>
@@ -126,14 +121,7 @@ export async function getAssetsOverTimeChartData(
   }
 
   // Format checkpoint labels
-  const labels = checkpoints.map((date) => {
-    const d = dayjs(date);
-    if (mode === 'month') {
-      return d.format('MMM YYYY');
-    } else {
-      return d.format('YYYY');
-    }
-  });
+  const labels = getCheckpointLabels(checkpoints, mode);
 
   // Group buckets by the specified groupBy field
   const bucketGroup = new Map<
@@ -220,10 +208,7 @@ export async function getExpensePieChartData(
 
   if (groupBy === 'category') {
     // Group by category
-    const categoryMap = new Map<
-      string,
-      { total: number; id: number | null }
-    >();
+    const categoryMap = new Map<string, { total: number; id: number | null }>();
 
     filteredData.forEach((item) => {
       const categoryName = item.category_name || 'Uncategorized';
@@ -445,9 +430,7 @@ export async function getBucketGoalsChartData(): Promise<BucketGoalsChartData> {
     (acc: { data: number[]; metadata: number[] }, metric) => {
       if (metric.maxAmount > 0) {
         acc.data.push(Math.max(0, metric.currentPercent - 100));
-        acc.metadata.push(
-          Math.max(0, metric.currentStatus - metric.maxAmount),
-        );
+        acc.metadata.push(Math.max(0, metric.currentStatus - metric.maxAmount));
       } else {
         acc.data.push(0);
         acc.metadata.push(0);
@@ -536,14 +519,7 @@ export async function getIncomeOverTimeChartData(
   }
 
   // Format checkpoint labels
-  const labels = checkpoints.map((date) => {
-    const d = dayjs(date);
-    if (mode === 'month') {
-      return d.format('MMM YYYY');
-    } else {
-      return d.format('YYYY');
-    }
-  });
+  const labels = getCheckpointLabels(checkpoints, mode);
 
   // Create category name map
   const categoryNameMap = new Map<number | null, string>();
@@ -628,5 +604,65 @@ export async function getIncomeOverTimeChartData(
     netByCategory,
     grossTotal,
     netTotal,
+  };
+}
+
+export async function getBucketTransactionHistoryChartData(
+  params: GetBucketTransactionHistoryChartDataParams,
+): Promise<BucketTransactionHistoryChartData> {
+  const { bucketId, startDate, endDate, mode } = params;
+
+  // Fetch transactions for the bucket
+  const transactions = await getTransactionsByBucket(
+    bucketId,
+    startDate,
+    endDate,
+  );
+
+  if (transactions.length === 0) {
+    return {
+      labels: [],
+      data: [],
+    };
+  }
+
+  // Generate time checkpoints based on mode
+  const periodFrom = dayjs(startDate);
+  const periodTo = dayjs(endDate);
+  const checkpoints = getCheckpoints(
+    periodFrom.toDate(),
+    periodTo.toDate(),
+    mode,
+  );
+
+  if (checkpoints.length === 0) {
+    return {
+      labels: [],
+      data: [],
+    };
+  }
+
+  // Format checkpoint labels
+  const labels = getCheckpointLabels(checkpoints, mode);
+
+  // Calculate transaction sums for each checkpoint
+  const data = checkpoints.map((checkpoint) => {
+    const checkpointDayjs = dayjs(checkpoint);
+
+    return transactions.reduce((total, transaction) => {
+      const transactionDate = dayjs(transaction.transaction_date);
+
+      // Check if the transaction_date falls within the same period as checkpoint
+      if (transactionDate.isSame(checkpointDayjs, mode)) {
+        return total + transaction.amount;
+      }
+
+      return total;
+    }, 0);
+  });
+
+  return {
+    labels,
+    data,
   };
 }

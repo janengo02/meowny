@@ -11,19 +11,16 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { useGetTransactionsByBucketQuery } from '../../transaction/api/transactionApi';
 import { useMemo } from 'react';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import {
   CHART_COLORS,
-  getCheckpointLabels,
-  getCheckpoints,
-  getTransactionSumAtCheckpoint,
   barChartOptions,
   barTotalLabelPlugin,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
+import { useGetBucketTransactionHistoryChartDataQuery } from '../../dashboard/api/dashboardApi';
 
 // Register Chart.js components
 ChartJS.register(
@@ -51,40 +48,32 @@ export function BucketTransactionHistoryChart({
   periodTo,
 }: BucketTransactionHistoryChartProps) {
   const queryParams = useMemo(
-    () => ({
+    (): GetBucketTransactionHistoryChartDataParams => ({
       bucketId,
       startDate: formatDateForDB(periodFrom),
       endDate: formatDateForDB(periodTo),
+      mode,
     }),
-    [bucketId, periodFrom, periodTo],
+    [bucketId, periodFrom, periodTo, mode],
   );
 
   const {
-    data: transactions,
+    data: chartDataResponse,
     isLoading,
     error,
-  } = useGetTransactionsByBucketQuery(queryParams);
+  } = useGetBucketTransactionHistoryChartDataQuery(queryParams);
 
   const chartData = useMemo(() => {
-    if (!transactions || transactions.length === 0) {
+    if (!chartDataResponse || chartDataResponse.data.length === 0) {
       return null;
     }
 
-    const checkpoints = getCheckpoints(periodFrom, periodTo, mode);
-    if (checkpoints.length === 0) return null;
-
-    // Format checkpoint labels
-    const labels = getCheckpointLabels(checkpoints, mode);
-
-    // Calculate transaction sums for each checkpoint
-    const transactionSums = checkpoints.map((checkpoint) =>
-      getTransactionSumAtCheckpoint(transactions, checkpoint, bucketId, mode),
-    );
+    const { labels, data } = chartDataResponse;
 
     const datasets = [
       {
         label: bucketType === 'expense' ? 'Spent Amount' : 'Contributed Amount',
-        data: transactionSums,
+        data,
         backgroundColor: CHART_COLORS[0].replace('0.8', '0.7'),
         borderColor: CHART_COLORS[0],
         borderWidth: 1,
@@ -95,7 +84,7 @@ export function BucketTransactionHistoryChart({
       labels,
       datasets,
     };
-  }, [transactions, mode, periodFrom, periodTo, bucketId, bucketType]);
+  }, [chartDataResponse, bucketType]);
 
   if (isLoading) {
     return (

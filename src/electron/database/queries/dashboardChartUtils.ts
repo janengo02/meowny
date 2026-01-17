@@ -26,6 +26,21 @@ export const getCheckpoints = (
   return checkpoints;
 };
 
+// Format checkpoint labels based on mode
+export const getCheckpointLabels = (
+  checkpoints: Date[],
+  mode: 'month' | 'year',
+): string[] => {
+  return checkpoints.map((date) => {
+    const d = dayjs(date);
+    if (mode === 'month') {
+      return d.format('MMM YYYY');
+    } else {
+      return d.format('YYYY');
+    }
+  });
+};
+
 // Get total net income at checkpoint from income histories
 export const getNetIncomeAtCheckpoint = (
   incomeHistories: Pick<IncomeHistoryWithTaxes, 'received_date' | 'net_amount'>[],
