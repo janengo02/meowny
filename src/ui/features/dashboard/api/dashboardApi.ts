@@ -8,15 +8,13 @@ export const dashboardApi = baseApi.injectEndpoints({
     >({
       queryFn: async (params) => {
         try {
-          const chartData = await window.electron.getIncomeVsSavingsChartData(
-            params,
-          );
+          const chartData =
+            await window.electron.getIncomeVsSavingsChartData(params);
           return { data: chartData };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: ['Income', 'Transaction', 'Bucket'],
     }),
     getAssetsOverTimeChartData: builder.query<
       AssetsOverTimeChartData,
@@ -24,15 +22,13 @@ export const dashboardApi = baseApi.injectEndpoints({
     >({
       queryFn: async (params) => {
         try {
-          const chartData = await window.electron.getAssetsOverTimeChartData(
-            params,
-          );
+          const chartData =
+            await window.electron.getAssetsOverTimeChartData(params);
           return { data: chartData };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: ['Bucket'],
     }),
     getExpensePieChartData: builder.query<
       ExpensePieChartData,
@@ -40,15 +36,23 @@ export const dashboardApi = baseApi.injectEndpoints({
     >({
       queryFn: async (params) => {
         try {
-          const chartData = await window.electron.getExpensePieChartData(
-            params,
-          );
+          const chartData =
+            await window.electron.getExpensePieChartData(params);
           return { data: chartData };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: ['Transaction'],
+    }),
+    getBucketGoalsChartData: builder.query<BucketGoalsChartData, void>({
+      queryFn: async () => {
+        try {
+          const chartData = await window.electron.getBucketGoalsChartData();
+          return { data: chartData };
+        } catch (error) {
+          return { error: { message: (error as Error).message } };
+        }
+      },
     }),
   }),
 });
@@ -57,4 +61,5 @@ export const {
   useGetIncomeVsSavingsChartDataQuery,
   useGetAssetsOverTimeChartDataQuery,
   useGetExpensePieChartDataQuery,
+  useGetBucketGoalsChartDataQuery,
 } = dashboardApi;

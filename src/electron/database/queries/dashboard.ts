@@ -12,6 +12,7 @@ import {
   getAssetContributionAtCheckpoint,
   getHistoryAtCheckpoint,
 } from './dashboardChartUtils.js';
+import { getAllBucketGoalsWithStatus } from './bucketGoal.js';
 
 export async function getIncomeVsSavingsChartData(
   params: GetIncomeVsSavingsChartDataParams,
@@ -277,5 +278,215 @@ export async function getExpensePieChartData(
     labels,
     values,
     ids,
+  };
+}
+
+export async function getBucketGoalsChartData(): Promise<BucketGoalsChartData> {
+  // Fetch all bucket goals with status
+  const goalsData = await getAllBucketGoalsWithStatus();
+
+  if (goalsData.length === 0) {
+    return {
+      labels: [],
+      bucketTypes: [],
+      datasets: [],
+    };
+  }
+
+  const labels = goalsData.map((goal) => goal.bucket_name);
+  const bucketTypes = goalsData.map((goal) => goal.bucket_type);
+
+  // Pre-calculate common values for each goal
+  const goalMetrics = goalsData.map((goal) => {
+    const base100 = goal.max_amount ?? goal.min_amount ?? 0;
+    const minAmount = goal.min_amount ?? 0;
+    const maxAmount = goal.max_amount ?? 0;
+    const currentStatus = goal.current_status;
+    const currentPercent = base100 > 0 ? (currentStatus / base100) * 100 : 0;
+    const minPercent =
+      base100 > 0 && minAmount > 0 ? (minAmount / base100) * 100 : 0;
+
+    return {
+      base100,
+      minAmount,
+      maxAmount,
+      currentStatus,
+      currentPercent,
+      minPercent,
+    };
+  });
+
+  // Layer 1: Yellow when current < min (shows current_status)
+  const yellowCurrent = goalMetrics.reduce(
+    (acc: { data: number[]; metadata: number[] }, metric) => {
+      if (metric.currentPercent < metric.minPercent) {
+        acc.data.push(metric.currentPercent);
+        acc.metadata.push(metric.currentStatus);
+      } else {
+        acc.data.push(0);
+        acc.metadata.push(0);
+      }
+      return acc;
+    },
+    { data: [] as number[], metadata: [] as number[] },
+  );
+
+  // Layer 2: Transparent outline when current < min (shows min - current)
+  const transparentMinRemaining = goalMetrics.reduce(
+    (
+      acc: {
+        data: number[];
+        metadata: { amount: number; target?: number }[];
+      },
+      metric,
+    ) => {
+      if (
+        metric.base100 > 0 &&
+        metric.minAmount > 0 &&
+        metric.currentPercent < metric.minPercent
+      ) {
+        acc.data.push(metric.minPercent - metric.currentPercent);
+        acc.metadata.push({
+          amount: metric.minAmount - metric.currentStatus,
+          target: metric.minAmount,
+        });
+      } else {
+        acc.data.push(0);
+        acc.metadata.push({ amount: 0 });
+      }
+      return acc;
+    },
+    { data: [], metadata: [] },
+  );
+
+  // Layer 3: Green when current >= min (shows min amount)
+  const greenMin = goalMetrics.reduce(
+    (acc: { data: number[]; metadata: number[] }, metric) => {
+      if (!metric.minAmount && metric.maxAmount) {
+        acc.data.push(0);
+        acc.metadata.push(0);
+      } else if (metric.currentPercent >= metric.minPercent) {
+        acc.data.push(metric.minPercent);
+        acc.metadata.push(metric.minAmount);
+      } else {
+        acc.data.push(0);
+        acc.metadata.push(0);
+      }
+      return acc;
+    },
+    { data: [], metadata: [] },
+  );
+
+  // Layer 4: Green when min <= current <= max (shows current - min)
+  const greenCurrent = goalMetrics.reduce(
+    (acc: { data: number[]; metadata: number[] }, metric) => {
+      if (!metric.minAmount && metric.maxAmount) {
+        acc.data.push(Math.min(metric.currentPercent, 100));
+        acc.metadata.push(Math.min(metric.currentStatus, metric.maxAmount));
+      } else if (metric.currentPercent < metric.minPercent) {
+        acc.data.push(0);
+        acc.metadata.push(0);
+      } else if (metric.maxAmount) {
+        acc.data.push(
+          Math.min(
+            metric.currentPercent - metric.minPercent,
+            100 - metric.minPercent,
+          ),
+        );
+        acc.metadata.push(
+          Math.min(metric.currentStatus, metric.maxAmount) - metric.minAmount,
+        );
+      } else {
+        acc.data.push(metric.currentPercent - metric.minPercent);
+        acc.metadata.push(metric.currentStatus - metric.minAmount);
+      }
+      return acc;
+    },
+    { data: [], metadata: [] },
+  );
+
+  // Layer 5: Transparent outline when max exists
+  const transparentMaxRemaining = goalMetrics.reduce(
+    (
+      acc: {
+        data: number[];
+        metadata: { amount: number; target?: number }[];
+      },
+      metric,
+    ) => {
+      if (!metric.maxAmount) {
+        acc.data.push(0);
+        acc.metadata.push({ amount: 0 });
+      } else if (metric.currentPercent < metric.minPercent) {
+        acc.data.push(100 - metric.minPercent);
+        acc.metadata.push({
+          amount: metric.maxAmount - metric.minAmount,
+          target: metric.maxAmount,
+        });
+      } else {
+        acc.data.push(100 - Math.min(metric.currentPercent, 100));
+        acc.metadata.push({
+          amount:
+            metric.maxAmount - Math.min(metric.currentStatus, metric.maxAmount),
+          target: metric.maxAmount,
+        });
+      }
+      return acc;
+    },
+    { data: [], metadata: [] },
+  );
+
+  // Layer 6: Red when current > max (shows current - max)
+  const redExceedMax = goalMetrics.reduce(
+    (acc: { data: number[]; metadata: number[] }, metric) => {
+      if (metric.maxAmount > 0) {
+        acc.data.push(Math.max(0, metric.currentPercent - 100));
+        acc.metadata.push(
+          Math.max(0, metric.currentStatus - metric.maxAmount),
+        );
+      } else {
+        acc.data.push(0);
+        acc.metadata.push(0);
+      }
+      return acc;
+    },
+    { data: [], metadata: [] },
+  );
+
+  return {
+    labels,
+    bucketTypes,
+    datasets: [
+      {
+        label: 'Below Min',
+        data: yellowCurrent.data,
+        metadata: yellowCurrent.metadata,
+      },
+      {
+        label: 'To Min Goal',
+        data: transparentMinRemaining.data,
+        metadata: transparentMinRemaining.metadata,
+      },
+      {
+        label: 'Min Goal Met',
+        data: greenMin.data,
+        metadata: greenMin.metadata,
+      },
+      {
+        label: 'On Track',
+        data: greenCurrent.data,
+        metadata: greenCurrent.metadata,
+      },
+      {
+        label: 'To Max Goal',
+        data: transparentMaxRemaining.data,
+        metadata: transparentMaxRemaining.metadata,
+      },
+      {
+        label: 'Over Max',
+        data: redExceedMax.data,
+        metadata: redExceedMax.metadata,
+      },
+    ],
   };
 }

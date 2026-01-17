@@ -352,4 +352,7 @@ app.on('ready', async () => {
   ipcMainHandle('db:getExpensePieChartData', async (args) => {
     return db.getExpensePieChartData(args as GetExpensePieChartDataParams);
   });
+  ipcMainHandle('db:getBucketGoalsChartData', async () => {
+    return db.getBucketGoalsChartData();
+  });
 });

@@ -547,6 +547,16 @@ type ExpensePieChartData = {
   ids: (number | null)[];
 };
 
+type BucketGoalsChartData = {
+  labels: string[];
+  bucketTypes: BucketTypeEnum[];
+  datasets: {
+    label: string;
+    data: number[];
+    metadata: number[] | { amount: number; target?: number }[];
+  }[];
+};
+
 // Income Source
 type CreateIncomeSourceParams = {
   name: string;
@@ -837,6 +847,7 @@ type EventPayloadMapping = {
   'db:getIncomeVsSavingsChartData': IncomeVsSavingsChartData;
   'db:getAssetsOverTimeChartData': AssetsOverTimeChartData;
   'db:getExpensePieChartData': ExpensePieChartData;
+  'db:getBucketGoalsChartData': BucketGoalsChartData;
 };
 
 type UnSubscribeFunction = () => void;
@@ -1024,6 +1035,7 @@ interface Window {
     getExpensePieChartData: (
       params: GetExpensePieChartDataParams,
     ) => Promise<ExpensePieChartData>;
+    getBucketGoalsChartData: () => Promise<BucketGoalsChartData>;
 
     // Event listeners
     onBatchCreateTransactionsProgress: (
