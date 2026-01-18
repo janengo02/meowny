@@ -47,7 +47,7 @@ export const incomeChartFilterSchema = z
 
 export type IncomeChartFilterFormData = z.infer<typeof incomeChartFilterSchema>;
 
-export type TabValue = 'gross' | 'net' | 'comparison';
+export type TabValue = 'gross' | 'net' | 'tax';
 
 // Form schema
 export const incomeVsSavingsChartFilterSchema = z

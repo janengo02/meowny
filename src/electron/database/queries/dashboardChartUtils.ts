@@ -131,6 +131,34 @@ export const getNetIncomeByCategory = (
   return categoryMap;
 };
 
+// Get tax amount by tax category at checkpoint
+export const getTaxByCategory = (
+  incomeHistories: Pick<
+    IncomeHistoryWithTaxes,
+    'received_date' | 'income_taxes'
+  >[],
+  checkpoint: Date,
+  mode: 'month' | 'year',
+): Map<number | null, number> => {
+  const checkpointDayjs = dayjs(checkpoint);
+  const categoryMap = new Map<number | null, number>();
+
+  incomeHistories.forEach((history) => {
+    const receivedDate = dayjs(history.received_date);
+
+    if (receivedDate.isSame(checkpointDayjs, mode)) {
+      // Sum up all taxes for this income history entry
+      history.income_taxes.forEach((tax) => {
+        const categoryId = tax.tax_category_id;
+        const currentAmount = categoryMap.get(categoryId) || 0;
+        categoryMap.set(categoryId, currentAmount + tax.tax_amount);
+      });
+    }
+  });
+
+  return categoryMap;
+};
+
 // Get total expense amount at checkpoint from expense transactions
 export const getExpenseAtCheckpoint = (
   expenseTransactions: Pick<Transaction, 'transaction_date' | 'amount'>[],

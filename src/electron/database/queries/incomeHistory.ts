@@ -71,7 +71,7 @@ export async function getIncomeHistoriesByPeriod(
     .select(
       `
       *,
-      income_taxes:income_tax(id, tax_amount)
+      income_taxes:income_tax(id, tax_amount, tax_category_id)
     `,
     )
     .eq('user_id', userId);
@@ -94,8 +94,14 @@ export async function getIncomeHistoriesByPeriod(
   return data.map((item) => {
     const totalTax = Array.isArray(item.income_taxes)
       ? item.income_taxes.reduce(
-          (sum: number, tax: { id: number; tax_amount: number } | null) =>
-            sum + (tax?.tax_amount || 0),
+          (
+            sum: number,
+            tax: {
+              id: number;
+              tax_amount: number;
+              tax_category_id: number | null;
+            } | null,
+          ) => sum + (tax?.tax_amount || 0),
           0,
         )
       : 0;

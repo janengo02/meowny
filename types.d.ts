@@ -232,7 +232,7 @@ type IncomeTax = {
 };
 
 type IncomeHistoryWithTaxes = IncomeHistory & {
-  income_taxes: Pick<IncomeTax, 'id' | 'tax_amount'>[];
+  income_taxes: Pick<IncomeTax, 'id' | 'tax_amount' | 'tax_category_id'>[];
   net_amount: number;
 };
 
@@ -573,6 +573,11 @@ type IncomeOverTimeChartData = {
     label: string;
     data: number[];
   }[];
+  taxByCategory: {
+    label: string;
+    data: number[];
+  }[];
+  taxTotalPercentage: number[];
   grossTotal: number[];
   netTotal: number[];
 };

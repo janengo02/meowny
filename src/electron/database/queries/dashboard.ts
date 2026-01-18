@@ -17,12 +17,14 @@ import {
   getGrossIncomeAtCheckpoint,
   getGrossIncomeByCategory,
   getNetIncomeByCategory,
+  getTaxByCategory,
   getExpenseAtCheckpoint,
   getAssetContributionAtCheckpoint,
   getHistoryAtCheckpoint,
 } from './dashboardChartUtils.js';
 import { getAllBucketGoalsWithStatus } from './bucketGoal.js';
 import { getIncomeCategories } from './incomeCategory.js';
+import { getTaxCategories } from './taxCategory.js';
 
 export async function getIncomeVsSavingsChartData(
   params: GetIncomeVsSavingsChartDataParams,
@@ -488,16 +490,19 @@ export async function getIncomeOverTimeChartData(
   const { startDate, endDate, mode } = params;
 
   // Fetch data from database in parallel
-  const [incomeHistories, incomeCategories] = await Promise.all([
+  const [incomeHistories, incomeCategories, taxCategories] = await Promise.all([
     getIncomeHistoriesByPeriod({ startDate, endDate }),
     getIncomeCategories(),
+    getTaxCategories(),
   ]);
 
-  if (incomeHistories.length === 0 || incomeCategories.length === 0) {
+  if (incomeHistories.length === 0) {
     return {
       labels: [],
       grossByCategory: [],
       netByCategory: [],
+      taxByCategory: [],
+      taxTotalPercentage: [],
       grossTotal: [],
       netTotal: [],
     };
@@ -517,6 +522,8 @@ export async function getIncomeOverTimeChartData(
       labels: [],
       grossByCategory: [],
       netByCategory: [],
+      taxByCategory: [],
+      taxTotalPercentage: [],
       grossTotal: [],
       netTotal: [],
     };
@@ -525,12 +532,19 @@ export async function getIncomeOverTimeChartData(
   // Format checkpoint labels
   const labels = getCheckpointLabels(checkpoints, mode);
 
-  // Create category name map
+  // Create category name map for income categories
   const categoryNameMap = new Map<number | null, string>();
   incomeCategories.forEach((cat) => {
     categoryNameMap.set(cat.id, cat.name);
   });
   categoryNameMap.set(null, 'Uncategorized');
+
+  // Create category name map for tax categories
+  const taxCategoryNameMap = new Map<number | null, string>();
+  taxCategories.forEach((cat) => {
+    taxCategoryNameMap.set(cat.id, cat.name);
+  });
+  taxCategoryNameMap.set(null, 'Uncategorized');
 
   // Get unique categories from income histories
   const uniqueCategoryIds = Array.from(
@@ -593,6 +607,39 @@ export async function getIncomeOverTimeChartData(
     }
   });
 
+  // Build tax by category datasets
+  // First, get all unique tax category IDs from all income taxes
+  const uniqueTaxCategoryIds = Array.from(
+    new Set(
+      incomeHistories.flatMap((h) =>
+        h.income_taxes.map((t) => t.tax_category_id),
+      ),
+    ),
+  );
+
+  const taxByCategory: {
+    label: string;
+    data: number[];
+  }[] = [];
+
+  uniqueTaxCategoryIds.forEach((taxCategoryId) => {
+    const categoryName = taxCategoryNameMap.get(taxCategoryId) || 'Unknown';
+
+    const data = checkpoints.map((checkpoint) => {
+      const categoryMap = getTaxByCategory(incomeHistories, checkpoint, mode);
+      return categoryMap.get(taxCategoryId) || 0;
+    });
+
+    // Only add dataset if it has non-zero values
+    const hasNonZeroValues = data.some((value) => value > 0);
+    if (hasNonZeroValues) {
+      taxByCategory.push({
+        label: categoryName,
+        data,
+      });
+    }
+  });
+
   // Calculate total gross and net (for comparison view)
   const grossTotal = checkpoints.map((checkpoint) =>
     getGrossIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
@@ -602,10 +649,27 @@ export async function getIncomeOverTimeChartData(
     getNetIncomeAtCheckpoint(incomeHistories, checkpoint, mode),
   );
 
+  // Calculate tax total percentage (tax amount / gross income * 100)
+  const taxTotalPercentage = checkpoints.map((checkpoint, index) => {
+    const gross = grossTotal[index];
+    if (gross === 0) return 0;
+
+    // Sum all tax amounts for this checkpoint
+    const categoryMap = getTaxByCategory(incomeHistories, checkpoint, mode);
+    const totalTax = Array.from(categoryMap.values()).reduce(
+      (sum, amount) => sum + amount,
+      0,
+    );
+
+    return (totalTax / gross) * 100;
+  });
+
   return {
     labels,
     grossByCategory,
     netByCategory,
+    taxByCategory,
+    taxTotalPercentage,
     grossTotal,
     netTotal,
   };
