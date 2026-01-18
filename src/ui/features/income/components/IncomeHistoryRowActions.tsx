@@ -1,8 +1,14 @@
 import { memo } from 'react';
 import dayjs from 'dayjs';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
-import { useCreateIncomeHistoryMutation, useDeleteIncomeHistoryMutation } from '../api/incomeHistoryApi';
-import { useCreateIncomeTaxMutation, useGetIncomeTaxesByIncomeHistoryQuery } from '../api/incomeTaxApi';
+import {
+  useCreateIncomeHistoryMutation,
+  useDeleteIncomeHistoryMutation,
+} from '../api/incomeHistoryApi';
+import {
+  useCreateIncomeTaxMutation,
+  useGetIncomeTaxesByIncomeHistoryQuery,
+} from '../api/incomeTaxApi';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -26,7 +32,6 @@ function IncomeHistoryRowActionsComponent({
   const [createIncomeTax] = useCreateIncomeTaxMutation();
   const [deleteIncomeHistory] = useDeleteIncomeHistoryMutation();
 
-
   const handleDeleteHistory = async (historyId: number) => {
     try {
       await deleteIncomeHistory(historyId).unwrap();
@@ -46,7 +51,8 @@ function IncomeHistoryRowActionsComponent({
       }).unwrap();
 
       // Duplicate all taxes associated with the original income history
-      for (const tax of incomeTaxes) {
+      const sortedIncomeTaxes = [...incomeTaxes].sort((a, b) => a.id - b.id);
+      for (const tax of sortedIncomeTaxes) {
         await createIncomeTax({
           income_history_id: newHistory.id,
           tax_category_id: tax.tax_category_id,
