@@ -2,16 +2,25 @@ import { baseApi } from '../../../store/baseApi';
 
 export const incomeTaxApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getIncomeTaxes: builder.query<IncomeTax[], void>({
-      queryFn: async () => {
+    getIncomeTaxesByIncomeHistory: builder.query<IncomeTax[], number>({
+      queryFn: async (incomeHistoryId) => {
         try {
-          const incomeTaxes = await window.electron.getIncomeTaxes();
+          const incomeTaxes =
+            await window.electron.getIncomeTaxesByIncomeHistory(
+              incomeHistoryId,
+            );
           return { data: incomeTaxes };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: ['Income'],
+      providesTags: (result, _error, incomeHistoryId) => [
+        { type: 'IncomeTax', id: `LIST-${incomeHistoryId}` },
+        ...(result?.map((tax) => ({
+          type: 'IncomeTax' as const,
+          id: tax.id,
+        })) || []),
+      ],
     }),
     getIncomeTax: builder.query<IncomeTax, number>({
       queryFn: async (id) => {
@@ -22,19 +31,9 @@ export const incomeTaxApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: (_result, _error, id) => [{ type: 'Income', id }],
+      providesTags: (_result, _error, id) => [{ type: 'IncomeTax', id }],
     }),
-    getIncomeTaxesByIncomeHistory: builder.query<IncomeTax[], number>({
-      queryFn: async (incomeHistoryId) => {
-        try {
-          const incomeTaxes = await window.electron.getIncomeTaxesByIncomeHistory(incomeHistoryId);
-          return { data: incomeTaxes };
-        } catch (error) {
-          return { error: { message: (error as Error).message } };
-        }
-      },
-      providesTags: ['Income'],
-    }),
+
     createIncomeTax: builder.mutation<IncomeTax, CreateIncomeTaxParams>({
       queryFn: async (params) => {
         try {
@@ -44,7 +43,9 @@ export const incomeTaxApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Income'],
+      invalidatesTags: (_result, _error, params) => [
+        { type: 'IncomeTax', id: `LIST-${params.income_history_id}` },
+      ],
     }),
     updateIncomeTax: builder.mutation<
       IncomeTax,
@@ -58,9 +59,11 @@ export const incomeTaxApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: (_result, _error, { id }) => [
-        'Income',
-        { type: 'Income', id },
+      invalidatesTags: (result, _error, { id }) => [
+        { type: 'IncomeTax', id },
+        ...(result?.income_history_id
+          ? [{ type: 'IncomeTax' as const, id: `LIST-${result.income_history_id}` }]
+          : []),
       ],
     }),
     deleteIncomeTax: builder.mutation<void, number>({
@@ -72,14 +75,35 @@ export const incomeTaxApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Income'],
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'IncomeTax', id },
+      ],
+      onQueryStarted: async (id, { dispatch, queryFulfilled, getState }) => {
+        try {
+          // Get the income tax before deletion to know which income history to invalidate
+          const state = getState();
+          const incomeTax =
+            incomeTaxApi.endpoints.getIncomeTax.select(id)(state);
+
+          await queryFulfilled;
+
+          // Invalidate the specific income history's tax list
+          if (incomeTax.data?.income_history_id) {
+            dispatch(
+              baseApi.util.invalidateTags([
+                { type: 'IncomeTax', id: `LIST-${incomeTax.data.income_history_id}` },
+              ]),
+            );
+          }
+        } catch {
+          // Query failed, no need to invalidate
+        }
+      },
     }),
   }),
 });
 
 export const {
-  useGetIncomeTaxesQuery,
-  useGetIncomeTaxQuery,
   useGetIncomeTaxesByIncomeHistoryQuery,
   useCreateIncomeTaxMutation,
   useUpdateIncomeTaxMutation,

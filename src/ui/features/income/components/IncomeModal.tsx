@@ -122,10 +122,6 @@ export function IncomeModal({
         <DialogContent sx={{ pt: 2 }}>
           {/* Income History Section */}
           <Box display="flex" flexDirection="column" gap={2} sx={{ mb: 3 }}>
-            <IncomeVisibilityToggle
-              incomeSourceId={incomeSource.id}
-              isActive={incomeSource.is_active}
-            />
             <IncomeHistoryTable incomeSourceId={incomeSourceId} />
           </Box>
 
@@ -164,6 +160,10 @@ export function IncomeModal({
               Delete Income Source
             </Button>
             <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              <IncomeVisibilityToggle
+                incomeSourceId={incomeSource.id}
+                isActive={incomeSource.is_active}
+              />
               <Box>
                 <Typography variant="caption" color="text.secondary">
                   Created

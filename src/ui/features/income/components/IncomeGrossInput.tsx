@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { TextField } from '@mui/material';
 import { NumericFormat } from 'react-number-format';
 import { useUpdateIncomeHistoryMutation } from '../api/incomeHistoryApi';
@@ -8,7 +8,7 @@ interface IncomeGrossInputProps {
   historyId: number;
 }
 
-export function IncomeGrossInput({ value, historyId }: IncomeGrossInputProps) {
+function IncomeGrossInputComponent({ value, historyId }: IncomeGrossInputProps) {
   const [updateIncomeHistory] = useUpdateIncomeHistoryMutation();
   const [displayValue, setDisplayValue] = useState<number>(value);
 
@@ -68,3 +68,5 @@ export function IncomeGrossInput({ value, historyId }: IncomeGrossInputProps) {
     />
   );
 }
+
+export const IncomeGrossInput = memo(IncomeGrossInputComponent);

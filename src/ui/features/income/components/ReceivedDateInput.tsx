@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -11,7 +11,7 @@ interface ReceivedDateInputProps {
   historyId: number;
 }
 
-export function ReceivedDateInput({
+function ReceivedDateInputComponent({
   value,
   historyId,
 }: ReceivedDateInputProps) {
@@ -74,3 +74,5 @@ export function ReceivedDateInput({
     </LocalizationProvider>
   );
 }
+
+export const ReceivedDateInput = memo(ReceivedDateInputComponent);

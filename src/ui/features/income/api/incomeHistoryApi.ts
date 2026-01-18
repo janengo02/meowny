@@ -2,33 +2,29 @@ import { baseApi } from '../../../store/baseApi';
 
 export const incomeHistoryApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
-    getIncomeHistories: builder.query<IncomeHistory[], void>({
-      queryFn: async () => {
+    getIncomeHistoryIdsBySource: builder.query<number[], number>({
+      queryFn: async (incomeId) => {
         try {
-          const incomeHistories = await window.electron.getIncomeHistories();
-          return { data: incomeHistories };
-        } catch (error) {
-          return { error: { message: (error as Error).message } };
-        }
-      },
-      providesTags: ['Income'],
-    }),
-    getIncomeHistoriesByPeriod: builder.query<
-      IncomeHistoryWithTaxes[],
-      { startDate?: string; endDate?: string }
-    >({
-      queryFn: async ({ startDate, endDate }) => {
-        try {
-          const incomeHistories = await window.electron.getIncomeHistoriesByPeriod({
-            startDate,
-            endDate,
+          const incomeHistories =
+            await window.electron.getIncomeHistoriesBySource(incomeId);
+
+          // Sort by received_date desc, then by id desc
+          const sorted = [...incomeHistories].sort((a, b) => {
+            const dateComparison =
+              new Date(b.received_date).getTime() -
+              new Date(a.received_date).getTime();
+            if (dateComparison !== 0) {
+              return dateComparison;
+            }
+            return b.id - a.id;
           });
-          return { data: incomeHistories };
+
+          return { data: sorted.map((history) => history.id) };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: ['Income'],
+      providesTags: ['IncomeHistory'],
     }),
     getIncomeHistory: builder.query<IncomeHistory, number>({
       queryFn: async (id) => {
@@ -39,29 +35,23 @@ export const incomeHistoryApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: (_result, _error, id) => [{ type: 'Income', id }],
+      providesTags: (_result, _error, id) => [{ type: 'IncomeHistory', id }],
     }),
-    getIncomeHistoriesBySource: builder.query<IncomeHistory[], number>({
-      queryFn: async (incomeId) => {
-        try {
-          const incomeHistories = await window.electron.getIncomeHistoriesBySource(incomeId);
-          return { data: incomeHistories };
-        } catch (error) {
-          return { error: { message: (error as Error).message } };
-        }
-      },
-      providesTags: ['Income'],
-    }),
-    createIncomeHistory: builder.mutation<IncomeHistory, CreateIncomeHistoryParams>({
+
+    createIncomeHistory: builder.mutation<
+      IncomeHistory,
+      CreateIncomeHistoryParams
+    >({
       queryFn: async (params) => {
         try {
-          const incomeHistory = await window.electron.createIncomeHistory(params);
+          const incomeHistory =
+            await window.electron.createIncomeHistory(params);
           return { data: incomeHistory };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Income'],
+      invalidatesTags: ['IncomeHistory'],
     }),
     updateIncomeHistory: builder.mutation<
       IncomeHistory,
@@ -69,22 +59,28 @@ export const incomeHistoryApi = baseApi.injectEndpoints({
     >({
       queryFn: async ({ id, params }) => {
         try {
-          const incomeHistory = await window.electron.updateIncomeHistory(id, params);
+          const incomeHistory = await window.electron.updateIncomeHistory(
+            id,
+            params,
+          );
           return { data: incomeHistory };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
       invalidatesTags: (_result, _error, { id }) => [
-        'Income',
-        { type: 'Income', id },
+        { type: 'IncomeHistory', id },
       ],
       onQueryStarted: async ({ id, params }, { dispatch, queryFulfilled }) => {
         // Optimistic update for getIncomeHistory
         const patchResult = dispatch(
-          incomeHistoryApi.util.updateQueryData('getIncomeHistory', id, (draft) => {
-            Object.assign(draft, params);
-          }),
+          incomeHistoryApi.util.updateQueryData(
+            'getIncomeHistory',
+            id,
+            (draft) => {
+              Object.assign(draft, params);
+            },
+          ),
         );
 
         try {
@@ -103,16 +99,14 @@ export const incomeHistoryApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Income'],
+      invalidatesTags: ['IncomeHistory'],
     }),
   }),
 });
 
 export const {
-  useGetIncomeHistoriesQuery,
-  useGetIncomeHistoriesByPeriodQuery,
   useGetIncomeHistoryQuery,
-  useGetIncomeHistoriesBySourceQuery,
+  useGetIncomeHistoryIdsBySourceQuery,
   useCreateIncomeHistoryMutation,
   useUpdateIncomeHistoryMutation,
   useDeleteIncomeHistoryMutation,

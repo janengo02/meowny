@@ -11,7 +11,7 @@ export const incomeCategoryApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: ['Income'],
+      providesTags: ['IncomeCategory'],
     }),
     getIncomeCategory: builder.query<IncomeCategory, number>({
       queryFn: async (id) => {
@@ -22,18 +22,22 @@ export const incomeCategoryApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      providesTags: (_result, _error, id) => [{ type: 'Income', id }],
+      providesTags: (_result, _error, id) => [{ type: 'IncomeCategory', id }],
     }),
-    createIncomeCategory: builder.mutation<IncomeCategory, CreateIncomeCategoryParams>({
+    createIncomeCategory: builder.mutation<
+      IncomeCategory,
+      CreateIncomeCategoryParams
+    >({
       queryFn: async (params) => {
         try {
-          const incomeCategory = await window.electron.createIncomeCategory(params);
+          const incomeCategory =
+            await window.electron.createIncomeCategory(params);
           return { data: incomeCategory };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Income'],
+      invalidatesTags: ['IncomeCategory'],
     }),
     updateIncomeCategory: builder.mutation<
       IncomeCategory,
@@ -41,15 +45,18 @@ export const incomeCategoryApi = baseApi.injectEndpoints({
     >({
       queryFn: async ({ id, params }) => {
         try {
-          const incomeCategory = await window.electron.updateIncomeCategory(id, params);
+          const incomeCategory = await window.electron.updateIncomeCategory(
+            id,
+            params,
+          );
           return { data: incomeCategory };
         } catch (error) {
           return { error: { message: (error as Error).message } };
         }
       },
       invalidatesTags: (_result, _error, { id }) => [
-        'Income',
-        { type: 'Income', id },
+        'IncomeCategory',
+        { type: 'IncomeCategory', id },
       ],
     }),
     deleteIncomeCategory: builder.mutation<void, number>({
@@ -61,7 +68,7 @@ export const incomeCategoryApi = baseApi.injectEndpoints({
           return { error: { message: (error as Error).message } };
         }
       },
-      invalidatesTags: ['Income'],
+      invalidatesTags: ['IncomeCategory'],
     }),
   }),
 });

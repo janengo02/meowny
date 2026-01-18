@@ -3,6 +3,7 @@ import {
   Button,
   CircularProgress,
   Paper,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
@@ -12,9 +13,11 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import { memo } from 'react';
 
 import {
-  useGetIncomeHistoriesBySourceQuery,
+  useGetIncomeHistoryIdsBySourceQuery,
+  useGetIncomeHistoryQuery,
   useCreateIncomeHistoryMutation,
 } from '../api/incomeHistoryApi';
 
@@ -31,25 +34,101 @@ interface IncomeHistoryTableProps {
   incomeSourceId: number;
 }
 
+interface IncomeHistoryRowProps {
+  historyId: number;
+  incomeSourceId: number;
+}
+const IncomeRowSkeleton = () => (
+  <TableRow>
+    <TableCell>
+      <Skeleton variant="rectangular" height={20} sx={{ borderRadius: 2 }} />
+    </TableCell>
+    <TableCell>
+      <Skeleton variant="rectangular" height={20} sx={{ borderRadius: 2 }} />
+    </TableCell>
+    <TableCell>
+      <Skeleton variant="rectangular" height={20} sx={{ borderRadius: 2 }} />
+    </TableCell>
+    <TableCell>
+      <Skeleton variant="rectangular" height={20} sx={{ borderRadius: 2 }} />
+    </TableCell>
+    <TableCell>
+      <Skeleton variant="rectangular" height={20} sx={{ borderRadius: 2 }} />
+    </TableCell>
+    <TableCell>
+      <Skeleton variant="rectangular" height={20} sx={{ borderRadius: 2 }} />
+    </TableCell>
+  </TableRow>
+);
+const IncomeHistoryRow = memo(function IncomeHistoryRow({
+  historyId,
+  incomeSourceId,
+}: IncomeHistoryRowProps) {
+  const { data: history, isLoading } = useGetIncomeHistoryQuery(historyId);
+
+  if (isLoading) {
+    return <IncomeRowSkeleton />;
+  }
+  if (!history) {
+    return null;
+  }
+
+  return (
+    <TableRow
+      sx={{
+        '&:last-child td, &:last-child th': { border: 0 },
+        verticalAlign: 'top',
+      }}
+    >
+      <TableCell sx={{ verticalAlign: 'top' }}>
+        <ReceivedDateInput
+          historyId={history.id}
+          value={history.received_date}
+        />
+      </TableCell>
+      <TableCell>
+        <IncomeCategorySelect
+          value={history.income_category_id}
+          historyId={history.id}
+        />
+      </TableCell>
+      <TableCell align="right">
+        <IncomeGrossInput historyId={history.id} value={history.gross_amount} />
+      </TableCell>
+      <TableCell>
+        <TaxCell
+          incomeHistoryId={history.id}
+          grossAmount={history.gross_amount}
+        />
+      </TableCell>
+      <TableCell align="right">
+        <NetAmountCell
+          incomeHistoryId={history.id}
+          grossAmount={history.gross_amount}
+        />
+      </TableCell>
+      <TableCell align="center">
+        <IncomeHistoryRowActions
+          historyId={history.id}
+          incomeId={incomeSourceId}
+          incomeCategoryId={history.income_category_id}
+          grossAmount={history.gross_amount}
+        />
+      </TableCell>
+    </TableRow>
+  );
+});
+
 export function IncomeHistoryTable({
   incomeSourceId,
 }: IncomeHistoryTableProps) {
-  const { data: incomeHistories = [], isLoading } =
-    useGetIncomeHistoriesBySourceQuery(incomeSourceId);
+  const { data: incomeHistoryIds = [], isLoading } =
+    useGetIncomeHistoryIdsBySourceQuery(incomeSourceId);
   const [createIncomeHistory, { isLoading: isCreating }] =
     useCreateIncomeHistoryMutation();
 
-  // Sort income histories by received_date desc, then by id asc
-  const sortedIncomeHistories = [...incomeHistories].sort((a, b) => {
-    // First sort by received_date descending
-    const dateComparison =
-      new Date(b.received_date).getTime() - new Date(a.received_date).getTime();
-    if (dateComparison !== 0) {
-      return dateComparison;
-    }
-    // If dates are equal, sort by id ascending
-    return b.id - a.id;
-  });
+  // Show skeleton only when creating a new income history
+  const showSkeleton = isCreating;
 
   const handleAddIncomeHistory = async () => {
     try {
@@ -62,8 +141,6 @@ export function IncomeHistoryTable({
       console.error('Failed to create income history:', error);
     }
   };
-
-
 
   if (isLoading) {
     return (
@@ -80,7 +157,7 @@ export function IncomeHistoryTable({
     );
   }
 
-  if (!sortedIncomeHistories || sortedIncomeHistories.length === 0) {
+  if (!incomeHistoryIds || incomeHistoryIds.length === 0) {
     return (
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
@@ -114,6 +191,16 @@ export function IncomeHistoryTable({
 
   return (
     <Box display="flex" flexDirection="column" justifyContent="center" gap={1}>
+      <Button
+        variant="contained"
+        size="small"
+        startIcon={<AddIcon />}
+        onClick={handleAddIncomeHistory}
+        disabled={isCreating}
+        sx={{ width: 'fit-content', ml: 'auto' }}
+      >
+        Add Income History
+      </Button>
       <TableContainer
         component={Paper}
         sx={{
@@ -140,67 +227,17 @@ export function IncomeHistoryTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedIncomeHistories.map((history) => (
-              <TableRow
-                key={history.id}
-                sx={{
-                  '&:last-child td, &:last-child th': { border: 0 },
-                  verticalAlign: 'top',
-                }}
-              >
-                <TableCell sx={{ verticalAlign: 'top' }}>
-                  <ReceivedDateInput
-                    historyId={history.id}
-                    value={history.received_date}
-                  />
-                </TableCell>
-                <TableCell>
-                  <IncomeCategorySelect
-                    value={history.income_category_id}
-                    historyId={history.id}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IncomeGrossInput
-                    historyId={history.id}
-                    value={history.gross_amount}
-
-                  />
-                </TableCell>
-                <TableCell>
-                  <TaxCell
-                    incomeHistoryId={history.id}
-                    grossAmount={history.gross_amount}
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <NetAmountCell
-                    incomeHistoryId={history.id}
-                    grossAmount={history.gross_amount}
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <IncomeHistoryRowActions
-                    historyId={history.id}
-                    incomeId={incomeSourceId}
-                    incomeCategoryId={history.income_category_id}
-                    grossAmount={history.gross_amount}
-                  />
-                </TableCell>
-              </TableRow>
+            {showSkeleton && <IncomeRowSkeleton />}
+            {incomeHistoryIds.map((historyId) => (
+              <IncomeHistoryRow
+                key={historyId}
+                historyId={historyId}
+                incomeSourceId={incomeSourceId}
+              />
             ))}
           </TableBody>
         </Table>
       </TableContainer>
-      <Button
-        variant="outlined"
-        size="small"
-        startIcon={<AddIcon />}
-        onClick={handleAddIncomeHistory}
-        disabled={isCreating}
-      >
-        Add Income History
-      </Button>
     </Box>
   );
 }

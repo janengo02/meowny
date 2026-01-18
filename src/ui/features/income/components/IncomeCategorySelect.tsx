@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { ChipAutocomplete } from '../../../shared/components/form/ChipAutocomplete';
 import {
   useGetIncomeCategoriesQuery,
@@ -14,7 +14,7 @@ interface IncomeCategorySelectProps {
   disabled?: boolean;
 }
 
-export function IncomeCategorySelect({
+function IncomeCategorySelectComponent({
   value,
   historyId,
   disabled = false,
@@ -132,3 +132,5 @@ export function IncomeCategorySelect({
     />
   );
 }
+
+export const IncomeCategorySelect = memo(IncomeCategorySelectComponent);

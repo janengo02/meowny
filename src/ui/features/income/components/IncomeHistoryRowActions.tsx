@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import dayjs from 'dayjs';
 import { formatDateForDB } from '../../../shared/utils/dateTime';
 import { useCreateIncomeHistoryMutation, useDeleteIncomeHistoryMutation } from '../api/incomeHistoryApi';
@@ -13,7 +14,7 @@ interface IncomeHistoryRowActionsProps {
   grossAmount: number;
 }
 
-export function IncomeHistoryRowActions({
+function IncomeHistoryRowActionsComponent({
   historyId,
   incomeId,
   incomeCategoryId,
@@ -78,3 +79,5 @@ export function IncomeHistoryRowActions({
     </>
   );
 }
+
+export const IncomeHistoryRowActions = memo(IncomeHistoryRowActionsComponent);

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Typography } from '@mui/material';
 import { useGetIncomeTaxesByIncomeHistoryQuery } from '../api/incomeTaxApi';
 import { formatMoney } from '../../../shared/utils';
@@ -7,7 +8,7 @@ interface NetAmountCellProps {
   grossAmount: number;
 }
 
-export function NetAmountCell({
+function NetAmountCellComponent({
   incomeHistoryId,
   grossAmount,
 }: NetAmountCellProps) {
@@ -33,3 +34,5 @@ export function NetAmountCell({
     </Typography>
   );
 }
+
+export const NetAmountCell = memo(NetAmountCellComponent);

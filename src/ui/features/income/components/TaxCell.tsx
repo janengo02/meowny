@@ -1,5 +1,12 @@
-import { useState } from 'react';
-import { Box, Button, IconButton, Stack, Typography } from '@mui/material';
+import { memo, useState } from 'react';
+import {
+  Box,
+  Button,
+  IconButton,
+  Skeleton,
+  Stack,
+  Typography,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -19,10 +26,11 @@ interface TaxCellProps {
   grossAmount: number;
 }
 
-export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
+function TaxCellComponent({ incomeHistoryId, grossAmount }: TaxCellProps) {
   const { data: incomeTaxes = [] } =
     useGetIncomeTaxesByIncomeHistoryQuery(incomeHistoryId);
-  const [createIncomeTax] = useCreateIncomeTaxMutation();
+  const [createIncomeTax, { isLoading: isCreating }] =
+    useCreateIncomeTaxMutation();
   const [updateIncomeTax] = useUpdateIncomeTaxMutation();
   const [deleteIncomeTax] = useDeleteIncomeTaxMutation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -162,6 +170,31 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
               </Stack>
             </Stack>
           ))}
+          {isCreating && (
+            <Stack
+              pb={1}
+              direction="row"
+              spacing={0.5}
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{
+                borderBottom: '1px solid',
+                borderColor: 'divider',
+              }}
+            >
+              <Skeleton
+                variant="rectangular"
+                height={20}
+                sx={{ flex: 1, borderRadius: 1 }}
+              />
+              <Skeleton
+                variant="rectangular"
+                height={20}
+                width={120}
+                sx={{ borderRadius: 1 }}
+              />
+            </Stack>
+          )}
         </Stack>
       )}
 
@@ -171,6 +204,7 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
           size="small"
           startIcon={<AddIcon />}
           onClick={handleAddTax}
+          disabled={isCreating}
           sx={{
             fontSize: '0.75rem',
             border: 'none',
@@ -192,3 +226,5 @@ export function TaxCell({ incomeHistoryId, grossAmount }: TaxCellProps) {
     </Box>
   );
 }
+
+export const TaxCell = memo(TaxCellComponent);
