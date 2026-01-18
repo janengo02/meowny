@@ -222,9 +222,9 @@ export const totalLabelPlugin = {
   },
 };
 
-// Plugin to display total values on top of bar charts
-export const barTotalLabelPlugin = {
-  id: 'barTotalLabel',
+// Plugin to display total values on top of stacked bar charts
+export const stackedBarTotalLabelPlugin = {
+  id: 'stackedBarTotalLabel',
   afterDatasetsDraw(chart: ChartJS<'bar'>) {
     const { ctx, data, scales } = chart;
 
@@ -262,6 +262,58 @@ export const barTotalLabelPlugin = {
         stackedY += value || 0;
       });
       const y = scales.y.getPixelForValue(stackedY);
+
+      const label = formatMoney(total);
+      ctx.fillText(label, x, y - 8);
+    }
+
+    ctx.restore();
+  },
+};
+
+// Plugin to display total values on top of bar charts (non-stacked/grouped)
+export const barTotalLabelPlugin = {
+  id: 'barTotalLabel',
+  afterDatasetsDraw(chart: ChartJS<'bar'>) {
+    const { ctx, data, scales } = chart;
+
+    if (!data.datasets.length) return;
+
+    ctx.save();
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#c1c1c1';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    // Calculate totals for each data point
+    const dataLength = data.datasets[0].data.length;
+    for (let i = 0; i < dataLength; i++) {
+      // Sum only visible dataset values at this index
+      let total = 0;
+      let maxValue = 0;
+
+      data.datasets.forEach((dataset, datasetIndex) => {
+        // Check if dataset is hidden via legend click
+        const meta = chart.getDatasetMeta(datasetIndex);
+        if (meta.hidden) return;
+
+        const value = (dataset.data[i] as number) || 0;
+        total += value;
+
+        // Track max value for positioning
+        if (value > maxValue) {
+          maxValue = value;
+        }
+      });
+
+      // Skip if no visible data
+      if (total === 0) continue;
+
+      // Get the x position from the x-axis scale
+      const x = scales.x.getPixelForValue(i);
+
+      // For non-stacked charts, position label at the highest bar
+      const y = scales.y.getPixelForValue(maxValue);
 
       const label = formatMoney(total);
       ctx.fillText(label, x, y - 8);
@@ -618,6 +670,64 @@ export const barChartOptions: ChartOptions<'bar'> = {
     },
     y: {
       stacked: false,
+      beginAtZero: true,
+      ticks: {
+        callback: function (value) {
+          return formatMoney(value as number);
+        },
+      },
+    },
+  },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'bottom' as const,
+      labels: {
+        boxWidth: 12,
+        padding: 8,
+        font: {
+          size: 10,
+        },
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: function (context) {
+          const value = context.parsed.y || 0;
+          // Skip showing zero values in tooltip
+          if (value === 0) {
+            return undefined;
+          }
+          const datasetLabel = context.dataset.label || '';
+          return `${datasetLabel}: ${formatMoney(value)}`;
+        },
+      },
+      filter: function (tooltipItem) {
+        // Filter out zero values from tooltip
+        return tooltipItem.parsed.y !== 0;
+      },
+    },
+  },
+};
+
+export const stackedBarChartOptions: ChartOptions<'bar'> = {
+  responsive: true,
+  maintainAspectRatio: false,
+  layout: {
+    padding: {
+      top: 25,
+    },
+  },
+  interaction: {
+    mode: 'index' as const,
+    intersect: false,
+  },
+  scales: {
+    x: {
+      stacked: true,
+    },
+    y: {
+      stacked: true,
       beginAtZero: true,
       ticks: {
         callback: function (value) {

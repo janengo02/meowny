@@ -23,8 +23,8 @@ import { useForm, FormProvider, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   CHART_COLORS,
-  barChartOptions,
-  barTotalLabelPlugin,
+  stackedBarChartOptions,
+  stackedBarTotalLabelPlugin,
 } from '../../../shared/utils/chart';
 import { ErrorState } from '../../../shared/components/layout/ErrorState';
 import { EmptyState } from '../../../shared/components/layout/EmptyState';
@@ -213,8 +213,8 @@ export function IncomeOverTimeChart() {
             ) : chartData ? (
               <Bar
                 data={chartData}
-                options={barChartOptions}
-                plugins={[barTotalLabelPlugin]}
+                options={stackedBarChartOptions}
+                plugins={[stackedBarTotalLabelPlugin]}
               />
             ) : (
               <EmptyState
