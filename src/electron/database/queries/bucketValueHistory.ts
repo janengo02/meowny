@@ -831,26 +831,24 @@ export async function getAssetsValueHistory(
 
   if (lastValuesError) throw new Error(lastValuesError.message);
 
-  // Create a map of the last value before start date for each bucket
-  const lastValueByBucket = new Map<
-    number,
-    AssetsBucketData['history'][number]
-  >(lastValuesBeforeStart?.map((item) => [item.bucket_id, item]) ?? []);
+  // Group history data by bucket, starting with last value before start date
+  const historyByBucket = new Map<number, AssetsBucketData['history']>();
 
-  // Map history data by bucket, including the last value before start date
-  const historyByBucket = new Map<number, AssetsBucketData['history']>(
-    bucketIds.map((bucketId) => [
-      bucketId,
-      lastValueByBucket.has(bucketId) ? [lastValueByBucket.get(bucketId)!] : [],
-    ]),
-  );
-
-  // Then, add all history data within the date range
-  historyData.forEach((item) => {
+  // Initialize with last values before start date (only first occurrence per bucket)
+  lastValuesBeforeStart?.forEach((item) => {
     if (!historyByBucket.has(item.bucket_id)) {
-      historyByBucket.set(item.bucket_id, []);
+      historyByBucket.set(item.bucket_id, [item]);
     }
-    historyByBucket.get(item.bucket_id)!.push(item);
+  });
+
+  // Add all history data within the date range
+  historyData.forEach((item) => {
+    const history = historyByBucket.get(item.bucket_id);
+    if (history) {
+      history.push(item);
+    } else {
+      historyByBucket.set(item.bucket_id, [item]);
+    }
   });
 
   // Combine bucket info with history

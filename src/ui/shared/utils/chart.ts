@@ -86,7 +86,7 @@ export const barStackedChartForGainLossDefaultOptions: ChartOptions<'bar'> = {
   maintainAspectRatio: false,
   layout: {
     padding: {
-      top: 20,
+      top: 30,
     },
   },
   interaction: {
