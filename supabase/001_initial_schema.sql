@@ -122,6 +122,9 @@ CREATE TABLE bucket_value_history (
   contributed_amount DECIMAL(19, 2) NOT NULL,
   market_value DECIMAL(19, 2) NOT NULL,
   total_units DECIMAL(19, 8),
+  contributed_amount_delta DECIMAL(19, 2) NOT NULL DEFAULT 0,
+  market_value_delta DECIMAL(19, 2) NOT NULL DEFAULT 0,
+  total_units_delta DECIMAL(19, 8),
   recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   source_type source_type_enum NOT NULL,
   source_id INT,
@@ -129,6 +132,10 @@ CREATE TABLE bucket_value_history (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
+
+COMMENT ON COLUMN bucket_value_history.contributed_amount_delta IS 'The change in contributed amount from the previous record (delta). For transactions: the transaction amount (positive for deposits, negative for withdrawals). For market updates: 0.';
+COMMENT ON COLUMN bucket_value_history.market_value_delta IS 'The change in market value from the previous record (delta). For transactions: same as contributed_amount_delta. For market updates: difference from previous market value.';
+COMMENT ON COLUMN bucket_value_history.total_units_delta IS 'The change in total units from the previous record (delta). For transactions with units: the unit change. NULL if units are not tracked.';
 
 -- ============================================
 -- INCOME SOURCE
@@ -220,6 +227,20 @@ CREATE TABLE keyword_bucket_mapping (
 );
 
 -- ============================================
+-- USER PREFERENCES
+-- ============================================
+
+CREATE TABLE user_preferences (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  preference_key VARCHAR(255) NOT NULL,
+  preference_value JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id, preference_key)
+);
+
+-- ============================================
 -- INDEXES
 -- ============================================
 
@@ -237,8 +258,8 @@ CREATE INDEX idx_transaction_date ON transaction(transaction_date);
 
 -- Bucket value history indexes
 CREATE INDEX idx_bucket_value_history_user_id ON bucket_value_history(user_id);
-CREATE INDEX idx_bucket_value_history_bucket_id ON bucket_value_history(bucket_id);
-CREATE INDEX idx_bucket_value_history_recorded_at ON bucket_value_history(recorded_at);
+CREATE INDEX idx_bucket_value_history_bucket_recorded_created
+  ON bucket_value_history(bucket_id, recorded_at, created_at);
 
 -- Bucket goal indexes
 CREATE INDEX idx_bucket_goal_user_id ON bucket_goal(user_id);
@@ -266,6 +287,10 @@ CREATE INDEX idx_tax_category_user_id ON tax_category(user_id);
 -- Keyword bucket mapping indexes
 CREATE INDEX idx_keyword_bucket_mapping_user_keyword ON keyword_bucket_mapping(user_id, keyword);
 
+-- User preferences indexes
+CREATE INDEX idx_user_preferences_user_id ON user_preferences(user_id);
+CREATE INDEX idx_user_preferences_user_key ON user_preferences(user_id, preference_key);
+
 
 -- ============================================
 -- ROW LEVEL SECURITY (RLS)
@@ -284,6 +309,7 @@ ALTER TABLE income_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tax_category ENABLE ROW LEVEL SECURITY;
 ALTER TABLE income_tax ENABLE ROW LEVEL SECURITY;
 ALTER TABLE keyword_bucket_mapping ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 
 -- ============================================
 -- RLS POLICIES - BUCKET_CATEGORY
@@ -526,6 +552,26 @@ CREATE POLICY "Users can delete their own keyword mappings"
   USING (auth.uid() = user_id);
 
 -- ============================================
+-- RLS POLICIES - USER_PREFERENCES
+-- ============================================
+
+CREATE POLICY "Users can view own preferences"
+  ON user_preferences FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own preferences"
+  ON user_preferences FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own preferences"
+  ON user_preferences FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own preferences"
+  ON user_preferences FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- ============================================
 -- TRIGGERS FOR updated_at
 -- ============================================
 
@@ -583,4 +629,8 @@ CREATE TRIGGER update_income_tax_updated_at
 
 CREATE TRIGGER update_keyword_bucket_mapping_updated_at
   BEFORE UPDATE ON keyword_bucket_mapping
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_preferences_updated_at
+  BEFORE UPDATE ON user_preferences
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
